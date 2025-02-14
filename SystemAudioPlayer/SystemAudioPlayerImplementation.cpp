@@ -22,6 +22,7 @@
 #include "impl/Helper.h"
 #include "base64.h"
 #include "UtilsJsonRpc.h"
+#include <unistd.h>
 
 #define SAP_MAJOR_VERSION 1
 #define SAP_MINOR_VERSION 0
@@ -33,8 +34,11 @@
 #undef returnResponse
 #define returnResponse(success) \
     response["success"] = success; \
+    SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON trigger\n"); \
     CONVERT_PARAMETERS_FROMJSON(); \
+    SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done\n"); \
     LOGTRACEMETHODFIN(); \
+    SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON return called\n"); \
     return (Core::ERROR_NONE);
 
 namespace WPEFramework {
@@ -269,18 +273,21 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
-        AudioPlayer *player;
+        AudioPlayer *player=NULL;
         int id;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Stop\n");
+        if (0 == access("/opt/systemAudioPlayer", F_OK)) {
         _adminLock.Lock();
          player = getObjectFromMap(id);
         _adminLock.Unlock();
+        }
          if(player != NULL)
         {
             player->Stop();;
             returnResponse(true);
         }
+        SAPLOG_INFO("SAP: SystemAudioPlayerImplementation return false response\n");
         returnResponse(false);
     }
 
