@@ -104,8 +104,11 @@ namespace Plugin {
         if(_sap) {
             string params,result;
             parameters.ToString(params);
+	    SAPLOG_INFO("SAP: SystemAudioPlayer stop called param [%s]\n", params.c_str());
             uint32_t ret = _sap->Stop(params, result);
+	    SAPLOG_INFO("SAP: SystemAudioPlayer stop return [%u]\n", ret);
             response.FromString(result);
+	    SAPLOG_INFO("SAP: SystemAudioPlayer stop response [%s]\n", result.c_str());
             return ret;
         }
         return Core::ERROR_NONE;
