@@ -35,7 +35,10 @@
 #define returnResponse(success) \
     response["success"] = success; \
     SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON trigger\n"); \
-    CONVERT_PARAMETERS_FROMJSON(); \
+    string Test=""; \
+    response.ToString(Test); \
+    SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done for Test [%s]\n",Test.c_str()); \
+    response.ToString(output); \
     SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done\n"); \
     LOGTRACEMETHODFIN(); \
     SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON return called\n"); \
