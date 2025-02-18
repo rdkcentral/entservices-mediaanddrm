@@ -72,6 +72,7 @@ find_package(GStreamer REQUIRED)
 
 find_package(Curl)
 
+target_compile_options(${MODULE_NAME} PRIVATE -g)
 
 target_include_directories(${MODULE_NAME} PRIVATE ./)
 target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
