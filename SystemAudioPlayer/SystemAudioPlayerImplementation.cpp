@@ -276,7 +276,7 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
         JsonObject response;
-        response["success"] = success;
+        response["success"] = false;
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON trigger\n");
         response.ToString(output);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done\n");
