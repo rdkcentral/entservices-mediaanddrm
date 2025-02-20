@@ -275,23 +275,12 @@ namespace Plugin {
     uint32_t SystemAudioPlayerImplementation::Stop(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
-        CONVERT_PARAMETERS_TOJSON();
-        AudioPlayer *player=NULL;
-        int id;
-        getNumberParameter("id", id);
-        SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Stop\n");
-        if (0 == access("/opt/systemAudioPlayer", F_OK)) {
-        _adminLock.Lock();
-         player = getObjectFromMap(id);
-        _adminLock.Unlock();
-        }
-         if(player != NULL)
-        {
-            player->Stop();;
-            returnResponse(true);
-        }
-        SAPLOG_INFO("SAP: SystemAudioPlayerImplementation return false response\n");
-        returnResponse(false);
+        JsonObject response;
+        response["success"] = success;
+        SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON trigger\n");
+        response.ToString(output);
+        SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done\n");
+        return (Core::ERROR_NONE);
     }
 
     uint32_t SystemAudioPlayerImplementation::Close(const string &input, string &output)
