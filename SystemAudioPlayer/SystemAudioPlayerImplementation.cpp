@@ -278,6 +278,13 @@ namespace Plugin {
         JsonObject response;
         response["success"] = false;
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON trigger\n");
+        string Test = "";
+        response.ToString(Test);
+        SAPLOG_INFO("SystemAudioPlayerImplementation Test :%s\n",Test.c_str());
+        output = Test.c_str();
+        SAPLOG_INFO("SystemAudioPlayerImplementation assign with c_str :%s\n",output.c_str());
+        output = Test;
+        SAPLOG_INFO("SystemAudioPlayerImplementation assign with = :%s\n",output.c_str());
         response.ToString(output);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Convert From JSON done\n");
         return (Core::ERROR_NONE);
