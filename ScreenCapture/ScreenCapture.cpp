@@ -24,6 +24,10 @@
 #include <png.h>
 #include <curl/curl.h>
 
+#include <iostream>
+#include <vector>
+#include <iomanip>
+
 #ifdef HAS_SCREENCAPTURE_PLATFORM
 #include "screencaptureplatform.h"
 #elif USE_DRM_SCREENCAPTURE
@@ -104,10 +108,16 @@ namespace WPEFramework
 
             url = parameters["url"].String();
 
+            std::cout <<"akshay : url = "<<url<<std::endl;
+
             if(parameters.HasLabel("callGUID"))
               callGUID = parameters["callGUID"].String();
 
+            std::cout <<"akshay : callGUID = "<<callGUID<<std::endl;
+            std::cout <<"akshay calling ScreenShotJob"<<std::endl;
             screenShotDispatcher->Schedule( Core::Time::Now().Add(0), ScreenShotJob( this) );
+
+            std::cout <<"akshay after ScreenShotJob"<<std::endl;
 
             returnResponse(true);
         }
@@ -119,90 +129,119 @@ namespace WPEFramework
         }
        
         static bool saveToPng(unsigned char *data, int width, int height, std::vector<unsigned char> &png_out_data)
+    {
+        std::cout << "akshay inside saveToPng" << std::endl;
+        int bitdepth = 8;
+        int colortype = PNG_COLOR_TYPE_RGBA;
+        int pitch = 4 * width;
+        int transform = PNG_TRANSFORM_IDENTITY;
+
+    int i = 0;
+    int r = 0;
+    png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    png_bytep* row_pointers = NULL;
+
+    if (NULL == data)
+    {
+        LOGERR("Error: failed to save the png because the given data is NULL.");
+        r = -1;
+        goto error;
+    }
+    std::cout << "akshay data is valid" << std::endl;
+
+    if (0 == pitch)
+    {
+        LOGERR("Error: failed to save the png because the given pitch is 0.");
+        r = -3;
+        goto error;
+    }
+    std::cout << "akshay pitch is valid" << std::endl;
+
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (NULL == png_ptr)
+    {
+        LOGERR("Error: failed to create the png write struct.");
+        r = -5;
+        goto error;
+    }
+    std::cout << "akshay png_create_write_struct successful" << std::endl;
+
+    info_ptr = png_create_info_struct(png_ptr);
+    if (NULL == info_ptr)
+    {
+        LOGERR("Error: failed to create the png info struct.");
+        r = -6;
+        goto error;
+    }
+    std::cout << "akshay png_create_info_struct successful" << std::endl;
+
+    png_set_IHDR(png_ptr,
+                 info_ptr,
+                 width,
+                 height,
+                 bitdepth,                 /* e.g. 8 */
+                 colortype,                /* PNG_COLOR_TYPE_{GRAY, PALETTE, RGB, RGB_ALPHA, GRAY_ALPHA, RGBA, GA} */
+                 PNG_INTERLACE_NONE,       /* PNG_INTERLACE_{NONE, ADAM7 } */
+                 PNG_COMPRESSION_TYPE_BASE,
+                 PNG_FILTER_TYPE_BASE);
+    std::cout << "akshay png_set_IHDR successful" << std::endl;
+
+    row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
+    if (NULL == row_pointers)
+    {
+        LOGERR("Error: failed to allocate memory for row pointers.");
+        r = -7;
+        goto error;
+    }
+    std::cout << "akshay row_pointers allocation successful" << std::endl;
+
+    for (i = 0; i < height; ++i)
+        row_pointers[i] = data + i * pitch;
+    std::cout << "akshay row_pointers setup successful" << std::endl;
+
+    png_set_write_fn(png_ptr, &png_out_data, PngWriteCallback, NULL);
+    png_set_rows(png_ptr, info_ptr, row_pointers);
+    png_write_png(png_ptr, info_ptr, transform, NULL);
+    std::cout << "akshay png_write_png successful" << std::endl;
+
+error:
+
+    if (NULL != png_ptr)
+    {
+        if (NULL == info_ptr)
         {
-            int bitdepth = 8;
-            int colortype = PNG_COLOR_TYPE_RGBA;
-            int pitch = 4 * width;
-            int transform = PNG_TRANSFORM_IDENTITY;
-
-            int i = 0;
-            int r = 0;
-            png_structp png_ptr = NULL;
-            png_infop info_ptr = NULL;
-            png_bytep* row_pointers = NULL;
-
-            if (NULL == data)
-            {
-                LOGERR("Error: failed to save the png because the given data is NULL.");
-                r = -1;
-                goto error;
-            }
-
-            if (0 == pitch)
-            {
-                LOGERR("Error: failed to save the png because the given pitch is 0.");
-                r = -3;
-                goto error;
-            }
-
-            png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-            if (NULL == png_ptr)
-            {
-                LOGERR("Error: failed to create the png write struct.");
-                r = -5;
-                goto error;
-            }
-
-            info_ptr = png_create_info_struct(png_ptr);
-            if (NULL == info_ptr)
-            {
-                LOGERR("Error: failed to create the png info struct.");
-                r = -6;
-                goto error;
-            }
-
-            png_set_IHDR(png_ptr,
-                            info_ptr,
-                            width,
-                            height,
-                            bitdepth,                 /* e.g. 8 */
-                            colortype,                /* PNG_COLOR_TYPE_{GRAY, PALETTE, RGB, RGB_ALPHA, GRAY_ALPHA, RGBA, GA} */
-                            PNG_INTERLACE_NONE,       /* PNG_INTERLACE_{NONE, ADAM7 } */
-                            PNG_COMPRESSION_TYPE_BASE,
-                            PNG_FILTER_TYPE_BASE);
-
-            row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
-
-            for (i = 0; i < height; ++i)
-                row_pointers[i] = data + i * pitch;
-
-            png_set_write_fn(png_ptr, &png_out_data, PngWriteCallback, NULL);
-            png_set_rows(png_ptr, info_ptr, row_pointers);
-            png_write_png(png_ptr, info_ptr, transform, NULL);
-
-            error:
-
-            if (NULL != png_ptr)
-            {
-
-                if (NULL == info_ptr)
-                {
-                    LOGERR("Error: info ptr is null. not supposed to happen here.\n");
-                }
-
-                png_destroy_write_struct(&png_ptr, &info_ptr);
-                png_ptr = NULL;
-                info_ptr = NULL;
-            }
-
-            if (NULL != row_pointers)
-            {
-                free(row_pointers);
-                row_pointers = NULL;
-            }
-
-            return (r==0);
+            LOGERR("Error: info ptr is null. not supposed to happen here.\n");
         }
+
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        png_ptr = NULL;
+        info_ptr = NULL;
+    }
+    std::cout << "akshay cleanup png_ptr and info_ptr" << std::endl;
+
+    if (NULL != row_pointers)
+    {
+        free(row_pointers);
+        row_pointers = NULL;
+    }
+    std::cout << "akshay cleanup row_pointers" << std::endl;
+
+    return (r == 0);
+    }
+
+        void printPngData(const std::vector<unsigned char>& png_data) 
+        {
+            std::cout << "akshay png_data size: " << png_data.size() << std::endl;
+            std::cout << "akshay png_data contents: ";
+            for (size_t i = 0; i < png_data.size(); ++i) {
+            std::cout << "akshay" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(png_data[i]) << " ";
+            if ((i + 1) % 16 == 0) { // Print 16 bytes per line for readability
+                std::cout << "akshay in bytes"<<std::endl;
+            }
+    }
+    std::cout << "akshay value of png_data" << std::dec << std::endl; // Reset to decimal format
+}
 
 
 #ifdef USE_DRM_SCREENCAPTURE
@@ -258,9 +297,13 @@ namespace WPEFramework
                         color[2] = blue;
                     }
                 }
+
+                std::cout <<"akshay before saveToPng"<<std::endl;
                 if (!saveToPng(buffer, handle->width, handle->height, png_out_data))
                 {
+                    std::cout <<"akshay after saveToPng"<<std::endl;
                     LOGERR("[SCREENCAP] could not convert screenshot to png");
+                    std::cout <<"akshay setting ret to false"<<std::endl;
                     ret = false;
                     break;
                 }
@@ -286,6 +329,7 @@ namespace WPEFramework
 
         uint64_t ScreenShotJob::Timed(const uint64_t scheduledTime)
         {
+            std::cout <<"akshay inside ScreenShotJob"<<std::endl;
             if(!m_screenCapture)
             {
                 LOGERR("!m_screenCapture");
@@ -296,6 +340,8 @@ namespace WPEFramework
             bool got_screenshot = false;
 
             got_screenshot = getScreenContent(png_data);
+            printPngData(png_data);
+
 
             m_screenCapture->doUploadScreenCapture(png_data, got_screenshot);
 
@@ -307,6 +353,8 @@ namespace WPEFramework
             if(got_screenshot)
             {
                 std::string error_str;
+
+                printPngData(png_data);
 
                 LOGWARN("uploading %u of png data to '%s'", (uint32_t)png_data.size(), url.c_str() );
 
