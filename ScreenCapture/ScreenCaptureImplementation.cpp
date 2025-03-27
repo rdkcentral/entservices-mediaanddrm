@@ -158,7 +158,7 @@ namespace WPEFramework
             _adminLock.Unlock();
         }
 
-        Core::hresult ScreenCaptureImplementation::UploadScreenCapture(const string &url, const string &callGUID)
+        Core::hresult ScreenCaptureImplementation::UploadScreenCapture(const string &url, const string &callGUID, Result &result)
         {
 
             std::lock_guard<std::mutex> guard(m_callMutex);
@@ -178,6 +178,7 @@ namespace WPEFramework
             }
             screenShotDispatcher->Schedule(Core::Time::Now().Add(0), ScreenShotJob(this));
 
+            result.success = true;
             return Core::ERROR_NONE;
         }
 
