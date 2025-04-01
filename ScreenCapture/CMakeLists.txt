@@ -17,6 +17,7 @@
 
 set(PLUGIN_NAME ScreenCapture)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
+set(PLUGIN_IMPLEMENTATION ${MODULE_NAME}Implementation)
 
 set(PLUGIN_SCREENCAPTURE_STARTUPORDER "" CACHE STRING "To configure startup order of ScreenCapture plugin")
 
@@ -37,32 +38,48 @@ set_target_properties(${MODULE_NAME} PROPERTIES
 
 target_compile_definitions(${MODULE_NAME} PRIVATE MODULE_NAME=Plugin_${PLUGIN_NAME})
 
+include_directories(
+        ../helpers)
+
+target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins)
+
+install(TARGETS ${MODULE_NAME}
+        DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
+
+add_library(${PLUGIN_IMPLEMENTATION} SHARED
+        ScreenCaptureImplementation.cpp
+        Module.cpp)
+
+set_target_properties(${PLUGIN_IMPLEMENTATION} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES)
+
 find_path(PLATFORM_SC NAMES screencaptureplatform.h)
 if (NOT ${PLATFORM_SC} STREQUAL "PLATFORM_SC-NOTFOUND")
     message("Found screencaptureplatform.h")
     add_definitions (-DHAS_SCREENCAPTURE_PLATFORM)
-    target_link_libraries(${MODULE_NAME} PRIVATE -lscreencaptureplatform)
+    target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE -lscreencaptureplatform)
 else()
     find_package(LibDRM QUIET)
     if (LIBDRM_FOUND)
         message("Found libdrm")
         add_definitions (-DUSE_DRM_SCREENCAPTURE)
 
-        target_sources(${MODULE_NAME}
+        target_sources(${PLUGIN_IMPLEMENTATION}
             PRIVATE
             Implementation/drm/kms.cpp
             Implementation/drm/drmsc.cpp)
-        target_link_libraries(${MODULE_NAME}
+        target_link_libraries(${PLUGIN_IMPLEMENTATION}
             PRIVATE
             drm)
     endif()
 endif()
 
-target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
+target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ../helpers)
 
-target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins -lpng -lcurl)
+target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins -lpng -lcurl)
 
-install(TARGETS ${MODULE_NAME}
+install(TARGETS ${PLUGIN_IMPLEMENTATION}
         DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
 
 write_config(${PLUGIN_NAME})
