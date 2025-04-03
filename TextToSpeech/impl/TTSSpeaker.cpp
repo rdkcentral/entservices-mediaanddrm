@@ -167,7 +167,7 @@ bool TTSConfiguration::setApiKey(const std::string apikey) {
 }
 
 bool TTSConfiguration::setEndpointType(const std::string type) {
-    if(!type.empty())
+    if(!type.empty() &&  type.find_first_not_of(' ') != std::string::npos)
     {
         UPDATE_AND_RETURN(m_endpointType, type);
     }
@@ -177,7 +177,7 @@ bool TTSConfiguration::setEndpointType(const std::string type) {
 }
 
 bool TTSConfiguration::setSpeechRate(const std::string rate) {
-    if(!rate.empty())
+    if(!rate.empty() && rate.find_first_not_of(' ') != std::string::npos)
     {
         UPDATE_AND_RETURN(m_speechRate, rate);
     }
@@ -312,9 +312,9 @@ bool TTSConfiguration::updateWith(TTSConfiguration &nConfig) {
 }
 
 bool TTSConfiguration::isValid() {
-    if((m_ttsEndPoint.empty() && m_ttsEndPointSecured.empty())) {
-        TTSLOG_ERROR("TTSEndPointEmpty=%d, TTSSecuredEndPointEmpty=%d",
-                m_ttsEndPoint.empty(), m_ttsEndPointSecured.empty());
+    if((m_ttsEndPoint.empty() && m_ttsEndPointSecured.empty() && m_ttsRFCEndpoint.empty())) {
+        TTSLOG_ERROR("TTSEndPointEmpty=%d, TTSSecuredEndPointEmpty=%d , TTSRFCEndpoint=%d",
+                m_ttsEndPoint.empty(), m_ttsEndPointSecured.empty(), m_ttsRFCEndpoint.empty());
         return false;
     }
     return true;
@@ -634,7 +634,7 @@ void TTSSpeaker::createPipeline(PipelineType type) {
     }
 
     std::string tts_url =
-        !m_defaultConfig.secureEndPoint().empty() ? m_defaultConfig.secureEndPoint() : m_defaultConfig.endPoint();
+        !m_defaultConfig.secureEndPoint().empty() ? m_defaultConfig.secureEndPoint() : m_defaultConfig.rfcEndPoint();
     if(!tts_url.empty()) {
         if(!m_defaultConfig.voice().empty()) {
             tts_url.append("voice=");
