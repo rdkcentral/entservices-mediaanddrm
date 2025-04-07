@@ -227,6 +227,7 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
   -DPLUGIN_SCREENCAPTURE=ON \
+  -DHIDE_NON_EXTERNAL_SYMBOLS=OFF \
 
 
 cmake --build build/entservices-mediaanddrm --target install
