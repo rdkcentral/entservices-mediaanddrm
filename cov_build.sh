@@ -19,7 +19,7 @@ echo "akshay Current Directory: $GITHUB_WORKSPACE"
 
 
 apt update
-apt install -y libsqlite3-dev libcurl4-openssl-dev valgrind lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev curl protobuf-compiler-grpc libgrpc-dev libgrpc++-dev libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+apt install -y libsqlite3-dev libcurl4-openssl-dev valgrind lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev curl protobuf-compiler-grpc libgrpc-dev libgrpc++-dev libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpng-dev
 pip install jsonref
 
 #############################
@@ -162,6 +162,9 @@ touch rdk/ds/videoOutputPort.hpp
 touch rdk/ds/videoOutputPortConfig.hpp
 touch rdk/ds/videoOutputPortType.hpp
 touch rdk/ds/videoResolution.hpp
+touch rdk/ds/frontPanelIndicator.hpp
+touch rdk/ds/frontPanelConfig.hpp
+touch rdk/ds/frontPanelTextDisplay.hpp
 touch rdk/iarmbus/libIARM.h
 touch rdk/iarmbus/libIBus.h
 touch rdk/iarmbus/libIBusDaemon.h
@@ -227,6 +230,8 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
                       -include ${PWD}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/readprocMockInterface.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h \
+
                       --coverage -Wall -Werror -Wno-error=format \
                       -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog \
                       -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
