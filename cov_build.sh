@@ -130,8 +130,11 @@ mkdir -p headers/audiocapturemgr
 mkdir -p headers/rdk/ds
 mkdir -p headers/rdk/iarmbus
 mkdir -p headers/rdk/iarmmgrs-hal
+mkdir -p headers/rdk/halif/
+mkdir -p headers/rdk/halif/deepsleep-manager
 mkdir -p headers/ccec/drivers
 mkdir -p headers/network
+mkdir -p headers/proc
 echo "dir created successfully"
 echo "======================================================================================"
 
@@ -162,7 +165,7 @@ touch rdk/ds/videoResolution.hpp
 touch rdk/iarmbus/libIARM.h
 touch rdk/iarmbus/libIBus.h
 touch rdk/iarmbus/libIBusDaemon.h
-touch rdk/iarmmgrs-hal/deepSleepMgr.h
+touch rdk/halif/deepsleep-manager/deepSleepMgr.h
 touch rdk/iarmmgrs-hal/mfrMgr.h
 touch rdk/iarmmgrs-hal/pwrMgr.h
 touch rdk/iarmmgrs-hal/sysMgr.h
@@ -179,6 +182,7 @@ touch wpa_ctrl.h
 touch btmgr.h
 touch rdk_logger_milestone.h
 touch png.h
+touch proc/readproc.h
 echo "files created successfully"
 echo "======================================================================================"
 
@@ -199,6 +203,9 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
   -DCMAKE_DISABLE_FIND_PACKAGE_IARMBus=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON \
   -DCMAKE_DISABLE_FIND_PACKAGE_DS=ON \
+  -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON \
+  -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_CXX_FLAGS="-DEXCEPTIONS_ENABLE=ON \
                       -I ${PWD}/entservices-testframework/Tests/headers \
                       -I ${PWD}/entservices-testframework/Tests/headers/audiocapturemgr \
@@ -207,6 +214,9 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
                       -I ${PWD}/entservices-testframework/Tests/headers/rdk/iarmmgrs-hal \
                       -I ${PWD}/entservices-testframework/Tests/headers/ccec/drivers \
                       -I ${PWD}/entservices-testframework/Tests/headers/network \
+                      -I ${PWD}/entservices-testframework/Tests \
+                      -I ${PWD}//Thunder/Source \
+                      -I ${PWD}//Thunder/Source/core \
                       -include ${PWD}/entservices-testframework/Tests/mocks/devicesettings.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/Iarm.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/Rfc.h \
@@ -215,6 +225,7 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
                       -include ${PWD}/entservices-testframework/Tests/mocks/Udev.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/pkg.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/maintenanceMGR.h \
+                      -include ${PWD}/entservices-testframework/Tests/mocks/readprocMockInterface.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       --coverage -Wall -Werror -Wno-error=format \
                       -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog \
@@ -224,7 +235,6 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
                       -DUSE_DRM_SCREENCAPTURE -DHAS_API_SYSTEM -DHAS_API_POWERSTATE \
                       -DHAS_RBUS -DDISABLE_SECURITY_TOKEN -DENABLE_DEVICE_MANUFACTURER_INFO -DUSE_THUNDER_R4=ON -DTHUNDER_VERSION=4 -DTHUNDER_VERSION_MAJOR=4 -DTHUNDER_VERSION_MINOR=4" \
   -DCOMCAST_CONFIG=OFF \
-  -DRDK_SERVICES_COVERITY=ON \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
   -DPLUGIN_SCREENCAPTURE=ON \
