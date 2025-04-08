@@ -231,7 +231,6 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
                       -include ${PWD}/entservices-testframework/Tests/mocks/readprocMockInterface.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/secure_wrappermock.h \
                       -include ${PWD}/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h \
-
                       --coverage -Wall -Werror -Wno-error=format \
                       -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog \
                       -DENABLE_TELEMETRY_LOGGING -DUSE_IARMBUS \
