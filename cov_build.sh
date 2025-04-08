@@ -228,6 +228,7 @@ cmake -G Ninja -S entservices-mediaanddrm -B build/entservices-mediaanddrm \
   -DRDK_SERVICES_L1_TEST=ON \
   -DDS_FOUND=ON \
   -DPLUGIN_SCREENCAPTURE=ON \
+  -DHAS_FRONT_PANEL=ON \
   -DHIDE_NON_EXTERNAL_SYMBOLS=OFF \
 
 
