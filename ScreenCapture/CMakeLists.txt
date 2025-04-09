@@ -44,7 +44,7 @@ include_directories(
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins)
 
 install(TARGETS ${MODULE_NAME}
-        DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
 
 add_library(${PLUGIN_IMPLEMENTATION} SHARED
         ScreenCaptureImplementation.cpp
@@ -80,6 +80,6 @@ target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ../helpers)
 target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins -lpng -lcurl)
 
 install(TARGETS ${PLUGIN_IMPLEMENTATION}
-        DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
 
 write_config(${PLUGIN_NAME})
