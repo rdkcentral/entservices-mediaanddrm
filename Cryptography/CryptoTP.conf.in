@@ -1,0 +1,6 @@
+precondition = ["Platform"]
+callsign = "org.rdk.Cryptography"
+autostart = "false"
+
+configuration = JSON()
+

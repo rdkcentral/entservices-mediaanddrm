@@ -1,0 +1,12 @@
+startmode = "@PLUGIN_CRYPTOGRAPHY_STARTMODE@"
+
+configuration = JSON()
+
+configuration.add("location", "@PLUGIN_CRYPTOGRAPHY_LOCATION@")
+
+rootobject = JSON()
+rootobject.add("mode", "@PLUGIN_CRYPTOGRAPHY_MODE@")
+rootobject.add("user", "@PLUGIN_CRYPTOGRAPHY_USER@")
+rootobject.add("group", "@PLUGIN_CRYPTOGRAPHY_GROUP@")
+
+configuration.add("root", rootobject)
