@@ -18,6 +18,8 @@
 set(PLUGIN_NAME CryptoTP)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
+set(PLUGIN_CRYPTOGRAPTHY_LOCATION "objects" CACHE STRING "Location within VaultProvisioning persistent path to look for provisioned objects")
+
 find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(${NAMESPACE}Definitions REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)

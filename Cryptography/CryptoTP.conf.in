@@ -4,3 +4,5 @@ autostart = "false"
 
 configuration = JSON()
 
+configuration.add("location", "@PLUGIN_CRYPTOGRAPTHY_LOCATION@")
+
