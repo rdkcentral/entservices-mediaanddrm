@@ -75,34 +75,9 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, uint32_t bufSize) {
 	bool ret = true;
-
-	do {
-		if(!handle || !output) {
-			cout << "[SCREENCAP] null input parameter" << endl;
-			ret = false;
-			break;
-		}
-
-		uint32_t size = handle->pitch * handle->height;
-		if(bufSize < size) {
-			// buffer size not match
-			ret = false;
-			break;
-		}
-
-		// copy frame
-		void *vaddr = NULL;
-		vaddr =(void*) mmap64(NULL, size, PROT_READ , MAP_SHARED, handle->dmabuf_fd, 0);
-
-		if (vaddr == MAP_FAILED) {
-			cout << "[SCREENCAP] mmap failed" << endl;
-			ret = false;
-			break;
-        }
-		memcpy(output,(unsigned char*)vaddr, size);
-		munmap(vaddr, size);
-
-	} while(false);
+        uint8_t* buffer = (uint8_t*) malloc(5120 * 720);
+        memset(buffer, 0xff, 5120 * 720);
+	memcpy(output, buffer, size);
 
 	return ret;
 }
