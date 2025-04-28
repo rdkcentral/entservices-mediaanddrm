@@ -77,7 +77,7 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 	bool ret = true;
         uint8_t* buffer = (uint8_t*) malloc(5120 * 720);
         memset(buffer, 0xff, 5120 * 720);
-	memcpy(output, buffer, size);
+	memcpy(output, buffer, bufSize);
 
 	return ret;
 }
