@@ -42,8 +42,8 @@ typedef struct DRMContext_s {
 
 
 DRMScreenCapture* DRMScreenCapture_Init() {
-	     DRMScreenCapture *drmHandle = {0, 1280, 720, 5120, 32};
-		return drmHandle;
+	     static DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
+	     return &drmHandle;
 }
 
 bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
@@ -61,27 +61,6 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 }
 
 bool DRMScreenCapture_Destroy(DRMScreenCapture* handle) {
-	DRMContext *context;
-	if(!handle) {
-		cout << "[SCREENCAP] null input parameter" << endl;
-		return false;
-	}
-
-	context = (DRMContext*) handle->context;
-	if(context) {
-		if(context->kms) {
-			kms_cleanup_context(context->kms);
-			free(context->kms);
-			context->kms = nullptr;
-		}
-
-		if(context->fd) {
-			close(context->fd);
-			context->fd = 0;
-		}
-		free(context);
-		handle->context = nullptr;
-	}
-	free(handle);
+	
 	return true;
 }
