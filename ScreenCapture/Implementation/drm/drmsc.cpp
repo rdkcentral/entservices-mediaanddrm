@@ -42,8 +42,8 @@ typedef struct DRMContext_s {
 
 
 DRMScreenCapture* DRMScreenCapture_Init() {
-	    static DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
-		return &drmHandle;
+	     DRMScreenCapture *drmHandle = {0, 1280, 720, 5120, 32};
+		return drmHandle;
 }
 
 bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
