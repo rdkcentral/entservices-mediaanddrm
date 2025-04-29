@@ -42,30 +42,8 @@ typedef struct DRMContext_s {
 
 
 DRMScreenCapture* DRMScreenCapture_Init() {
-	DRMScreenCapture *handle = nullptr;
-	DRMContext *context = nullptr;
-
-	do {
-		// init variables
-		handle = (DRMScreenCapture*)calloc(1, sizeof(DRMScreenCapture));
-		if(!handle) {
-			cout << "[SCREENCAP] fail to calloc DRMScreenCapture" << endl;
-			break;
-		}
-		context = (DRMContext*)calloc(1, sizeof(DRMContext));
-		if(!context) {
-			cout << "[SCREENCAP] fail to calloc DRMContext" << endl;
-			break;
-		}
-		handle->context = (void*) context;
-
-		return handle;
-	} while(0);
-
-	// fail to calloc
-	free(handle);
-	free(context);
-	return nullptr;
+	    DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
+		return &drmHandle;
 }
 
 bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
