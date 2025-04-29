@@ -88,7 +88,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: sprint/RDK-55561-l2
+          ref: sprint/RDK-55561-l2test
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Apply patches ThunderTools
@@ -295,6 +295,7 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortType.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortConfig.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoResolution.hpp
@@ -386,6 +387,7 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsExtODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -Werror -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -DUSE_IARMBUS
           -DRDK_SERVICE_L2_TEST
