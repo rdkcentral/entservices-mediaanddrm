@@ -203,7 +203,6 @@ jobs:
           rfcapi.h
           rbus.h
           libudev.h
-          DRMScreenCapture.h
           systemservices/proc/readproc.h
           systemservices/secure_wrapper.h
           systemaudioplatform.h
@@ -297,7 +296,6 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
-          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortType.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortConfig.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoResolution.hpp
