@@ -78,10 +78,10 @@ jobs:
           path: ThunderTools
           ref: R4.4.3
 
-      - name: Checkout entservices-mediaanddrm
+      - name: Checkout entservices-mediaand
         uses: actions/checkout@v3
         with:
-          path: entservices-mediaanddrm
+          path: entservices-mediaand
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
@@ -250,11 +250,11 @@ jobs:
           &&
           cmake --install build/mocks
 
-      - name: Build entservices-mediaanddrm
+      - name: Build entservices-mediaand
         run: >
           cmake
-          -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
-          -B build/entservices-mediaanddrm
+          -S "$GITHUB_WORKSPACE/entservices-mediaand"
+          -B build/entservices-mediaand
           -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}"
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
@@ -295,7 +295,6 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
-          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortType.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoOutputPortConfig.hpp
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/rdk/ds/videoResolution.hpp
@@ -387,7 +386,6 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsExtODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
-          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -Werror -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -DUSE_IARMBUS
           -DRDK_SERVICE_L2_TEST
