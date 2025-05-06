@@ -78,10 +78,10 @@ jobs:
           path: ThunderTools
           ref: R4.4.3
 
-      - name: Checkout entservices-mediaand
+      - name: Checkout entservices-mediaanddrm
         uses: actions/checkout@v3
         with:
-          path: entservices-mediaand
+          path: entservices-mediaanddrm
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
@@ -250,11 +250,11 @@ jobs:
           &&
           cmake --install build/mocks
 
-      - name: Build entservices-mediaand
+      - name: Build entservices-mediaanddrm
         run: >
           cmake
-          -S "$GITHUB_WORKSPACE/entservices-mediaand"
-          -B build/entservices-mediaand
+          -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
+          -B build/entservices-mediaanddrm
           -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}"
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
