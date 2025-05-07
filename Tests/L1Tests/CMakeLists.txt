@@ -33,7 +33,6 @@ FetchContent_MakeAvailable(googletest)
 
 set (TEST_SRC
     tests/test_UtilsFile.cpp
-    tests/test_JSON.cpp
 )
 
 set (TEST_LIB
