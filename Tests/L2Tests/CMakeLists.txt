@@ -30,9 +30,9 @@ FetchContent_Declare(
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 FetchContent_MakeAvailable(googletest)
 
-#if(PLUGIN_TEXTTOSPEECH)
-#     set(SRC_FILES ${SRC_FILES} tests/TextToSpeech_L2test.cpp)
-# endif()
+if(PLUGIN_TEXTTOSPEECH)
+    set(SRC_FILES ${SRC_FILES} tests/TextToSpeech_L2test.cpp)
+endif()
 
 add_library(${MODULE_NAME} SHARED ${SRC_FILES})
 
