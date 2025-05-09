@@ -26,6 +26,8 @@
 
 #ifdef HAS_SCREENCAPTURE_PLATFORM
 #include "screencaptureplatform.h"
+#ifdef RDK_SERVICE_L2_TEST
+#include "DRMScreenCapture.h"
 #elif USE_DRM_SCREENCAPTURE
 #include "Implementation/drm/drmsc.h"
 #else
