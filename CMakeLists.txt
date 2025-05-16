@@ -37,7 +37,7 @@ string(TOLOWER ${NAMESPACE} STORAGE_DIRECTORY)
 include(CmakeHelperFunctions)
 
 if(RDK_SERVICE_L2_TEST)
-    #add_subdirectory(Tests/L2Tests)
+    add_subdirectory(Tests/L2Tests)
 endif()
 
 if(ENABLE_COMMUNITY_DEVICE_TYPE)
