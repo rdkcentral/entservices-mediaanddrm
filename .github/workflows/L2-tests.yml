@@ -1,10 +1,8 @@
 name: L2-tests
 
+#enable the workflow incase of any plugin/test case modifications
 on:
-  push:
-    branches: [ main, develop, 'sprint/**', 'release/**' ]
-  pull_request:
-    branches: [ main, develop, 'sprint/**', 'release/**' ]
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Debug
