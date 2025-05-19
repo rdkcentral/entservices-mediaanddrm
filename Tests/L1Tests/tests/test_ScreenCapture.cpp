@@ -162,6 +162,7 @@ TEST_F(ScreenCaptureDRMTest, Upload)
             ::testing::Invoke(
             [&](DRMScreenCapture* handle, uint8_t* output, uint32_t size) {
                 memcpy(output, buffer, size);
+                free(buffer);
                 return true;
             }));
 
