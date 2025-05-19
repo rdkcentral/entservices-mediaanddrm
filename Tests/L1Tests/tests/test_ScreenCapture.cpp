@@ -200,8 +200,8 @@ TEST_F(ScreenCaptureDRMTest, Upload)
         auto addrlen = sizeof(sockaddr);
         const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
         ASSERT_FALSE(connection < 0);
-        char buffer[2048] = { 0 };
-        ASSERT_TRUE(read(connection, buffer, 2048) > 0);
+        char buf[2048] = { 0 };
+        ASSERT_TRUE(read(connection, buf, 2048) > 0);
 
         std::string reqHeader(buffer);
         EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
@@ -222,5 +222,6 @@ TEST_F(ScreenCaptureDRMTest, Upload)
     EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
     thread.join();
+    free(buffer);
     close(sockfd);
 }
