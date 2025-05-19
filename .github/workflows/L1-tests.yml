@@ -395,7 +395,7 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
-          -DPLUGIN_SCREENCAPTURE=OFF
+          -DPLUGIN_SCREENCAPTURE=ON
           &&
           cmake --build build/entservices-mediaanddrm -j8
           &&
@@ -464,7 +464,7 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
-          -DPLUGIN_SCREENCAPTURE=OFF
+          -DPLUGIN_SCREENCAPTURE=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
