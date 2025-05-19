@@ -221,6 +221,5 @@ TEST_F(ScreenCaptureDRMTest, Upload)
 
     thread.join();
     EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
-    free(buffer);
     close(sockfd);
 }
