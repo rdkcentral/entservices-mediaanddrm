@@ -64,14 +64,15 @@ else()
     if (LIBDRM_FOUND)
         message("Found libdrm")
         add_definitions (-DUSE_DRM_SCREENCAPTURE)
-
-        target_sources(${PLUGIN_IMPLEMENTATION}
+        if ( NOT RDK_SERVICES_L1_TEST OR NOT RDK_SERVICE_L2_TEST)
+          target_sources(${PLUGIN_IMPLEMENTATION}
             PRIVATE
             Implementation/drm/kms.cpp
             Implementation/drm/drmsc.cpp)
-        target_link_libraries(${PLUGIN_IMPLEMENTATION}
+          target_link_libraries(${PLUGIN_IMPLEMENTATION}
             PRIVATE
             drm)
+        endif()
     endif()
 endif()
 
