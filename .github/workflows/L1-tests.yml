@@ -567,7 +567,7 @@ jobs:
           valgrind
           --tool=memcheck
           --log-file=valgrind_log
-          --leak-check=full
+          --show-leak-kinds=all
           --show-reachable=yes
           --track-fds=yes
           --fair-sched=try
