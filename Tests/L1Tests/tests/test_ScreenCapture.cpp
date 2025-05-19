@@ -203,7 +203,7 @@ TEST_F(ScreenCaptureDRMTest, Upload)
         char buf[2048] = { 0 };
         ASSERT_TRUE(read(connection, buf, 2048) > 0);
 
-        std::string reqHeader(buffer);
+        std::string reqHeader(buf);
         EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
 
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
