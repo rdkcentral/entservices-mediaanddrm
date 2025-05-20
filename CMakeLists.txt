@@ -36,8 +36,16 @@ string(TOLOWER ${NAMESPACE} STORAGE_DIRECTORY)
 # for writing pc and config files
 include(CmakeHelperFunctions)
 
+if(RDK_SERVICE_L2_TEST)
+    add_subdirectory(Tests/L2Tests)
+endif()
+
 if(ENABLE_COMMUNITY_DEVICE_TYPE)
    add_definitions(-DENABLE_COMMUNITY_DEVICE_TYPE)
+endif()
+
+if(RDK_SERVICES_L1_TEST)
+    add_subdirectory(Tests/L1Tests)
 endif()
 
 if(PLUGIN_SCREENCAPTURE)
