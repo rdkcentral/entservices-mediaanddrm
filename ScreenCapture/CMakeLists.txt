@@ -64,7 +64,7 @@ else()
     if (LIBDRM_FOUND)
         message("Found libdrm")
         add_definitions (-DUSE_DRM_SCREENCAPTURE)
-        if ( NOT RDK_SERVICES_L1_TEST OR NOT RDK_SERVICE_L2_TEST)
+        if ( NOT RDK_SERVICE_L2_TEST)
           target_sources(${PLUGIN_IMPLEMENTATION}
             PRIVATE
             Implementation/drm/kms.cpp
@@ -74,6 +74,17 @@ else()
             drm)
         endif()
     endif()
+endif()
+
+if (RDK_SERVICE_L2_TEST)
+    message ("L2 test Enabled")
+    find_library(TESTMOCKLIB_LIBRARIES NAMES TestMocklib)
+    if (TESTMOCKLIB_LIBRARIES)
+        message ("linking mock libraries ${TESTMOCKLIB_LIBRARIES} library")
+        target_link_libraries(${PLUGIN_IMPLEMENTATION} PRIVATE ${TESTMOCKLIB_LIBRARIES})
+    else (TESTMOCKLIB_LIBRARIES)
+        message ("Require ${TESTMOCKLIB_LIBRARIES} library")
+    endif (TESTMOCKLIB_LIBRARIES)
 endif()
 
 target_include_directories(${PLUGIN_IMPLEMENTATION} PRIVATE ../helpers)
