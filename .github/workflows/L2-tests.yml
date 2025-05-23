@@ -245,6 +245,8 @@ jobs:
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -DCMAKE_CXX_FLAGS="
+          -fprofile-arcs
+          -ftest-coverage
           -I $GITHUB_WORKSPACE/entservices-testframework/Tests/headers"
           &&
           cmake --build build/mocks -j8
