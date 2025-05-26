@@ -2,7 +2,10 @@ name: L2-tests
 
 #enable the workflow incase of any plugin/test case modifications
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main, develop, 'sprint/**', 'release/**' ]
+  pull_request:
+    branches: [ main, develop, 'sprint/**', 'release/**' ]
 
 env:
   BUILD_TYPE: Debug
@@ -86,7 +89,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: sprint/RDK-55561-l1l2
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Apply patches ThunderTools
@@ -317,6 +320,7 @@ jobs:
           -DUSE_IARMBUS
           -DRDK_SERVICE_L2_TEST
           -DDISABLE_SECURITY_TOKEN
+          -DUSE_DRM_SCREENCAPTURE
           -DENABLE_THERMAL_PROTECTION"
           -DPLUGIN_PERSISTENTSTORE_PATH="/tmp/secure/persistent/rdkservicestore"
           -DPLUGIN_PERSISTENTSTORE_LEGACYPATH="/tmp/persistent/rdkservicestore"
@@ -326,7 +330,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH=OFF
+          -DPLUGIN_SCREENCAPTURE=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
           -DRDK_SERVICE_L2_TEST=ON
@@ -382,10 +387,12 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsExtODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
           -Werror -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -DUSE_IARMBUS
           -DRDK_SERVICE_L2_TEST
           -DDISABLE_SECURITY_TOKEN
+          -DUSE_DRM_SCREENCAPTURE
           -DENABLE_THERMAL_PROTECTION"
           -DPLUGIN_PERSISTENTSTORE_PATH="/tmp/secure/persistent/rdkservicestore"
           -DPLUGIN_PERSISTENTSTORE_LEGACYPATH="/tmp/persistent/rdkservicestore"
@@ -395,7 +402,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH=OFF
+          -DPLUGIN_SCREENCAPTURE=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
           -DRDK_SERVICE_L2_TEST=ON
