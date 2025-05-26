@@ -225,7 +225,6 @@ TEST_F(ScreenCaptureTest, Upload_Failed)
     params["callGUID"] = "1234";
     status = InvokeServiceMethod("org.rdk.ScreenCapture", "uploadScreenCapture", params, result);
     EXPECT_EQ(Core::ERROR_NONE, status);
-    free(buffer);
     thread.join();
     close(sockfd);
     TEST_LOG("End of test case ***\n");
