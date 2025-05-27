@@ -189,6 +189,7 @@ ScreenCaptureTest::~ScreenCaptureTest()
         m_screenCapturePlugin->Release();
     }
     status = DeactivateService("org.rdk.ScreenCapture");
+    TEST_LOG("ScreenCaptureTest Deactivated ***\n");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
