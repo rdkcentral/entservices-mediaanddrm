@@ -103,6 +103,8 @@ TEST_F(ScreenCaptureTest, Upload)
     fd_set set;
     struct timeval timeout;
 
+    Core::Event uploadComplete(false, true);
+
     DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
     uint8_t* buffer = (uint8_t*) malloc(5120 * 720);
     memset(buffer, 0xff, 5120 * 720);
@@ -127,6 +129,22 @@ TEST_F(ScreenCaptureTest, Upload)
     EXPECT_CALL(*p_drmScreenCaptureApiImplMock, Destroy(::testing::_))
         .Times(1)
         .WillOnce(::testing::Return(true));
+
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                string text;
+                EXPECT_TRUE(json->ToString(text));
+
+                EXPECT_EQ(text, string(_T(
+                	"{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.ScreenCapture.uploadComplete\",\"params\":{\"status\":true,\"message\":\"Success\",\"call_guid\":\"\"}}"
+                )));
+
+                uploadComplete.SetEvent();
+
+                return Core::ERROR_NONE;
+            }));
 
     // Initialize the set
     FD_ZERO(&set);
@@ -162,12 +180,15 @@ TEST_F(ScreenCaptureTest, Upload)
     uint32_t status = Core::ERROR_GENERAL;
     JsonObject params;
     JsonObject result;
-    
+    EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
     params["url"] = "http://127.0.0.1:11111";
     params["callGUID"] = "12345";
     status = InvokeServiceMethod("org.rdk.ScreenCapture", "uploadScreenCapture", params, result);
     EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_EQ(Core::ERROR_NONE, uploadComplete.Lock());
     TEST_LOG("After InvokeServiceMethod ***\n");
+    EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
+    free(buffer);
     thread.join();
     close(sockfd);
     TEST_LOG("End of test case ***\n");
