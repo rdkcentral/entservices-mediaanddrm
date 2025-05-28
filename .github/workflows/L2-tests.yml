@@ -89,7 +89,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: sprint/RDK-55561-l1l2
+          ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Apply patches ThunderTools
