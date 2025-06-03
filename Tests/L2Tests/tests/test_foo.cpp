@@ -6,7 +6,7 @@ class PrintTestMD : public ::testing::Test {
 
 // Single test with print statement
 TEST_F(PrintTestMD, BasicOutputMD) {
-    std::cout << "this is a print statement from inputoutput" << std::endl;
+    std::cout << "this is a print statement from mediaanddrm" << std::endl;
 }
 
 // TEST_F(PrintTestIO, BasicoutputIOExt) {
