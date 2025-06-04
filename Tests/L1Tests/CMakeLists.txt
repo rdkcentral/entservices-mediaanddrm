@@ -114,6 +114,10 @@ set (SCREENCAPTURE_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/ScreenCapt
 set (SCREENCAPTURE_LIBS ${NAMESPACE}ScreenCapture ${NAMESPACE}ScreenCaptureImplementation)
 add_plugin_test_ex(PLUGIN_SCREENCAPTURE tests/test_ScreenCapture.cpp "${SCREENCAPTURE_INC}" "${SCREENCAPTURE_LIBS}")
 
+# PLUGIN_LINEARPLAYBACKCONTROL
+set (LINEARPLAYBACKCONTROL_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/LinearPlaybackControl ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
+add_plugin_test_ex(PLUGIN_LINEARPLAYBACKCONTROL tests/test_LinearPlaybackControl.cpp "${LINEARPLAYBACKCONTROL_INC}" "${NAMESPACE}LinearPlaybackControl")
+
 # PLUGIN_SYSTEMAUDIOPLAYER
 add_plugin_test(SystemAudioPlayer tests/test_SystemAudioPlayer.cpp)
 
