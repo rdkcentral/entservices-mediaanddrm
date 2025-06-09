@@ -106,6 +106,7 @@ kms_ctx* kms_setup( int fd )
 
     kms->res = drmModeGetResources(fd);
     if (!kms->res) {
+        free(kms);
        return NULL;
     }
 
