@@ -2,7 +2,7 @@ name: L1-tests
 
 on:
   push:
-    branches: [ main, develop, 'sprint/**', 'release/**' ]
+    branches: [ main, develop, 'sprint/**', 'release/**', test_1 ]
   pull_request:
     branches: [ main, develop, 'sprint/**', 'release/**' ]
 
@@ -581,7 +581,7 @@ jobs:
           &&
           lcov -c
           -o coverage.info
-          -d build/
+          -d build/entservices-mediaanddrm
           &&
           lcov
           -r coverage.info
