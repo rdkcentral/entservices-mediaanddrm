@@ -93,8 +93,7 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
-
-        EXPECT_EQ(string(""), plugin->Initialize(&service));	    
+    
     }
     virtual ~ScreenCaptureTest() override
     {
@@ -116,6 +115,14 @@ protected:
         }
 
         PluginHost::IFactories::Assign(nullptr);
+    }
+
+    virtual void SetUp() override {
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
+    }
+
+    virtual void TearDown() override {
+        plugin->Deinitialize(&service);
     }
 };
 
