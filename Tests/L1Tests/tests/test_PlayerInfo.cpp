@@ -82,7 +82,7 @@ TEST_F(PlayerInfoTest, InstanceShouldBeCreated) {
 TEST_F(PlayerInfoTest, InfoReturnsEmptyString) {
     EXPECT_EQ(plugin->Information(), "");
 }
-TEST_F(PlayerInfoTest, InboundMethodDoesNothing) {
+TEST_F(PlayerInfoTest, InboundMethodTest) {
     Web::Request dummyRequest;
     EXPECT_NO_THROW(plugin->Inbound(dummyRequest));
 }
@@ -94,7 +94,7 @@ TEST_F(PlayerInfoTest, DeactivatedTest) {
     plugin->InjectService(mockService, actualId);
     plugin->TriggerDeactivated(mockConnection);
 }
-TEST_F(PlayerInfoTest, InfoMethodInfo) {
+TEST_F(PlayerInfoTest, InfoMethodTest) {
     auto* mockAudio = new NiceMock<MockAudioCodecIterator>();
     auto* mockVideo = new NiceMock<MockVideoCodecIterator>();
 
@@ -155,7 +155,7 @@ TEST_F(PlayerInfoTest, ProcessMethodTest_2) {
     delete mockAudio;
     delete mockVideo;
 }
-TEST_F(PlayerInfoTest, DolbyNotification_Initialize_Deinitialize) {
+TEST_F(PlayerInfoTest, DolbyNotification_Initialize_Test) {
     auto& dolbyNotificationSink = plugin->DolbyNotificationSink();
 
     auto* mockDolby = new NiceMock<MockDolbyOutput>();
@@ -168,13 +168,13 @@ TEST_F(PlayerInfoTest, DolbyNotification_Initialize_Deinitialize) {
 
     delete mockDolby;
 }
-TEST_F(PlayerInfoTest, DolbyNotification_AudioModeChanged) {
+TEST_F(PlayerInfoTest, AudioModeChanged_Test) {
     auto* pluginWithAccess = static_cast<TestablePlayerInfo*>(plugin);
 
     pluginWithAccess->DolbyNotificationSink().AudioModeChanged(
         Exchange::Dolby::IOutput::SoundModes::SURROUND, true);
 }
-TEST_F(PlayerInfoTest, Deinitialize_ReleasesResourcesAndTerminatesConnection) {
+TEST_F(PlayerInfoTest, Deinitialize_Test) {
     auto* mockAudio = new NiceMock<MockAudioCodecIterator>();
     auto* mockVideo = new NiceMock<MockVideoCodecIterator>();
     auto* mockDolby = new NiceMock<MockDolbyOutput>();
@@ -199,7 +199,7 @@ TEST_F(PlayerInfoTest, Deinitialize_ReleasesResourcesAndTerminatesConnection) {
     delete mockDolby;
     delete mockPlayer;
 }
-TEST_F(PlayerInfoTest, Initialize_MinimalLinesCovered) {
+TEST_F(PlayerInfoTest, Initialize_Test) {
     auto* mockPlayer = new NiceMock<MockPlayerProperties>();
     auto* mockAudio = new NiceMock<MockAudioCodecIterator>();
     auto* mockVideo = new NiceMock<MockVideoCodecIterator>();
