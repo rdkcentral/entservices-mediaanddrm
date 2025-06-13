@@ -139,11 +139,13 @@ namespace Plugin {
         void Inbound(Web::Request& request) override;
         Core::ProxyType<Web::Response> Process(const Web::Request& request) override;
 
-    private:
+    // private:
+    protected:
         void Deactivated(RPC::IRemoteConnection* connection);
         void Info(JsonData::PlayerInfo::CodecsData&) const;
 
-    private:
+    // private:
+    protected:
         uint8_t _skipURL;
         uint32_t _connectionId;
 
