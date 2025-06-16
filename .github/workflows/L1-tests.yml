@@ -187,7 +187,7 @@ jobs:
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
-            
+          
       - name: Apply patches LinearPlaybackControl
         run: |  
           cd $GITHUB_WORKSPACE/entservices-apis
