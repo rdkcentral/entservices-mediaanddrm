@@ -83,7 +83,11 @@ namespace Plugin {
         // to this plugin. This Metadata can be used by the MetData plugin to publish this information to the ouside world.
         string Information() const override;
 
-    private:
+        // Public accessors for testing
+        std::unique_ptr<DemuxerStreamFsFCC>& getDemuxer() { return _demuxer; }
+        bool& getStreamFSEnabled() { return _isStreamFSEnabled; }
+
+    protected:
         void RegisterAll();
         void UnregisterAll();
         uint32_t endpoint_set_channel(const string& demuxerId, const JsonData::LinearPlaybackControl::ChannelData& params);
