@@ -15,9 +15,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <iostream>
-
-// Include Wraps.h for WrapsImpl interface
 #include "Wraps.h"
+#include "MockLinearPlaybackControl.h"
 
 using namespace WPEFramework;
 using namespace WPEFramework::Plugin;
@@ -78,89 +77,6 @@ static bool createDirectoryRecursive(const std::string& path, mode_t mode = 0755
     return true;
 }
 
-// Mock implementation of WrapsImpl
-class MockWrapsImpl : public WrapsImpl {
-public:
-    MOCK_METHOD1(system, int(const char*));
-    MOCK_METHOD2(popen, FILE*(const char*, const char*));
-    MOCK_METHOD1(pclose, int(FILE*));
-    MOCK_METHOD3(syslog, void(int, const char*, va_list));
-    MOCK_METHOD2(setmntent, FILE*(const char*, const char*));
-    MOCK_METHOD1(getmntent, struct mntent*(FILE*));
-    MOCK_METHOD3(v_secure_popen, FILE*(const char*, const char*, va_list));
-    MOCK_METHOD1(v_secure_pclose, int(FILE*));
-    MOCK_METHOD2(v_secure_system, int(const char*, va_list));
-    MOCK_METHOD3(readlink, ssize_t(const char*, char*, size_t));
-    MOCK_METHOD1(time, time_t(time_t*));
-    MOCK_METHOD1(wpa_ctrl_open, struct wpa_ctrl*(const char* ctrl_path));
-    MOCK_METHOD6(wpa_ctrl_request, int(struct wpa_ctrl* ctrl, const char* cmd, size_t cmd_len,
-                                       char* reply, size_t* reply_len, void (*msg_cb)(char*, size_t)));
-    MOCK_METHOD1(wpa_ctrl_close, void(struct wpa_ctrl* ctrl));
-    MOCK_METHOD1(wpa_ctrl_pending, int(struct wpa_ctrl* ctrl));
-    MOCK_METHOD3(wpa_ctrl_recv, int(struct wpa_ctrl* ctrl, char* reply, size_t* reply_len));
-    MOCK_METHOD1(wpa_ctrl_attach, int(struct wpa_ctrl* ctrl));
-    MOCK_METHOD1(unlink, int(const char* filePath));
-    MOCK_METHOD3(ioctl, int(int fd, unsigned long request, void* arg));
-    MOCK_METHOD2(statvfs, int(const char* path, struct statvfs* buf));
-    MOCK_METHOD2(statfs, int(const char* path, struct statfs* buf));
-    MOCK_METHOD2(getline, std::istream&(std::istream& is, std::string& line));
-    MOCK_METHOD2(mkdir, int(const char* path, mode_t mode));
-    MOCK_METHOD5(mount, int(const char* source, const char* target, const char* filesystemtype,
-                            unsigned long mountflags, const void* data));
-    MOCK_METHOD2(stat, int(const char* path, struct stat* info));
-    MOCK_METHOD3(open, int(const char* pathname, int flags, mode_t mode));
-    MOCK_METHOD1(umount, int(const char* path));
-    MOCK_METHOD1(rmdir, int(const char* pathname));
-};
-
-// Global test fixture to initialize Wraps::impl
-class WrapsTestFixture : public ::testing::Test {
-protected:
-    static void SetUpTestSuite() {
-        Wraps::setImpl(nullptr); // Reset impl to avoid conflicts
-        static MockWrapsImpl mockImpl;
-        Wraps::setImpl(&mockImpl);
-
-        ON_CALL(mockImpl, popen(_, _))
-            .WillByDefault([](const char*, const char*) -> FILE* {
-                return std::tmpfile();
-            });
-        ON_CALL(mockImpl, pclose(_))
-            .WillByDefault([](FILE* fp) -> int {
-                if (fp) fclose(fp);
-                return 0;
-            });
-        ON_CALL(mockImpl, v_secure_popen(_, _, _))
-            .WillByDefault([](const char*, const char*, va_list) -> FILE* {
-                return std::tmpfile();
-            });
-        ON_CALL(mockImpl, v_secure_pclose(_))
-            .WillByDefault([](FILE* fp) -> int {
-                if (fp) fclose(fp);
-                return 0;
-            });
-        ON_CALL(mockImpl, system(_)).WillByDefault(Return(0));
-        ON_CALL(mockImpl, v_secure_system(_, _)).WillByDefault(Return(0));
-        ON_CALL(mockImpl, syslog(_, _, _)).WillByDefault([](int, const char*, va_list) {});
-        ON_CALL(mockImpl, readlink(_, _, _)).WillByDefault(Return(0));
-        ON_CALL(mockImpl, time(_)).WillByDefault([](time_t* t) -> time_t {
-            time_t now = std::time(nullptr);
-            if (t) *t = now;
-            return now;
-        });
-        EXPECT_CALL(mockImpl, syslog(_, _, _)).Times(testing::AnyNumber());
-    }
-
-    static void TearDownTestSuite() {
-        Wraps::setImpl(nullptr);
-    }
-
-    void TearDown() override {
-        Wraps::setImpl(nullptr);
-    }
-};
-
-// DemuxerRealTest for real DemuxerStreamFsFCC implementation
 // DemuxerRealTest for real DemuxerStreamFsFCC implementation
 class DemuxerRealTest : public WrapsTestFixture {
 protected:
@@ -259,63 +175,6 @@ public:
     void speedchangedNotify(const std::string& data) { LinearPlaybackControl::speedchangedNotify(data); }
 };
 
-// Mock IShell
-class MockShell : public WPEFramework::PluginHost::IShell {
-public:
-    MOCK_METHOD(void, AddRef, (), (const, override));
-    MOCK_METHOD(uint32_t, Release, (), (const, override));
-    MOCK_METHOD(void*, QueryInterface, (uint32_t id), (override));
-    MOCK_METHOD(void, EnableWebServer, (const string& URL, const string& prefix), (override));
-    MOCK_METHOD(void, DisableWebServer, (), (override));
-    MOCK_METHOD(string, SystemPath, (), (const, override));
-    MOCK_METHOD(string, PluginPath, (), (const, override));
-    MOCK_METHOD(startup, Startup, (), (const, override));
-    MOCK_METHOD(Core::hresult, Startup, (const startup value), (override));
-    MOCK_METHOD(bool, Resumed, (), (const, override));
-    MOCK_METHOD(Core::hresult, Resumed, (const bool value), (override));
-    MOCK_METHOD(Core::hresult, Metadata, (string& info), (const, override));
-    MOCK_METHOD(string, Model, (), (const, override));
-    MOCK_METHOD(bool, Background, (), (const, override));
-    MOCK_METHOD(string, Accessor, (), (const, override));
-    MOCK_METHOD(string, WebPrefix, (), (const, override));
-    MOCK_METHOD(string, Locator, (), (const, override));
-    MOCK_METHOD(string, ClassName, (), (const, override));
-    MOCK_METHOD(string, Versions, (), (const, override));
-    MOCK_METHOD(string, Callsign, (), (const, override));
-    MOCK_METHOD(string, PersistentPath, (), (const, override));
-    MOCK_METHOD(string, VolatilePath, (), (const, override));
-    MOCK_METHOD(string, DataPath, (), (const, override));
-    MOCK_METHOD(string, ProxyStubPath, (), (const, override));
-    MOCK_METHOD(string, SystemRootPath, (), (const, override));
-    MOCK_METHOD(uint32_t, SystemRootPath, (const string& path), (override));
-    MOCK_METHOD(string, Substitute, (const string& input), (const, override));
-    MOCK_METHOD(string, HashKey, (), (const, override));
-    MOCK_METHOD(string, ConfigLine, (), (const, override));
-    MOCK_METHOD(uint32_t, ConfigLine, (const string& config), (override));
-    MOCK_METHOD(bool, IsSupported, (uint8_t version), (const, override));
-    MOCK_METHOD(WPEFramework::PluginHost::ISubSystem*, SubSystems, (), (override));
-    MOCK_METHOD(void, Notify, (const string& message), (override));
-    MOCK_METHOD(void, Register, (WPEFramework::PluginHost::IPlugin::INotification* notification), (override));
-    MOCK_METHOD(void, Unregister, (WPEFramework::PluginHost::IPlugin::INotification* notification), (override));
-    MOCK_METHOD(WPEFramework::PluginHost::IShell::state, State, (), (const, override));
-    MOCK_METHOD(void*, QueryInterfaceByCallsign, (uint32_t id, const string& name), (override));
-    MOCK_METHOD(uint32_t, Activate, (WPEFramework::PluginHost::IShell::reason why), (override));
-    MOCK_METHOD(uint32_t, Deactivate, (WPEFramework::PluginHost::IShell::reason why), (override));
-    MOCK_METHOD(uint32_t, Unavailable, (WPEFramework::PluginHost::IShell::reason why), (override));
-    MOCK_METHOD(Core::hresult, Hibernate, (const uint32_t timeout), (override));
-    MOCK_METHOD(WPEFramework::PluginHost::IShell::reason, Reason, (), (const, override));
-    MOCK_METHOD(WPEFramework::PluginHost::IShell::ICOMLink*, COMLink, (), (override));
-    MOCK_METHOD(uint32_t, Submit, (uint32_t id, const WPEFramework::Core::ProxyType<WPEFramework::Core::JSON::IElement>& element), (override));
-    // Additional methods that were incorrectly overridden
-    MOCK_METHOD(string, Version, (), (const));
-    MOCK_METHOD(uint8_t, Major, (), (const));
-    MOCK_METHOD(uint8_t, Minor, (), (const));
-    MOCK_METHOD(uint8_t, Patch, (), (const));
-    MOCK_METHOD(bool, AutoStart, (), (const));
-    MOCK_METHOD(uint32_t, Hibernate, (const string&, uint32_t), ());
-    MOCK_METHOD(uint32_t, Wakeup, (const string&, uint32_t), ());
-};
-
 // LinearPlaybackControlPluginTest for plugin lifecycle and JSON-RPC endpoints
 class LinearPlaybackControlPluginTest : public WrapsTestFixture {
 protected:
@@ -382,7 +241,6 @@ protected:
 };
 
 // Tests for DemuxerRealTest
-// Tests for DemuxerRealTest
 TEST_F(DemuxerRealTest, ConstructorSetsCorrectFilePaths) {
     EXPECT_EQ(demuxer->getTrickPlayFile(), "/tmp/test_mount/fcc/trick_play2");
 }
@@ -391,14 +249,6 @@ TEST_F(DemuxerRealTest, OpenCloseDoesNotCrash) {
     EXPECT_EQ(demuxer->open(), IDemuxer::IO_STATUS::OK);
     EXPECT_EQ(demuxer->close(), IDemuxer::IO_STATUS::OK);
 }
-
-// TEST_F(DemuxerRealTest, SetChannel_ValidChannel) {
-//     EXPECT_EQ(demuxer->setChannel(TEST_CHANNEL), IDemuxer::IO_STATUS::OK);
-//     std::ifstream file(channelFile);
-//     std::string content;
-//     std::getline(file, content);
-//     EXPECT_EQ(content, TEST_CHANNEL);
-// }
 
 TEST_F(DemuxerRealTest, SetChannel_EmptyChannel) {
     EXPECT_EQ(demuxer->setChannel(""), IDemuxer::IO_STATUS::OK); // No validation in impl
