@@ -120,7 +120,7 @@ namespace Plugin {
             }
         }
 
-#ifndef UNIT_TESTING
+#ifdef UNIT_TESTING
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
 #else

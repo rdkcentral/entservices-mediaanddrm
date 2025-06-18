@@ -700,11 +700,21 @@ void TTSSpeaker::createPipeline(PipelineType type) {
             TTSLOG_ERROR( "Unable to create capsfilter for PCM audio.");
             return;
         }
-        result = systemAudioGeneratePipeline(m_pipeline,m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#ifdef UNIT_TESTING
+            result = systemAudioGeneratePipeline(m_pipeline,m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#else
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#endif
+        
     }
     else
     {
+#ifdef UNIT_TESTING
         result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
+#else
+        result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
+#endif
+
     }
        
     if(!result) {
