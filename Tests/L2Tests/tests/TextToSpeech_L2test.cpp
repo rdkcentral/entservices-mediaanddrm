@@ -1,21 +1,21 @@
 /*
-* If not stated otherwise in this file or this component's LICENSE file the
-* following copyright and licenses apply:
-*
-* Copyright 2025 RDK Management
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2025 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "L2Tests.h"
 #include "L2TestsMock.h"
@@ -58,7 +58,7 @@ public:
     std::condition_variable m_condition_variable;
     uint32_t m_event_signalled;
 
-    std::mutex mtx; 
+    std::mutex mtx;
     std::condition_variable cv;
     bool ready = false;
     uint32_t speechID;
@@ -67,6 +67,62 @@ public:
 TextToSpeechTest::TextToSpeechTest()
     : L2TestMocks()
 {
+    gst_init(nullptr, nullptr);
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioInitialize())
+        .WillByDefault(
+            ::testing::Invoke(
+                [&]() {
+                    return;
+                }));
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioDeinitialize())
+        .WillByDefault(
+            ::testing::Invoke(
+                [&]() {
+                    return;
+                }));
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioChangePrimaryVol(::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetDetectTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetHoldTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetThreshold(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+                             GstElement** audioSink, GstElement** audioVolume,
+                             AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+
+            *pipeline = gst_pipeline_new(NULL);
+            *source = gst_element_factory_make("souphttpsrc", NULL);
+            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            *audioSink = gst_element_factory_make("fakesink", NULL);
+
+            bool result = TRUE;
+
+            if (type == MP3) {
+                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
+                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
+                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
+
+                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
+
+            } else if (type == PCM) {
+
+            } else {
+            }
+
+            return result;
+        }));
+
     Core::JSONRPC::Message message;
     string response;
     uint32_t status = Core::ERROR_GENERAL;
@@ -135,12 +191,12 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
 {
     JsonObject configurationParameter;
     JsonObject configurationResponse;
-    
+
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://test/tts?";
-    configurationParameter["ttsendpoint"] = "https://test/tts?";
- 
+    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
     JsonObject configurationGetParameter;
@@ -231,6 +287,7 @@ TEST_F(TextToSpeechTest, willSpeakEventCheck)
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
 
+    enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onwillspeak"));
 }
 
@@ -272,7 +329,7 @@ TEST_F(TextToSpeechTest, speakStartEventCheck)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
-
+    enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
 
@@ -314,7 +371,7 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
-
+    enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
 }
 
@@ -408,7 +465,7 @@ TEST_F(TextToSpeechTest, speechInterruptEventCheck)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
-
+    enableTTS(false);
     // Wait for the interrupt thread to finish
     interruptThread.join();
 }
@@ -468,11 +525,10 @@ TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
                     std::string eventString;
                     event.ToString(eventString);
                     TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                     m_event_signalled = 1;
-                }        // Disable TTS
+                    m_event_signalled = 1;
+                } // Disable TTS
                 m_condition_variable.notify_one();
             });
-        
     }
     cv.notify_one();
 
@@ -532,7 +588,7 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     parameterSpeak["text"] = text1;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    
+
     {
         std::lock_guard<std::mutex> lock(mtx);
         // Wait for the speech invocation to complete (the second speak call)
@@ -554,7 +610,6 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
                 }
                 m_condition_variable.notify_one();
             });
-        
     }
     cv.notify_one();
 
@@ -575,26 +630,27 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
-
+    enableTTS(false);
     // Wait for the interrupt thread to finish
     interruptThread.join();
 }
 
-
-void TextToSpeechTest::setTTSConfiguration() {
+void TextToSpeechTest::setTTSConfiguration()
+{
     JsonObject configurationParameter;
     JsonObject configurationResponse;
-    
+
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://test/tts?";
-    configurationParameter["ttsendpoint"] = "https://test/tts?";
- 
+    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
-void TextToSpeechTest::enableTTS(bool ttsValue) {
+void TextToSpeechTest::enableTTS(bool ttsValue)
+{
     JsonObject parameter;
     JsonObject response;
     parameter["enabletts"] = ttsValue;
@@ -602,7 +658,8 @@ void TextToSpeechTest::enableTTS(bool ttsValue) {
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
-void TextToSpeechTest::setACL() {
+void TextToSpeechTest::setACL()
+{
     JsonObject parameterACL;
     JsonObject responseACL;
     JsonObject accessListItems;
@@ -612,7 +669,6 @@ void TextToSpeechTest::setACL() {
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setACL", parameterACL, responseACL);
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
-
 
 uint32_t TextToSpeechTest::WaitForRequestStatus(uint32_t timeout_ms)
 {
