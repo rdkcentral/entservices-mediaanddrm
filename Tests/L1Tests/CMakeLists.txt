@@ -19,24 +19,16 @@ cmake_minimum_required(VERSION 3.8)
 set(PLUGIN_NAME L1TestsMD)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(${NAMESPACE}Plugins REQUIRED)
-
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/e39786088138f2749d64e9e90e0f9902daa77c40.zip
-)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-FetchContent_MakeAvailable(googletest)
 
 set (TEST_SRC
     tests/test_UtilsFile.cpp
 )
 
 set (TEST_LIB
-    gmock_main
     ${NAMESPACE}Plugins::${NAMESPACE}Plugins
 )
 
@@ -114,6 +106,14 @@ set (SCREENCAPTURE_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/ScreenCapt
 set (SCREENCAPTURE_LIBS ${NAMESPACE}ScreenCapture ${NAMESPACE}ScreenCaptureImplementation)
 add_plugin_test_ex(PLUGIN_SCREENCAPTURE tests/test_ScreenCapture.cpp "${SCREENCAPTURE_INC}" "${SCREENCAPTURE_LIBS}")
 
+# PLUGIN_PLAYERINFO
+set (PLAYERINFO_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/PlayerInfo ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
+add_plugin_test_ex(PLUGIN_PLAYERINFO tests/test_PlayerInfo.cpp "${PLAYERINFO_INC}" "${NAMESPACE}PlayerInfo")
+
+# PLUGIN_LINEARPLAYBACKCONTROL
+set (LINEARPLAYBACKCONTROL_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/LinearPlaybackControl ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
+add_plugin_test_ex(PLUGIN_LINEARPLAYBACKCONTROL tests/test_LinearPlaybackControl.cpp "${LINEARPLAYBACKCONTROL_INC}" "${NAMESPACE}LinearPlaybackControl")
+
 # PLUGIN_SYSTEMAUDIOPLAYER
 add_plugin_test(SystemAudioPlayer tests/test_SystemAudioPlayer.cpp)
 
@@ -134,7 +134,7 @@ endif (RDK_SERVICES_L1_TEST)
 
 include_directories(${TEST_INC})
 
-target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
+target_link_directories(${MODULE_NAME} PUBLIC ${CMAKE_INSTALL_PREFIX}/lib ${CMAKE_INSTALL_PREFIX}/lib/wpeframework/plugins)
 
 target_link_libraries(${MODULE_NAME} ${TEST_LIB})
 
