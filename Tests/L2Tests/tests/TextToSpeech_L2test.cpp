@@ -630,7 +630,7 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
-
+    enableTTS(false);
     // Wait for the interrupt thread to finish
     interruptThread.join();
 }
