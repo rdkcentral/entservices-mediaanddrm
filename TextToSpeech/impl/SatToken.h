@@ -20,6 +20,7 @@
 #ifndef _TTS_SATTOKEN_H_
 #define _TTS_SATTOKEN_H_
 #include "TTSCommon.h"
+#include <atomic>
 #include <mutex>
 
 namespace WPEFramework {
@@ -29,10 +30,7 @@ namespace TTS {
 class SatToken {
 public:
     static SatToken* getInstance(const string callsign);
-    string getSAT() { 
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_SatToken; 
-    };
+    string getSAT();
 
 private:
     SatToken(){};
@@ -49,6 +47,7 @@ private:
     string m_callsign;
     std::mutex m_mutex;
     bool m_eventRegistered{false};
+    std::atomic<bool> m_tokenUpdated {false};
 };
 }
 }
