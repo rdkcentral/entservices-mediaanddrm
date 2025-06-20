@@ -159,6 +159,7 @@ touch wpa_ctrl.h
 touch btmgr.h
 touch rdk_logger_milestone.h
 touch proc/readproc.h
+touch systemaudioplatform.h
 echo "files created successfully"
 echo "======================================================================================"
 
