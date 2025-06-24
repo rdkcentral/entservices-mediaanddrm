@@ -19,15 +19,24 @@ set(PLUGIN_NAME UnifiedCASManagement)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
 find_package(${NAMESPACE}Plugins REQUIRED)
+if (NOT RDK_SERVICES_L1_TEST)
 find_package(${NAMESPACE}Protocols REQUIRED)
 find_package(${NAMESPACE}Definitions REQUIRED)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 find_package(IARMBus)
 
+if (NOT RDK_SERVICES_L1_TEST)
 find_package(LMPLAYER REQUIRED)
+else()
+include_directories(
+        ${PROJECT_SOURCE_DIR}/../entservices-testframework/Tests/mocks/
+        ${PROJECT_SOURCE_DIR}/helpers
+)
+endif()
 
 if (LMPLAYER_FOUND)
 	add_library(${MODULE_NAME} SHARED
