@@ -430,6 +430,7 @@ jobs:
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
+          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
           &&
           cmake --build build/entservices-mediaanddrm -j8
           &&
@@ -506,6 +507,7 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
+          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
           &&
           cmake --build build/entservices-testframework -j8
           &&

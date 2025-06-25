@@ -29,7 +29,7 @@ namespace WPEFramework
 namespace Plugin 
 {
 
-class UnifiedCASManagement : public PluginHost::IPlugin, PluginHost::JSONRPC 
+class UnifiedCASManagement : public PluginHost::IPlugin, public PluginHost::JSONRPC 
 {
 
 public:
@@ -60,11 +60,13 @@ public/*members*/:
 private/*registered methods*/:
     void RegisterAll();
     void UnregisterAll();
+
+protected/*registered methods*/:
     uint32_t manage(const JsonObject& params, JsonObject& response);
     uint32_t unmanage(const JsonObject& params, JsonObject& response);
     uint32_t send(const JsonObject& params, JsonObject& response);
 
-private/*members*/:
+protected/*members*/:
     std::shared_ptr<MediaPlayer> m_player;
         
 };
