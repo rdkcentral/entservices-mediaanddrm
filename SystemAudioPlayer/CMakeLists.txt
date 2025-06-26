@@ -53,6 +53,17 @@ add_library(${MODULE_NAME} SHARED
         ../helpers/WebSockets/JsonRpc/Response.cpp
         ../helpers/WebSockets/JsonRpc/Notification.cpp
         )
+if (RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
+    message ("L1 test Enabled")
+    find_library(TESTMOCKLIB_LIBRARIES NAMES TestMocklib)
+    if (TESTMOCKLIB_LIBRARIES)
+        message ("linking mock libraries ${TESTMOCKLIB_LIBRARIES} library")
+        target_link_libraries(${MODULE_NAME} PRIVATE ${TESTMOCKLIB_LIBRARIES})
+    else (TESTMOCKLIB_LIBRARIES)
+        message ("Require ${TESTMOCKLIB_LIBRARIES} library")
+    endif (TESTMOCKLIB_LIBRARIES)
+endif()
+target_include_directories(${MODULE_NAME} PRIVATE ../helpers ${GSTREAMER_INCLUDES})
 
 if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
     target_include_directories(${MODULE_NAME} PRIVATE
@@ -92,9 +103,6 @@ target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
 target_include_directories(${MODULE_NAME} PRIVATE ../helpers/WebSockets)
 target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMER_INCLUDES})
 target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMERBASE_INCLUDE_DIRS})
-if(RDK_SERVICES_L1_TEST)
-    target_include_directories(${MODULE_NAME} PRIVATE ../Tests/mocks)
-endif()
 
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins)
 target_link_libraries(${MODULE_NAME} PRIVATE ${CURL_LIBRARY})
