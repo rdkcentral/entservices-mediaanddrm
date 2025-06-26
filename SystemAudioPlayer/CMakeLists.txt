@@ -54,8 +54,22 @@ add_library(${MODULE_NAME} SHARED
         ../helpers/WebSockets/JsonRpc/Notification.cpp
         )
 
-if(RDK_SERVICES_L1_TEST)
-    target_sources(${MODULE_NAME} PRIVATE ../Tests/mocks/systemaudioplatform.cpp)
+if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
+    target_include_directories(${MODULE_NAME} PRIVATE
+        ../Tests/mocks
+    )
+    target_link_libraries(${MODULE_NAME} PRIVATE
+        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
+        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
+)
+else()
+    target_link_libraries(${MODULE_NAME} PRIVATE
+        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
+        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
+        systemaudioplatform
+    )
 endif()
 
 set_target_properties(${MODULE_NAME} PROPERTIES
