@@ -70,6 +70,46 @@ protected:
     TTSInitializedTest() : TTSTest() {
         TextToSpeechImplementation = Core::ProxyType<Plugin::TextToSpeechImplementation>::Create();
 
+    gst_init(nullptr, nullptr);
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioInitialize())
+        .WillByDefault(
+            ::testing::Invoke(
+                [&]() {
+                    return;
+                }));
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioDeinitialize())
+        .WillByDefault(
+            ::testing::Invoke(
+                [&]() {
+                    return;
+                }));
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioChangePrimaryVol(::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetDetectTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetHoldTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetThreshold(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+                             GstElement** audioSink, GstElement** audioVolume,
+                             AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+            
+          
+            bool result = false;
+            return result;
+        }));
+
+
         ON_CALL(service, ConfigLine())
             .WillByDefault(::testing::Return("{}"));
         ON_CALL(service, WebPrefix())
