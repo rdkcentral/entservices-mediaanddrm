@@ -114,6 +114,10 @@ add_plugin_test_ex(PLUGIN_PLAYERINFO tests/test_PlayerInfo.cpp "${PLAYERINFO_INC
 set (LINEARPLAYBACKCONTROL_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/LinearPlaybackControl ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
 add_plugin_test_ex(PLUGIN_LINEARPLAYBACKCONTROL tests/test_LinearPlaybackControl.cpp "${LINEARPLAYBACKCONTROL_INC}" "${NAMESPACE}LinearPlaybackControl")
 
+# PLUGIN_UNIFIEDCASMANAGEMENT
+set (UNIFIEDCASMANAGEMENT_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/UnifiedCASManagement ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
+add_plugin_test_ex(PLUGIN_UNIFIEDCASMANAGEMENT tests/test_UnifiedCASManagement.cpp "${UNIFIEDCASMANAGEMENT_INC}" "${NAMESPACE}UnifiedCASManagement")
+
 # PLUGIN_SYSTEMAUDIOPLAYER
 add_plugin_test(SystemAudioPlayer tests/test_SystemAudioPlayer.cpp)
 

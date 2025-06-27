@@ -53,7 +53,17 @@ jobs:
       - name: Install GStreamer
         run: |
            sudo apt update
-           sudo apt install -y libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+           sudo apt install -y \
+             libunwind-dev \
+             libgstreamer1.0-dev \
+             libgstreamer-plugins-base1.0-dev \
+             gstreamer1.0-tools \
+             gstreamer1.0-plugins-base \
+             gstreamer1.0-plugins-good \
+             gstreamer1.0-plugins-bad \
+             gstreamer1.0-plugins-ugly \
+             gstreamer1.0-libav
+
 
       - name: Build trevor-base64
         run: |
@@ -292,6 +302,7 @@ jobs:
           -ftest-coverage
           -DUSE_THUNDER_R4=ON
           -DTHUNDER_VERSION=4
+          -DUNIT_TESTING
           -DTHUNDER_VERSION_MAJOR=4
           -DTHUNDER_VERSION_MINOR=4
           -DDEVICE_TYPE=AVOutputTV
@@ -339,7 +350,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=OFF
+          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_SCREENCAPTURE=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
@@ -399,6 +411,7 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvSettingsODM.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
           -Werror -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -Wl,--no-as-needed
           -DUSE_IARMBUS
@@ -414,7 +427,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=OFF
+          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_SCREENCAPTURE=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
