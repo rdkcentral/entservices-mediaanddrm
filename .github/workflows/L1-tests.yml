@@ -113,8 +113,8 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
-          token: ${{ secrets.RDKCM_RDKE }}
+          ref: feature/RDKEMW-2209-Test
+          #token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-mediaanddrm
         uses: actions/checkout@v3
@@ -185,7 +185,7 @@ jobs:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
-          token : ${{ secrets.RDKCM_RDKE }}
+          #token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
       - name: Apply patches LinearPlaybackControl
@@ -315,7 +315,6 @@ jobs:
           -I $GITHUB_WORKSPACE/Thunder/Source/core
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/devicesettings.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h
-          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Rfc.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/RBus.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Telemetry.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Udev.h
@@ -325,6 +324,7 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/readprocMockInterface.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/gdialservice.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
           --coverage
           -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,v_secure_system -Wl,-wrap,v_secure_popen -Wl,-wrap,v_secure_pclose -Wl,-wrap,unlink -Wl,-wrap,v_secure_system -Wl,-wrap,pclose -Wl,-wrap,setmntent -Wl,-wrap,getmntent
@@ -372,6 +372,7 @@ jobs:
           -ftest-coverage
           -DEXCEPTIONS_ENABLE=ON
           -DUSE_THUNDER_R4=ON
+          -DUNIT_TESTING=ON
           -DTHUNDER_VERSION=4
           -DTHUNDER_VERSION_MAJOR=4
           -DTHUNDER_VERSION_MINOR=4
@@ -401,6 +402,8 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/wpa_ctrl_mock.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/readprocMockInterface.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/gdialservice.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/systemaudioplatform.h
           --coverage
           -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,-wrap,v_secure_system -Wl,-wrap,v_secure_popen -Wl,-wrap,v_secure_pclose -Wl,-wrap,unlink
@@ -428,6 +431,7 @@ jobs:
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DPLUGIN_SCREENCAPTURE=ON
+          -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
@@ -479,6 +483,8 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/gdialservice.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/thunder/Communicator.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/DRMScreenCapture.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
+          -include $GITHUB_WORKSPACE/entservices-testframework/Tests/headers/systemaudioplatform.h
           --coverage
           -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -Wl,-wrap,system -Wl,-wrap,popen -Wl,-wrap,syslog -Wl,--no-as-needed
@@ -502,6 +508,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
           -DPLUGIN_SCREENCAPTURE=ON
+          -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DRDK_SERVICES_L1_TEST=ON
