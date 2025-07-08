@@ -61,6 +61,7 @@ namespace Plugin {
 
     uint32_t TextToSpeechImplementation::Configure(PluginHost::IShell* service)
     {
+        std::cout << "akshay inside TextToSpeechImplementation::Configure" << std::endl;
         if(!_ttsManager)
             return 0;
 
@@ -79,7 +80,9 @@ namespace Plugin {
         config.FromString(service->ConfigLine());
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
+        std::cout << "akshay calling triggerRFC" << std::endl;
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
+        std::cout << "akshay after triggerRFC" << std::endl;
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));

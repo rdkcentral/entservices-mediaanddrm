@@ -49,6 +49,7 @@ namespace Plugin {
 
     const string TextToSpeech::Initialize(PluginHost::IShell* service)
     {
+        std::cout << "akshay: inside TextToSpeech::Initialize" << std::endl;
         ASSERT(_service == nullptr);
 
         _connectionId = 0;
@@ -68,9 +69,11 @@ namespace Plugin {
             PluginHost::IStateControl* stateControl(_tts->QueryInterface<PluginHost::IStateControl>());
 
             if (stateControl == nullptr) {
+                std::cout << "akshay: stateControl is null" << std::endl;
                 _tts->Release();
                 _tts = nullptr;
             } else {
+                std::cout << "akshay: stateControl is not null calling configure" << std::endl;
                 if (stateControl->Configure(_service) != Core::ERROR_NONE) {
                     _tts->Release();
                     _tts = nullptr;

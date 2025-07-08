@@ -25,9 +25,16 @@ namespace Utils {
 inline bool getRFCConfig(const char* paramName, RFC_ParamData_t& paramOutput)
 {
     WDMP_STATUS wdmpStatus = getRFCParameter(nullptr, paramName, &paramOutput);
+    std::cout << "akshay: getRFCConfig called for paramName: " << paramName << " with status: " << wdmpStatus << std::endl;
+    std::cout << "akshay: getRFCConfig paramOutput.value: " << paramOutput.value << std::endl;
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE) {
+        std::cout << "akshay: getRFCConfig succeeded for paramName: " << paramName << std::endl;
+        std::cout << "akshay: getRFCConfig paramOutput.value: " << paramOutput.value << std::endl;
+        std::cout << "akshay: retuting true from getRFCConfig" << std::endl;
         return true;
     }
+    std::cout << "akshay: getRFCConfig failed for paramName: " << paramName << " with status: " << wdmpStatus << std::endl;
+    std::cout << "akshay: returning false from getRFCConfig" << std::endl;
     return false;
 }
 }

@@ -48,20 +48,26 @@ RFCURLObserver* RFCURLObserver::getInstance() {
 
 void RFCURLObserver::triggerRFC(TTSConfiguration *config)
 {
+   std::cout << "akshay triggerRFC inside" << std::endl;
    m_defaultConfig = config;
+   std::cout << "akshay calling fetchURLFromConfig() from triggerRFC" << std::endl;
    fetchURLFromConfig();
+   std::cout << "akshay came from fetchURLFromConfig()" << std::endl;
    std::thread notificationThread(&RFCURLObserver::registerNotification, this);
    notificationThread.detach(); // Detach the thread to run independently
 }
 
 void RFCURLObserver::fetchURLFromConfig() {
+    std::cout << "akshay fetchURLFromConfig() inside" << std::endl;
     bool  m_rfcURLSet = false;
     RFC_ParamData_t param;
     #ifndef UNIT_TESTING
+    std::cout << "akshay value of m_rfcURLSet before mfr call " << m_rfcURLSet << std::endl;
     m_rfcURLSet = Utils::getRFCConfig("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL", param);
+    std::cout << "akshay value of m_rfcURLSet after mfr call " << m_rfcURLSet << std::endl;
     #endif
     if (m_rfcURLSet) {
-	TTSLOG_INFO("Received RFC URL %s\n",param.value);
+	TTSLOG_INFO("akshay Received RFC URL %s\n",param.value);
         m_defaultConfig->setRFCEndPoint(param.value);
     } else {
         TTSLOG_ERROR("Error: Reading URL RFC failed.");
@@ -131,7 +137,7 @@ void RFCURLObserver::registerNotification() {
             if (m_systemService->Subscribe<JsonObject>(3000, "onDeviceMgtUpdateReceived",
                 &RFCURLObserver::onDeviceMgtUpdateReceivedHandler, this) == Core::ERROR_NONE) {
                 m_eventRegistered = true;
-                TTSLOG_INFO("Subscribed to notification handler: onDeviceMgtUpdateReceived");
+                TTSLOG_INFO("akshay Subscribed to notification handler: onDeviceMgtUpdateReceived");
                 break;
             } else {
                 TTSLOG_ERROR("Failed to subscribe to notification handler: onDeviceMgtUpdateReceived..Retrying");
@@ -144,8 +150,9 @@ void RFCURLObserver::registerNotification() {
 void RFCURLObserver::onDeviceMgtUpdateReceivedHandler(const JsonObject& parameters) {
     if(parameters["source"].String() == "rfc")
     {
+       std::cout << "akshay calling fetchURLFromConfig() from onDeviceMgtUpdateReceivedHandler" << std::endl;
        fetchURLFromConfig();
-       TTSLOG_INFO("onDeviceMgtUpdateReceived notification received");
+       TTSLOG_INFO("akshay onDeviceMgtUpdateReceived notification received");
     }
 }
 
