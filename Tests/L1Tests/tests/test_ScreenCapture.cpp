@@ -227,4 +227,3 @@ TEST_F(ScreenCaptureDRMTest, Upload)
 }
 #endif
 
-
