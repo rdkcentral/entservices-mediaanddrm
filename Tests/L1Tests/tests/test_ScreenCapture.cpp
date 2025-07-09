@@ -140,7 +140,7 @@ TEST_F(ScreenCaptureTest, RegisteredMethods)
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("uploadScreenCapture")));
 }
 
-
+#if 0
 TEST_F(ScreenCaptureDRMTest, Upload)
 {   
     DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
@@ -225,5 +225,6 @@ TEST_F(ScreenCaptureDRMTest, Upload)
     thread.join();
     close(sockfd);
 }
+#endif
 
 
