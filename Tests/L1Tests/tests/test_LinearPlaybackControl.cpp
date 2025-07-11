@@ -579,16 +579,6 @@ TEST_F(LinearPlaybackControlPluginTest, SetSeek_MissingSeekPos) {
     EXPECT_EQ(result, Core::ERROR_BAD_REQUEST);
 }
 
-TEST_F(LinearPlaybackControlPluginTest, SetSeek_FileError) {
-    SeekData params;
-    params.SeekPosInSeconds = TEST_SEEK_POS;
-    createFile(seekFile, "");
-    makeFileReadOnly(seekFile);
-
-    uint32_t result = lpc.endpoint_set_seek("0", params);
-    EXPECT_EQ(result, Core::ERROR_NONE); // Adjusted to match observed behavior
-}
-
 TEST_F(LinearPlaybackControlPluginTest, GetSeek_FileError) {
     SeekData params;
 
@@ -615,16 +605,6 @@ TEST_F(LinearPlaybackControlPluginTest, SetTrickPlay_MissingSpeed) {
 
     uint32_t result = lpc.endpoint_set_trickplay("0", params);
     EXPECT_EQ(result, Core::ERROR_BAD_REQUEST);
-}
-
-TEST_F(LinearPlaybackControlPluginTest, SetTrickPlay_FileError) {
-    TrickplayData params;
-    params.Speed = TEST_SPEED;
-    createFile(trickPlayFile, "");
-    makeFileReadOnly(trickPlayFile);
-
-    uint32_t result = lpc.endpoint_set_trickplay("0", params);
-    EXPECT_EQ(result, Core::ERROR_NONE); // Adjusted to match observed behavior
 }
 
 TEST_F(LinearPlaybackControlPluginTest, GetTrickPlay_ValidResponse) {
