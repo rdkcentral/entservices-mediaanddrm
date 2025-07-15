@@ -21,7 +21,6 @@
 #include "TTSURLConstructer.h"
 #include "NetworkStatusObserver.h"
 #include "SatToken.h"
-#include <systemaudioplatform.h>
 #include <unistd.h>
 #include <regex>
 
@@ -30,6 +29,8 @@
 #define UPDATE_AND_RETURN(o, n) if(o != n) { o = n; return true; }
 
 namespace TTS {
+
+using namespace ::TTS;
 
 std::map<std::string, std::string> TTSConfiguration::m_others;
 
@@ -167,7 +168,7 @@ bool TTSConfiguration::setApiKey(const std::string apikey) {
 }
 
 bool TTSConfiguration::setEndpointType(const std::string type) {
-    if(!type.empty() &&  type.find_first_not_of(' ') != std::string::npos)
+    if(!type.empty())
     {
         UPDATE_AND_RETURN(m_endpointType, type);
     }
@@ -359,78 +360,51 @@ bool TTSConfiguration::setFallBackText(FallbackData &fd) {
     return false;
 }
 
-// --- //
-
 TTSSpeaker::TTSSpeaker(TTSConfiguration &config) :
-    m_defaultConfig(config),
-    m_clientSpeaking(NULL),
-    m_currentSpeech(NULL),
-    m_isSpeaking(false),
-    m_isPaused(false),
-    m_pipeline(NULL),
-    m_source(NULL),
-    m_audioSink(NULL),
-    m_audioVolume(NULL),
-    m_main_loop(NULL),
-    m_main_context(NULL),
-    m_main_loop_thread(NULL),
-    m_pipelineError(false),
+    m_playerError(false),
     m_networkError(false),
+    m_ensurePlayer(false),
     m_remoteError(false),
     m_runThread(true),
-    m_busThread(true),
     m_flushed(false),
-    m_isEOS(false),
-    m_pcmAudioEnabled(false),
-    m_ensurePipeline(false),
-    m_busWatch(0),
-    m_duration(0),
-    m_pipelineConstructionFailures(0),
-    m_maxPipelineConstructionFailures(INT_FROM_ENV("MAX_PIPELINE_FAILURE_THRESHOLD", 1)) {
-
-        setenv("GST_DEBUG", "2", 0);
-        setenv("GST_REGISTRY_UPDATE", "no", 0);
-        setenv("GST_REGISTRY_FORK", "no", 0);
-
-        m_main_loop_thread = g_thread_new("BusWatch", (void* (*)(void*)) event_loop, this);
+    m_isSpeaking(false),
+    m_isPaused(false),
+    m_playerConstructionFailures(0),
+    m_maxPlayerConstructionFailures(INT_FROM_ENV("MAX_PIPELINE_FAILURE_THRESHOLD", 1)),
+    m_defaultConfig(config),
+    m_clientSpeaking(nullptr),
+    m_currentSpeech(nullptr),
+    m_player(nullptr) 
+    {
+        std::cout << "RAJAN-DBG: Speaker Constructed" << std::endl;
+        m_player = TTS::TTSSystemAudioPlayer::createPlayerInstance();
         m_gstThread = new std::thread(GStreamerThreadFunc, this);
-        systemAudioInitialize();
 
-}
-
-TTSSpeaker::~TTSSpeaker() {
-    if(m_isSpeaking)
-        m_flushed = true;
-    m_runThread = false;
-    m_busThread = false;
-    m_pcmAudioEnabled = false;
-    systemAudioDeinitialize();
-    m_condition.notify_one();
-
-    if(m_gstThread) {
-        m_gstThread->join();
-        m_gstThread = NULL;
     }
 
-    if(g_main_loop_is_running(m_main_loop))
-        g_main_loop_quit(m_main_loop);
+TTSSpeaker::~TTSSpeaker() 
+{
+        if (m_isSpeaking)
+            m_flushed = true;
+        m_runThread = false;
+        m_condition.notify_one();
 
-    if (m_main_loop_thread) {
-        g_thread_join(m_main_loop_thread);
-        g_thread_unref(m_main_loop_thread);
-        m_main_loop_thread = nullptr;
-    }
+        delete m_player;
+        m_player = nullptr;
+
+        if (m_gstThread)
+        {
+            m_gstThread->join();
+            m_gstThread = NULL;
+        }
 }
 
-PipelineType TTSSpeaker::getPipelineType() {
-   return m_pipelinetype;
-}
-
-void TTSSpeaker::ensurePipeline(bool flag) {
-    std::unique_lock<std::mutex> mlock(m_queueMutex);
-    TTSLOG_WARNING("%s", __FUNCTION__);
-    m_ensurePipeline = flag;
-    m_condition.notify_one();
+void TTSSpeaker::ensurePlayer(bool flag) 
+{
+        std::unique_lock<std::mutex> mlock(m_queueMutex);
+        m_ensurePlayer = flag;
+        TTSLOG_WARNING("%s", __FUNCTION__);
+        m_condition.notify_one();
 }
 
 int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, bool secure,int8_t primVolDuck) {
@@ -450,15 +424,6 @@ bool TTSSpeaker::shouldUseLocalEndpoint() {
    if(m_defaultConfig.hasValidLocalEndpoint())
        return !WPEFramework::Plugin::TTS::NetworkStatusObserver::getInstance()->isConnected() || m_remoteError;
    return false;
-}
-
-PipelineType TTSSpeaker::getUrlPipelineType(string url) {
-   //Check if url contains endpoint on localhost, enable PCM audio
-   if((url.rfind(LOOPBACK_ENDPOINT,0) != std::string::npos) || (url.rfind(LOCALHOST_ENDPOINT,0) != std::string::npos)) {
-       TTSLOG_INFO("PCM audio playback is enabled");
-       return PCM;
-    }
-    return MP3;
 }
 
 SpeechState TTSSpeaker::getSpeechState(uint32_t id) {
@@ -520,10 +485,10 @@ bool TTSSpeaker::pause(uint32_t id) {
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
-    if(m_pipeline) {
+    if(m_player) {
         if(!m_isPaused) {
             m_isPaused = true;
-            gst_element_set_state(m_pipeline, GST_STATE_PAUSED);
+            m_player->pause(0); // To be set for respective speechId
             TTSLOG_INFO("Set state to PAUSED");
             return true;
         }
@@ -535,9 +500,9 @@ bool TTSSpeaker::resume(uint32_t id) {
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
-    if(m_pipeline) {
+    if(m_player) {
         if(m_isPaused) {
-            gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
+            m_player->pause(0); // To be set for respective speechId
             TTSLOG_INFO("Set state to PLAYING");
             return true;
         }
@@ -578,397 +543,97 @@ SpeechData TTSSpeaker::dequeueData() {
     return d;
 }
 
-bool TTSSpeaker::waitForStatus(GstState expected_state, uint32_t timeout_ms) {
-    // wait for the pipeline to get to pause so we know we have the audio device
-    if(m_pipeline) {
-        GstState state = GST_STATE_NULL;
-        GstState pending;
-
-        auto timeout = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout_ms);
-
-        do {
-            std::unique_lock<std::mutex> mlock(m_queueMutex);
-            m_condition.wait_until(mlock, timeout, [this, &state, &pending, expected_state] () {
-                    // Speaker has flushed the data, no need wait for the completion
-                    // must break and reset the pipeline
-                    if(m_flushed) {
-                        TTSLOG_VERBOSE("Bailing out because of forced text queue (m_flushed=true)");
-                        return true;
-                    }
-
-                    gst_element_get_state(m_pipeline, &state, &pending, GST_CLOCK_TIME_NONE);
-                    if(state == expected_state)
-                        return true;
-
-                    return false;
-                });
-        } while(!m_flushed && state != expected_state && timeout > std::chrono::system_clock::now());
-
-        if(state == expected_state) {
-            TTSLOG_VERBOSE("Got Status : expected_state = %d, new_state = %d", expected_state, state);
-            return true;
-        }
-
-        TTSLOG_WARNING("Timed Out waiting for state %s, currentState %s",
-                gst_element_state_get_name(expected_state), gst_element_state_get_name(state));
-        return false;
-    }
-
-    return true;
-}
-
-
-void TTSSpeaker::createPipeline(PipelineType type) {
-    m_isEOS = false;
-    GstCaps *audiocaps = NULL;
-    GstElement *capsfilter = NULL;
-    m_pcmAudioEnabled = false;
-    
-    if(!m_ensurePipeline || m_pipeline) {
-        TTSLOG_WARNING("Skipping Pipeline creation");
-        return;
-    }
-
-    TTSLOG_WARNING("Creating Pipeline...");
-    m_pipeline = gst_pipeline_new(NULL);
-    if (!m_pipeline) {
-        m_pipelineConstructionFailures++;
-        TTSLOG_ERROR("Failed to create gstreamer pipeline");
-        return;
-    }
-
-    std::string tts_url =
-        !m_defaultConfig.secureEndPoint().empty() ? m_defaultConfig.secureEndPoint() : m_defaultConfig.rfcEndPoint();
-    if(!tts_url.empty()) {
-        if(!m_defaultConfig.voice().empty()) {
-            tts_url.append("voice=");
-            tts_url.append(m_defaultConfig.voice());
-        }
-
-        if(!m_defaultConfig.language().empty()) {
-            tts_url.append("&language=");
-            tts_url.append(m_defaultConfig.language());
-        }
-
-        tts_url.append("&text=init");
-
-        if(m_defaultConfig.hasValidLocalEndpoint()) {
-           if(type == PCM) {
-               m_pcmAudioEnabled = true;
-               m_pipelinetype = PCM;
-               TTSLOG_INFO("PCM audio playback is enabled");
-           } else {
-               TTSLOG_INFO("mp3 audio playback is enabled");
-               m_pipelinetype = MP3;
-           }
-        } else {
-            if((getUrlPipelineType(tts_url)) == PCM) {
-                TTSLOG_INFO("PCM audio playback is enabled");
-                m_pcmAudioEnabled = true;
-            }
-        }
-
-        if(m_pcmAudioEnabled) {
-            //Raw PCM audio does not work with souphhtpsrc on alsaasink
-            m_source = gst_element_factory_make("httpsrc", NULL);
-        } else {
-            m_source = gst_element_factory_make("souphttpsrc", NULL);
-        }
-
-        g_object_set(G_OBJECT(m_source), "location", tts_url.c_str(), NULL);
-    }
-
-    // Add elements to pipeline and link
-
-    bool result = TRUE;
-    if(m_pcmAudioEnabled)
-    {
-        audiocaps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "rate", G_TYPE_INT, 22050,
-                                "channels", G_TYPE_INT, 1, "layout", G_TYPE_STRING, "interleaved", NULL);
-        if(audiocaps == NULL) {
-            m_pcmAudioEnabled = false;
-            TTSLOG_ERROR("Unable to add audio caps for PCM audio.");
-            return ;
-        }
-        capsfilter = gst_element_factory_make ("capsfilter", NULL);
-        if (capsfilter) {
-            g_object_set (G_OBJECT (capsfilter), "caps", audiocaps, NULL);
-            gst_caps_unref(audiocaps);
-        }
-        else {
-            m_pcmAudioEnabled = false;
-            TTSLOG_ERROR( "Unable to create capsfilter for PCM audio.");
-            return;
-        }
-#ifndef UNIT_TESTING
-            result = systemAudioGeneratePipeline(m_pipeline,m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
-#else
-            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
-#endif
-    }
-    else
-    {
-#ifndef UNIT_TESTING
-        result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
-#else
-        result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
-#endif
-
-    }
-       
-    if(!result) {
-        TTSLOG_ERROR("failed to link elements!");
-        gst_object_unref(m_pipeline);
-        m_pipeline = NULL;
-        m_pipelineConstructionFailures++;
-        return;
-    }
-    // set the TTS volume to max.
-    g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (m_defaultConfig.volume() / MAX_VOLUME), NULL);
-    
-    TTSLOG_WARNING ("gst_element_get_bus\n");
-    GstBus *bus = gst_element_get_bus(m_pipeline);
-    m_busWatch = gst_bus_add_watch(bus, GstBusCallback, (gpointer)(this));
-    gst_object_unref(bus);
-
-    m_pipelineConstructionFailures = 0;
-
-    // wait until pipeline is set to NULL state
-    resetPipeline();
-}
-
-void TTSSpeaker::resetPipeline() {
-    TTSLOG_WARNING("Resetting Pipeline...");
-
-    // Detect pipe line error and destroy the pipeline if any
-    if(m_pipelineError) {
-        TTSLOG_WARNING("Pipeline error occured, attempting to recover by re-creating pipeline");
-
-        // Try to recover from errors by destroying the pipeline
-        destroyPipeline();
-    }
-    m_pipelineError = false;
-    m_remoteError = false;
-    m_networkError = false;
-    m_isPaused = false;
-    m_isEOS = false;
-
-    if(!m_pipeline) {
-        // If pipe line is NULL, create one
-        createPipeline(m_pipelinetype);
-    } else {
-        // If pipeline is present, bring it to NULL state
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        while(!waitForStatus(GST_STATE_NULL, 60*1000));
-    }
-}
-
-void TTSSpeaker::destroyPipeline() {
-    TTSLOG_WARNING("Destroying Pipeline...");
-
-    if(m_pipeline) {
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        waitForStatus(GST_STATE_NULL, 1*1000);
-        g_source_remove(m_busWatch);
-        gst_object_unref(m_pipeline);
-    }
-
-    m_busWatch = 0;
-    m_pipeline = NULL;
-    m_pipelineConstructionFailures = 0;
-    m_condition.notify_one();
-}
-
-void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
-    TTSLOG_TRACE("timeout_s=%f", timeout_s);
-
-    auto timeout = std::chrono::system_clock::now() + std::chrono::seconds((unsigned long)timeout_s);
-    auto startTime = std::chrono::system_clock::now();
-    gint64 lastPosition = 0;
-
-    auto playbackInterrupted = [this] () -> bool { return !m_pipeline || m_pipelineError || m_flushed; };
-    auto playbackCompleted = [this] () -> bool { return m_isEOS; };
-
-    while(timeout > std::chrono::system_clock::now()) {
-        std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [this, playbackInterrupted, playbackCompleted] () {
-            return playbackInterrupted() || playbackCompleted();
-        });
-
-        if(playbackInterrupted() || playbackCompleted()) {
-            if(m_flushed)
-                TTSLOG_VERBOSE("Bailing out because of forced text queue (m_flushed=true)");
-            break;
-        } else {
-            if(m_isPaused) {
-                timeout = std::chrono::system_clock::now() + std::chrono::seconds((unsigned long)timeout_s);
-            } else {
-                if(m_duration > 0 && m_duration != (gint64)GST_CLOCK_TIME_NONE &&
-                    std::chrono::system_clock::now() < startTime + std::chrono::nanoseconds(m_duration)) {
-                    timeout = std::chrono::system_clock::now() + std::chrono::seconds((unsigned long)timeout_s);
-                    TTSLOG_VERBOSE("Not reached duration");
-                } else {
-                    // This is a workaround for broken BRCM PCM Sink duration query - To be deleted once that is fixed
-                    m_duration = 0;
-                    gint64 position = 0;
-                    if (!(gst_element_query_position(m_pipeline, GST_FORMAT_TIME, &position)))
-                    {
-                        TTSLOG_ERROR("gst_element_query_position call failed");
-                    }
-                    if(position > 0 && position != (gint64)GST_CLOCK_TIME_NONE && position > lastPosition) {
-                        TTSLOG_VERBOSE("Reached/Invalid duration, last position=%" GST_TIME_FORMAT ", current position=%" GST_TIME_FORMAT,
-                                GST_TIME_ARGS(lastPosition), GST_TIME_ARGS(position));
-                        timeout = std::chrono::system_clock::now() + std::chrono::seconds((unsigned long)timeout_s);
-                        lastPosition = position;
-                    }
-                }
-            }
-        }
-    }
-    TTSLOG_INFO("m_isEOS=%d, m_pipeline=%p, m_pipelineError=%d, m_flushed=%d",
-            m_isEOS, m_pipeline, m_pipelineError, m_flushed);
-
-    // Irrespective of EOS / Timeout reset pipeline
-    if(m_pipeline)
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
-
-    if(!m_isEOS)
-        TTSLOG_ERROR("Stopped waiting for audio to finish without hitting EOS!");
-    m_isEOS = false;
-}
-
-bool TTSSpeaker::needsPipelineUpdate() {
-   return (m_pipelineConstructionFailures < m_maxPipelineConstructionFailures ? true : !m_queue.empty()) &&
-       ((m_ensurePipeline && !m_pipeline) || (m_pipeline && !m_ensurePipeline));
-}
-
 std::string TTSSpeaker::constructURL(TTSConfiguration &config, SpeechData &d) {
-    if(!config.isValid()) {
-        TTSLOG_ERROR("Invalid configuration");
-        return "";
-    }
+        if (!config.isValid())
+        {
+            TTSLOG_ERROR("Invalid configuration");
+            return "";
+        }
 
-    TTSURLConstructer urlConstructor;
-    std::string tts_request = urlConstructor.constructURL(m_defaultConfig, d.text, false, shouldUseLocalEndpoint());
-    if(m_defaultConfig.hasValidLocalEndpoint()) {
-       PipelineType pipelineType = getUrlPipelineType(tts_request);
-       if(pipelineType != m_pipelinetype) {
-          //pipeline switch required
-          TTSLOG_INFO("pipeline needs updation");
-          destroyPipeline();
-          createPipeline(pipelineType);
-       } else {
-          TTSLOG_INFO("re-use existing pipeline.");
-       }
-    }
-    TTSLOG_WARNING("Constructed final URL is %s", tts_request.c_str());
-    return tts_request;
+        TTSURLConstructer urlConstructor;
+        std::string tts_request = urlConstructor.constructURL(m_defaultConfig, d.text, false, shouldUseLocalEndpoint());
+        if (m_defaultConfig.hasValidLocalEndpoint())
+        {
+            TTSLOG_INFO("Trying to update playermetaData\n");
+            m_player->updatePlayerMetaDataFromURL(tts_request);
+        }
+        return tts_request;
 }
 
 void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string token) {
-    m_currentSpeech = &data;
-    g_object_set(G_OBJECT(m_source), "location", url.c_str(), NULL);
-    if(authrequired)
-    {
-        string authStr = "test, Authorization=(string)\"Bearer\\ " + token + "\"";
-        GstStructure* extraHeaders = gst_structure_from_string((const gchar*)(authStr.c_str()), NULL);
-        if (extraHeaders != NULL)
-        {
-            g_object_set(G_OBJECT(m_source), "extra-headers", extraHeaders, NULL);
-            gst_structure_free(extraHeaders);
-        }
-    }
-
-    // PCM Sink seems to be accepting volume change before PLAYING state
-    g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
-
-    gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
-
-    systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);
-    TTSLOG_VERBOSE("Speaking.... ( %d, \"%s\")", data.id, data.text.c_str());
-
-    //Wait for EOS with a timeout incase EOS never comes
-    if(m_pcmAudioEnabled) {
-        //FIXME, find out way to EOS or position for raw PCM audio
-        waitForAudioToFinishTimeout(60);
-    }
-    else {
-        waitForAudioToFinishTimeout(10);
-    }
-
-    m_currentSpeech = NULL;
+        m_currentSpeech = &data;
+        TTSLOG_INFO("Playing the Audio with speech id = %d\n", m_currentSpeech->id);
+        m_player->play(url, m_currentSpeech->id);
+        //m_player->adjustPrimaryVolume(data.primVolDuck,100);
+        TTSLOG_VERBOSE("Speaking.... ( %d, \"%s\")", data.id, data.text.c_str());
+        m_currentSpeech = NULL;
 }
 
 void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
-    m_isEOS = false;
-    m_duration = 0;
 
-    if((m_pipeline && !m_flushed)) {
+    if ((m_player && !m_flushed))
+    {
         string token;
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
-        if(authrequired) 
+        if (authrequired)
             token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
-        
-        play(constructURL(config, data),data,authrequired,token);
-
-    } else {
-        TTSLOG_WARNING("m_pipeline=%p, m_pipelineError=%d", m_pipeline, m_pipelineError);
+        TTSLOG_INFO("Constructing URL and Trying to Play\n");
+        play(constructURL(config, data), data, authrequired, token);
+    }
+    else
+    {
+        TTSLOG_WARNING("m_player=%p, m_playerError=%d", m_player, m_playerError);
     }
 }
 
-void TTSSpeaker::event_loop(void *data)
-{
-    TTSSpeaker *speaker= (TTSSpeaker*) data;
-    speaker->m_main_context = g_main_context_new();
-    speaker->m_main_loop = g_main_loop_new(NULL, false);
-    g_main_loop_run(speaker->m_main_loop);
-}
 
 void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
     TTSLOG_INFO("Starting GStreamerThread");
-    TTSSpeaker *speaker = (TTSSpeaker*) ctx;
+    TTSSpeaker *speaker = (TTSSpeaker *)ctx;
 
-    if(!gst_is_initialized())
-        gst_init(NULL,NULL);
+    //TTSLOG_INFO("Openening Player\n");
+    //TTSSAP_STATUS playerStatus = speaker->m_player->openPlayer();
+    //if(playerStatus != TTSSAP_STATUS::SAP_Success)
+    //    speaker->m_playerError =  true;
+    //TTSLOG_INFO("Player Opened\n");
 
-    while(speaker && speaker->m_runThread) {
-        if(speaker->needsPipelineUpdate()) {
-            if(speaker->m_ensurePipeline) {
-                speaker->createPipeline(speaker->getPipelineType());
-
-                // If pipeline creation fails, send playbackerror to the client and remove the req from queue
-                if(!speaker->m_pipeline && !speaker->m_queue.empty()) {
-                    SpeechData data = speaker->dequeueData();
-                    TTSLOG_ERROR("Pipeline creation failed, sending error for speech=%d from client %p\n", data.id, data.client);
-                    data.client->playbackerror(data.id,data.callsign);
-                    speaker->m_pipelineConstructionFailures = 0;
-                }
-            } else {
-                speaker->destroyPipeline();
+    while (speaker && speaker->m_runThread)
+    {
+        if (speaker->m_ensurePlayer)
+        {
+            // If pipeline creation fails, send playbackerror to the client and remove the req from queue
+            if (!speaker->m_player && !speaker->m_queue.empty())
+            {
+                SpeechData data = speaker->dequeueData();
+                TTSLOG_ERROR("Pipeline creation failed, sending error for speech=%d from client %p\n", data.id, data.client);
+                data.client->playbackerror(data.id, data.callsign);
+                speaker->m_playerConstructionFailures = 0;
             }
+        }
+        else
+        {
+            TTSLOG_INFO("Player destroyed\n");
+            speaker->m_player->destroyPlayer();
         }
 
         // Take an item from the queue
         TTSLOG_INFO("Waiting for text input");
-        while(speaker->m_runThread && speaker->m_queue.empty() && !speaker->needsPipelineUpdate()) {
+        while (speaker->m_runThread && speaker->m_queue.empty())
+        {
             std::unique_lock<std::mutex> mlock(speaker->m_queueMutex);
-            speaker->m_condition.wait(mlock, [speaker] () {
-                    return (!speaker->m_queue.empty() || !speaker->m_runThread || speaker->needsPipelineUpdate());
-                });
+            speaker->m_condition.wait(mlock, [speaker]()
+                                      { return (!speaker->m_queue.empty() || !speaker->m_runThread); });
         }
 
         // Stop thread on Speaker's cue
-        if(!speaker->m_runThread) {
-            if(speaker->m_pipeline) {
-                gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
-                speaker->waitForStatus(GST_STATE_NULL, 1*1000);
+        if (!speaker->m_runThread)
+        {
+            if (speaker->m_player)
+            {
+                speaker->m_player->resetPlayer();
             }
             TTSLOG_INFO("Stopping GStreamerThread");
             return;
-        }
-
-        if(speaker->needsPipelineUpdate()) {
-            continue;
         }
 
         TTSLOG_INFO("Got text input, list size=%d", speaker->m_queue.size());
@@ -976,156 +641,45 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
 
         speaker->setSpeakingState(true, data.client);
         // Inform the client before speaking
-        if(!speaker->m_flushed)
+        if (!speaker->m_flushed)
             data.client->willSpeak(data.id, data.callsign, data.text);
 
         // Push it to gstreamer for speaking
-        if(!speaker->m_flushed) {
+        if (!speaker->m_flushed)
+        {
             speaker->speakText(*data.client->configuration(), data);
         }
 
         // Use Local endpoint for speaking as remote is down
-        if(!speaker->m_flushed && speaker->m_remoteError) {
+        if (!speaker->m_flushed && speaker->m_remoteError)
+        {
             TTSLOG_INFO("Speak with Local endpoint");
             speaker->speakText(*data.client->configuration(), data);
         }
 
-	// when not speaking, set primary mixgain back to default.
-	if(speaker->m_flushed || speaker->m_networkError || !speaker->m_pipeline || speaker->m_pipelineError) {
-           systemAudioChangePrimaryVol(MIXGAIN_PRIM,100);
+        // when not speaking, set primary mixgain back to default.
+        if (speaker->m_flushed || speaker->m_networkError || !speaker->m_player || speaker->m_playerError)
+        {
+            speaker->m_player->adjustPrimaryVolume(100, 0);    //adjustVolume(PrimaryVolume, PlayerVolume)
         }
         // Inform the client after speaking
-        if(speaker->m_flushed)
+        if (speaker->m_flushed)
             data.client->interrupted(data.id, data.callsign);
-        else if(speaker->m_networkError)
+        else if (speaker->m_networkError)
             data.client->networkerror(data.id, data.callsign);
-        else if(!speaker->m_pipeline || speaker->m_pipelineError)
+        else if (!speaker->m_player || speaker->m_playerError)
             data.client->playbackerror(data.id, data.callsign);
-        else {
-            systemAudioChangePrimaryVol(MIXGAIN_PRIM, 100);
+        else
+        {
+            speaker->m_player->adjustPrimaryVolume(100, 0);
             data.client->spoke(data.id, data.callsign, data.text);
-	}
+        }
         speaker->setSpeakingState(false);
-
-        // stop the pipeline until the next tts string...
-        speaker->resetPipeline();
+        speaker->m_player->resetPlayer();
     }
 
-    speaker->destroyPipeline();
+    speaker->m_player->destroyPlayer();
 }
 
-int TTSSpeaker::GstBusCallback(GstBus *, GstMessage *message, gpointer data) {
-    TTSSpeaker *speaker = (TTSSpeaker*)data;
-    return speaker->handleMessage(message);
-}
-
-bool TTSSpeaker::handleMessage(GstMessage *message) {
-    GError* error = NULL;
-    gchar* debug = NULL;
-
-    if(!m_pipeline) {
-        TTSLOG_WARNING("NULL Pipeline");
-        return false;
-    }
-
-    switch (GST_MESSAGE_TYPE(message)){
-        case GST_MESSAGE_ERROR: {
-                gst_message_parse_error(message, &error, &debug);
-                TTSLOG_ERROR("error! code: %d, %s, Debug: %s", error->code, error->message, debug);
-                GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "error-pipeline");
-                std::string source = GST_MESSAGE_SRC_NAME(message);
-                if(source.find("httpsrc") != std::string::npos) {
-                    if(m_defaultConfig.hasValidLocalEndpoint() && getPipelineType() == MP3) {
-                        TTSLOG_INFO("remote down..switching to local\n");
-                        m_remoteError = true;
-                     } else {
-                         m_networkError = true;
-                     }
-                 }
-                m_pipelineError = true;
-                m_condition.notify_one();
-            }
-            break;
-
-        case GST_MESSAGE_WARNING: {
-                gst_message_parse_warning(message, &error, &debug);
-                TTSLOG_WARNING("warning! code: %d, %s, Debug: %s", error->code, error->message, debug);
-            }
-            break;
-
-        case GST_MESSAGE_EOS: {
-                TTSLOG_INFO("Audio EOS message received");
-                m_isEOS = true;
-                m_condition.notify_one();
-            }
-            break;
-
-
-        case GST_MESSAGE_DURATION_CHANGED: {
-                gst_element_query_duration(m_pipeline, GST_FORMAT_TIME, &m_duration);
-                TTSLOG_INFO("Duration %" GST_TIME_FORMAT, GST_TIME_ARGS(m_duration));
-            }
-            break;
-
-        case GST_MESSAGE_STATE_CHANGED: {
-                gchar* filename;
-                GstState oldstate, newstate, pending;
-                gst_message_parse_state_changed (message, &oldstate, &newstate, &pending);
-
-                // Ignore messages not coming directly from the pipeline.
-                if (GST_ELEMENT(GST_MESSAGE_SRC(message)) != m_pipeline)
-                    break;
-
-                filename = g_strdup_printf("%s-%s", gst_element_state_get_name(oldstate), gst_element_state_get_name(newstate));
-                GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, filename);
-                g_free(filename);
-
-                // get the name and state
-                TTSLOG_VERBOSE("%s old_state %s, new_state %s, pending %s",
-                        GST_MESSAGE_SRC_NAME(message) ? GST_MESSAGE_SRC_NAME(message) : "",
-                        gst_element_state_get_name (oldstate), gst_element_state_get_name (newstate), gst_element_state_get_name (pending));
-
-                if (oldstate == GST_STATE_NULL && newstate == GST_STATE_READY) {
-                } else if (oldstate == GST_STATE_READY && newstate == GST_STATE_PAUSED) {
-                    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "paused-pipeline");
-                } else if (oldstate == GST_STATE_PAUSED && newstate == GST_STATE_PAUSED) {
-                } else if (oldstate == GST_STATE_PAUSED && newstate == GST_STATE_PLAYING) {
-                    GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "playing-pipeline");
-                    std::lock_guard<std::mutex> lock(m_stateMutex);
-                    if(m_clientSpeaking) {
-                        if(m_isPaused) {
-                            m_isPaused = false;
-                            systemAudioChangePrimaryVol(MIXGAIN_PRIM, m_currentSpeech->primVolDuck);
-                            m_clientSpeaking->resumed(m_currentSpeech->id, m_currentSpeech->callsign);
-                            m_condition.notify_one();
-                        } else {
-                            m_clientSpeaking->started(m_currentSpeech->id, m_currentSpeech->callsign, m_currentSpeech->text);
-                        }
-                    }
-                } else if (oldstate == GST_STATE_PLAYING && newstate == GST_STATE_PAUSED) {
-                    std::lock_guard<std::mutex> lock(m_stateMutex);
-                    if(m_clientSpeaking && m_isPaused) {
-                        systemAudioChangePrimaryVol(MIXGAIN_PRIM, 100);
-                        m_clientSpeaking->paused(m_currentSpeech->id, m_currentSpeech->callsign);
-                        m_condition.notify_one();
-                    }
-                } else if (oldstate == GST_STATE_PAUSED && newstate == GST_STATE_READY) {
-                } else if (oldstate == GST_STATE_READY && newstate == GST_STATE_NULL) {
-                }
-            }
-            break;
-
-        default:
-            break;
-    }
-
-    if(error)
-        g_error_free(error);
-
-    if(debug)
-        g_free(debug);
-
-    return true;
-}
 
 } // namespace TTS
