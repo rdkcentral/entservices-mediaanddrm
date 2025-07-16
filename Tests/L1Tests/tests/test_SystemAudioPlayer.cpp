@@ -21,95 +21,138 @@
 #include <gtest/gtest.h>
 #include "SystemAudioPlayer.h"
 #include "SystemAudioPlayerImplementation.h"
+
 #include "ServiceMock.h"
 #include "COMLinkMock.h"
 #include "FactoriesImplementation.h"
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
+#include "systemaudioplatformmock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
-
-namespace {
-const string config = _T("SystemAudioPlayer");
-const string callSign = _T("org.rdk.SystemAudioPlayer");
-const string webPrefix = _T("/Service/SystemAudioPlayer");
-const string volatilePath = _T("/tmp/");
-const string dataPath = _T("/tmp/");
-}
 
 class SAPTest : public Test {
 protected:
     Core::ProxyType<Plugin::SystemAudioPlayer> plugin;
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
+    Core::JSONRPC::Message message;
+    string response;
+
+    SystemAudioPlatformAPIMock *p_systemAudioPlatformMock = nullptr;
+    Core::ProxyType<Plugin::SystemAudioPlayerImplementation> SystemAudioPlayerImplementation;
+    NiceMock<ServiceMock> service;
+    NiceMock<COMLinkMock> comLinkMock;
+    PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
 
     SAPTest()
         : plugin(Core::ProxyType<Plugin::SystemAudioPlayer>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
-            2, Core::Thread::DefaultStackSize(), 16)) {
-    }
+            2, Core::Thread::DefaultStackSize(), 16))
+    {
+    p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
+    SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
 
-    virtual ~SAPTest() = default;
-};
-
-class SAPInitializedTest : public SAPTest {
-protected:
-    NiceMock<FactoriesImplementation> factoriesImplementation;
-    NiceMock<ServiceMock> service;
-    NiceMock<COMLinkMock> comLinkMock;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::ProxyType<Plugin::SystemAudioPlayerImplementation> SystemAudioPlayerImplementation;
-    string response;
-
-    SAPInitializedTest() : SAPTest() {
-        SystemAudioPlayerImplementation = Core::ProxyType<Plugin::SystemAudioPlayerImplementation>::Create();
-
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return("{}"));
-        ON_CALL(service, WebPrefix())
-            .WillByDefault(::testing::Return(webPrefix));
-        ON_CALL(service, VolatilePath())
-            .WillByDefault(::testing::Return(volatilePath));
-        ON_CALL(service, Callsign())
-            .WillByDefault(::testing::Return(callSign));
-                ON_CALL(service, DataPath())
-            .WillByDefault(::testing::Return(dataPath));
         ON_CALL(service, COMLink())
-            .WillByDefault(::testing::Return(&comLinkMock));
+            .WillByDefault(::testing::Invoke(
+                  [this]() {
+                        return &comLinkMock;
+                    }));
+
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Return(&SystemAudioPlayerImplementation));
+			.WillByDefault(::testing::Invoke(
+                  [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
+                        SystemAudioPlayerImplementation = Core::ProxyType<Plugin::SystemAudioPlayerImplementation>::Create();
+                        return &SystemAudioPlayerImplementation;
+                    }));
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Return(SystemAudioPlayerImplementation));
 #endif /*USE_THUNDER_R4 */
+
         PluginHost::IFactories::Assign(&factoriesImplementation);
+
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-            plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
+
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
+
     }
 
-    virtual ~SAPInitializedTest() override {
-        plugin.Release();
-        SystemAudioPlayerImplementation.Release();
-        Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
-        PluginHost::IFactories::Assign(nullptr);
+    virtual ~SAPTest() override
+    {
+        plugin->Deinitialize(&service);
+
         dispatcher->Deactivate();
         dispatcher->Release();
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
+
+        SystemAudioPlatformMockImpl::setImpl(nullptr);
+        if (p_systemAudioPlatformMock != nullptr)
+        {
+            delete p_systemAudioPlatformMock;
+            p_systemAudioPlatformMock = nullptr;
+        }
+
+        PluginHost::IFactories::Assign(nullptr);
     }
 };
 
+class SAPInitializedTest : public SAPTest {
+protected:
+
+    SAPInitializedTest() : SAPTest() {
+   gst_init(nullptr, nullptr);
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioInitialize())
+        .WillByDefault(::testing::Return());
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioDeinitialize())
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioChangePrimaryVol(::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetDetectTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetHoldTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetThreshold(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+                             GstElement** audioSink, GstElement** audioVolume,
+                             AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+
+            bool result = false;
+            return result;
+        }));
+
+    }
+
+    virtual ~SAPInitializedTest() override = default;
+};
+
 TEST_F(SAPInitializedTest,RegisteredMethods) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("close")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("config")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getPlayerSessionId")));
