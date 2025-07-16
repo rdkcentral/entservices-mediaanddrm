@@ -293,11 +293,19 @@ void AudioPlayer::createPipeline(bool smartVolumeEnable)
 	    g_object_set(m_source, "format", GST_FORMAT_TIME, NULL);
 	    if(smartVolumeEnable)
             {
-                 result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#ifndef UNIT_TESTING
+                result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#else
+                result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#endif
             }
             else
             {
-                 result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#ifndef UNIT_TESTING
+                result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#else
+                result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#endif
             }
             
         }
@@ -316,11 +324,19 @@ void AudioPlayer::createPipeline(bool smartVolumeEnable)
             }
             if(smartVolumeEnable)
             {
+#ifndef UNIT_TESTING
                result = systemAudioGeneratePipeline(m_pipeline,m_source,m_capsfilter,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#else
+               result = systemAudioGeneratePipeline(&m_pipeline,&m_source,m_capsfilter,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#endif
             }
             else
             {
+#ifndef UNIT_TESTING
                result = systemAudioGeneratePipeline(m_pipeline,m_source,m_capsfilter,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#else        
+               result = systemAudioGeneratePipeline(&m_pipeline,&m_source,m_capsfilter,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#endif
             }
         }
     }
@@ -330,11 +346,19 @@ void AudioPlayer::createPipeline(bool smartVolumeEnable)
         SAPLOG_INFO("SAP: Pipleine for wav audioType\n");
         if(smartVolumeEnable)
         {
+#ifndef UNIT_TESTING
             result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#else 
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#endif
         }
         else
         {
+#ifndef UNIT_TESTING
             result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#else 
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#endif
         }       
     }
 
@@ -344,11 +368,19 @@ void AudioPlayer::createPipeline(bool smartVolumeEnable)
         SAPLOG_INFO("SAP: Pipeline for mp3 audioType\n");
         if(smartVolumeEnable)
         {
+#ifndef UNIT_TESTING
             result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#else   
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,true);
+#endif
         }
         else
         {
+#ifndef UNIT_TESTING
             result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#else
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,audioType,playMode,sourceType,false);
+#endif
         }
     }
 
