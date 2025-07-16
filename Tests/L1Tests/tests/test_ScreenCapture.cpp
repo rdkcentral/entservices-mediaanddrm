@@ -140,6 +140,9 @@ TEST_F(ScreenCaptureTest, RegisteredMethods)
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("uploadScreenCapture")));
 }
 
+//#define EVENT_SUBSCRIBE_1(__A__, __B__, __C__, __D__)   { plugin->Subscribe(__A__, __B__, __C__); (void)__D__; }
+//#define EVENT_UNSUBSCRIBE_1(__A__, __B__, __C__, __D__) { plugin->Unsubscribe(__A__, __B__, __C__); (void)__D__; }
+
 #define EVENT_SUBSCRIBE_1(__A__, __B__, __C__, __D__) \
     { \
         auto ret = plugin->Subscribe(__A__, __B__, __C__); \
@@ -224,10 +227,9 @@ TEST_F(ScreenCaptureDRMTest, Upload)
 
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
         ssize_t bytesSent = send(connection, response.c_str(), response.size(), 0);
-        bool success = (bytesSent > 0);
+        ASSERT_TRUE(bytesSent > 0);
 
         close(connection);
-        ASSERT_TRUE(success);
     });
 
     EVENT_SUBSCRIBE_1(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
