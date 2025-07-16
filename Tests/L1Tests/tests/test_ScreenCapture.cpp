@@ -227,9 +227,10 @@ TEST_F(ScreenCaptureDRMTest, Upload)
 
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
         ssize_t bytesSent = send(connection, response.c_str(), response.size(), 0);
-        ASSERT_TRUE(bytesSent > 0);
+        bool success = (bytesSent > 0);
 
         close(connection);
+        ASSERT_TRUE(success);
     });
 
     EVENT_SUBSCRIBE_1(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
