@@ -213,14 +213,14 @@ TEST_F(ScreenCaptureDRMTest, Upload)
         ASSERT_TRUE(bytesSent > 0);
     });
 
-    EVENT_SUBSCRIBE_1(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
+    EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("uploadScreenCapture"), _T("{\"url\":\"http://127.0.0.1:11111\"}"), response));
     EXPECT_EQ(response, _T("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, uploadComplete.Lock());
 
-    EVENT_UNSUBSCRIBE_1(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
+    EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
     free(buffer);
     close(sockfd);
