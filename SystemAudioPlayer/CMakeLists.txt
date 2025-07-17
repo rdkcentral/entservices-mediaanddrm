@@ -74,24 +74,8 @@ target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
 target_include_directories(${MODULE_NAME} PRIVATE ../helpers/WebSockets)
 target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMER_INCLUDES})
 target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMERBASE_INCLUDE_DIRS})
-
-find_package(${NAMESPACE}Definitions REQUIRED)
-if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
-    target_include_directories(${MODULE_NAME} PRIVATE
-        ../Tests/mocks
-    )
-    target_link_libraries(${MODULE_NAME} PRIVATE
-        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
-        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
-)
-else()
-    target_link_libraries(${MODULE_NAME} PRIVATE
-        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
-        ${NAMESPACE}Definitions::${NAMESPACE}Definitions
-        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
-        systemaudioplatform
-    )
+if(RDK_SERVICES_L1_TEST)
+    target_include_directories(${MODULE_NAME} PRIVATE ../Tests/mocks)
 endif()
 
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}Plugins::${NAMESPACE}Plugins)
