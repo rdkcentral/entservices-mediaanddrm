@@ -127,6 +127,7 @@ void AudioPlayer::waitForMainLoop()
 {
     std::unique_lock<std::mutex> lock(m_eventMutex);
     while(!m_eventCondition.wait_for(lock, std::chrono::seconds(1), [] {
+         SAPLOG_INFO("SAP: Inside waitForMainLoop\n");
         return AudioPlayer::m_isLoopStarted;
     }));
 }
@@ -149,7 +150,7 @@ void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
     waitForMainLoop();
-
+    SAPLOG_INFO("SAP: AudioPlayer Started\n");
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
         g_main_loop_quit(m_main_loop);
         g_main_loop_unref(m_main_loop);
@@ -159,10 +160,12 @@ void AudioPlayer::DeInit()
     if(m_main_loop_thread)
         g_thread_join(m_main_loop_thread);
     m_main_loop_thread = nullptr;
-
+    SAPLOG_INFO("SAP: AudioPlayer m_main_loop_thread_stopped\n");
     std::unique_lock<std::mutex> lock(m_eventMutex);
     systemAudioDeinitialize();
+    SAPLOG_INFO("SAP: AudioPlayer SystemAudio Deinitialized\n");
     m_isLoopStarted = false;
+    SAPLOG_INFO("SAP: AudioPlayer Deinitialized Done\n");
 }
 
 //Set PCM audio Caps
