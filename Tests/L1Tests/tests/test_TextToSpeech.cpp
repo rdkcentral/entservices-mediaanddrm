@@ -27,91 +27,132 @@
 #include "FactoriesImplementation.h"
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
+#include "systemaudioplatformmock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
-
-namespace {
-const string config = _T("TextToSpeech");
-const string callSign = _T("org.rdk.TextToSpeech");
-const string webPrefix = _T("/Service/TextToSpeech");
-const string volatilePath = _T("/tmp/");
-const string dataPath = _T("/tmp/");
-}
 
 class TTSTest : public Test{
 protected:
     Core::ProxyType<Plugin::TextToSpeech> plugin;
     Core::JSONRPC::Handler& handler;
     DECL_CORE_JSONRPC_CONX connection;
+    Core::JSONRPC::Message message;
+    string response;
+
+    SystemAudioPlatformAPIMock *p_systemAudioPlatformMock = nullptr;
+    Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
+    NiceMock<COMLinkMock> comLinkMock;
+    NiceMock<ServiceMock> service;
+    PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
+    NiceMock<FactoriesImplementation> factoriesImplementation;
 
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
-            2, Core::Thread::DefaultStackSize(), 16)) {
-    }
+            2, Core::Thread::DefaultStackSize(), 16))
+    {
+    p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
+    SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
 
-    virtual ~TTSTest() = default;
-};
-
-class TTSInitializedTest : public TTSTest {
-protected:
-    NiceMock<FactoriesImplementation> factoriesImplementation;
-    NiceMock<ServiceMock> service;
-    NiceMock<COMLinkMock> comLinkMock;
-    PLUGINHOST_DISPATCHER* dispatcher;
-    Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
-    string response;
-
-    TTSInitializedTest() : TTSTest() {
-        TextToSpeechImplementation = Core::ProxyType<Plugin::TextToSpeechImplementation>::Create();
-
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return("{}"));
-        ON_CALL(service, WebPrefix())
-            .WillByDefault(::testing::Return(webPrefix));
-        ON_CALL(service, VolatilePath())
-            .WillByDefault(::testing::Return(volatilePath));
-        ON_CALL(service, Callsign())
-            .WillByDefault(::testing::Return(callSign));
-                ON_CALL(service, DataPath())
-            .WillByDefault(::testing::Return(dataPath));
         ON_CALL(service, COMLink())
-            .WillByDefault(::testing::Return(&comLinkMock));
+            .WillByDefault(::testing::Invoke(
+                  [this]() {
+                        return &comLinkMock;
+                    }));
+
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Return(&TextToSpeechImplementation));
+			.WillByDefault(::testing::Invoke(
+                  [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
+                        TextToSpeechImplementation = Core::ProxyType<Plugin::TextToSpeechImplementation>::Create();
+                        return &TextToSpeechImplementation;
+                    }));
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Return(TextToSpeechImplementation));
 #endif /*USE_THUNDER_R4 */
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
+
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
 
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
-           plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
+        plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
+
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
+
     }
 
-    virtual ~TTSInitializedTest() override {
-        plugin.Release();
-        TextToSpeechImplementation.Release();
-        Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
-        PluginHost::IFactories::Assign(nullptr);
+    virtual ~TTSTest() override
+    {
+        plugin->Deinitialize(&service);
+
         dispatcher->Deactivate();
         dispatcher->Release();
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
+
+        SystemAudioPlatformMockImpl::setImpl(nullptr);
+        if (p_systemAudioPlatformMock != nullptr)
+        {
+            delete p_systemAudioPlatformMock;
+            p_systemAudioPlatformMock = nullptr;
+        }
+
+        PluginHost::IFactories::Assign(nullptr);
     }
 };
 
+class TTSInitializedTest : public TTSTest {
+protected:
+
+    TTSInitializedTest() : TTSTest() {
+
+    gst_init(nullptr, nullptr);
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioInitialize())
+        .WillByDefault(::testing::Return());
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioDeinitialize())
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioChangePrimaryVol(::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetDetectTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetHoldTime(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetThreshold(::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Return());
+
+    ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+                             GstElement** audioSink, GstElement** audioVolume,
+                             AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+
+            bool result = false;
+            return result;
+        }));
+
+    }
+
+    virtual ~TTSInitializedTest() override = default;
+};
+
 TEST_F(TTSInitializedTest,RegisteredMethods) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("enabletts")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("cancel")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getapiversion")));
