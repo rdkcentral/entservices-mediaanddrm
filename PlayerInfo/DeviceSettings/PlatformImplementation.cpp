@@ -121,7 +121,12 @@ public:
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
         Utils::IARM::init();
-        device::Manager::Initialize();
+        try {
+    // code that may throw
+} catch (const std::exception& e) {
+    std::cerr << "Sonacheck Exception: " << e.what() << std::endl; // OK: e is in scope here
+}
+        //device::Manager::Initialize();
         IARM_Result_t res;
         IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
         PlayerInfoImplementation::_instance = this;
