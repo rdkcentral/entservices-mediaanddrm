@@ -149,26 +149,20 @@ void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
     waitForMainLoop();
-    SAPLOG_INFO("SAP: AudioPlayer after waitForMainLoop \n");
+    
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
-        SAPLOG_INFO("SAP: AudioPlayer g_main_loop_is_running \n");
         g_main_loop_quit(m_main_loop);
-	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit1 \n");
 	g_main_context_wakeup(g_main_loop_get_context(m_main_loop));
 	 g_idle_add([](gpointer) -> gboolean {
-            std::cout << "[Idle] Wakeup callback\n";
             return G_SOURCE_REMOVE;
         }, nullptr);
         g_main_loop_unref(m_main_loop);
-	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_unref \n");
     }
-    SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit out \n");
     m_main_loop = nullptr;
 
     if(m_main_loop_thread)
         g_thread_join(m_main_loop_thread);
     m_main_loop_thread = nullptr;
-   SAPLOG_INFO("SAP: AudioPlayer g_thread_join \n");
 
     std::unique_lock<std::mutex> lock(m_eventMutex);
     systemAudioDeinitialize();
