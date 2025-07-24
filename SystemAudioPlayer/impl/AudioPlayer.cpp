@@ -155,6 +155,10 @@ void AudioPlayer::DeInit()
         g_main_loop_quit(m_main_loop);
 	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit1 \n");
 	g_main_context_wakeup(g_main_loop_get_context(m_main_loop));
+	 g_idle_add([](gpointer) -> gboolean {
+            std::cout << "[Idle] Wakeup callback\n";
+            return G_SOURCE_REMOVE;
+        }, nullptr);
         g_main_loop_unref(m_main_loop);
 	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_unref \n");
     }
