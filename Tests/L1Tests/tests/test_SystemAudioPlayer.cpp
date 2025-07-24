@@ -663,7 +663,6 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidPlayMode) {
     ));
     EXPECT_EQ(response, _T("{\"success\":false}"));
 }
-
 /*******************************************************************************************************************
  * Test function for config
  * Open                    :
