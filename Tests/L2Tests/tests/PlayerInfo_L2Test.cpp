@@ -1,3 +1,21 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2025 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -42,10 +60,10 @@ PlayerInfo_L2test::~PlayerInfo_L2test() {
 }
 
 // ------------------------------------------------------------
-// AudioCodecs_Success Test
+// AudioCodecs Test
 // ------------------------------------------------------------
-TEST_F(PlayerInfo_L2test, AudioCodecs_Success) {
-    std::cout << "Entering AudioCodecs_Success test" << std::endl;
+TEST_F(PlayerInfo_L2test, AudioCodecs_Test) {
+    std::cout << "Entering AudioCodecs test" << std::endl;
 
     auto* mockPlayer = new NiceMock<MockPlayerProperties>();
     auto* mockAudioIterator = new NiceMock<MockAudioCodecIterator>();
@@ -70,13 +88,19 @@ TEST_F(PlayerInfo_L2test, AudioCodecs_Success) {
     uint32_t status = InvokeServiceMethod(PLAYERINFO_CALLSIGN, "audiocodecs", params, result);
     std::cout << "Service method invoked, status=" << status << std::endl;
     EXPECT_EQ(status, Core::ERROR_NONE);
+    
+     // Validate result object as per API spec
+    ASSERT_TRUE(result.HasLabel("codecs"));
+    auto codecs = result["codecs"].Array();
+    ASSERT_EQ(codecs.Length(), 1);
+    EXPECT_EQ(codecs[0].String(), "AC3");
 }
 
 // ------------------------------------------------------------
-// VideoCodecs_Success Test
+// VideoCodecs Test
 // ------------------------------------------------------------
-TEST_F(PlayerInfo_L2test, VideoCodecs_Success) {
-    std::cout << "Entering VideoCodecs_Success test" << std::endl;
+TEST_F(PlayerInfo_L2test, VideoCodecs_Test) {
+    std::cout << "Entering VideoCodecs test" << std::endl;
 
     auto* mockPlayer = new NiceMock<MockPlayerProperties>();
     auto* mockVideoIterator = new NiceMock<MockVideoCodecIterator>();
@@ -101,4 +125,11 @@ TEST_F(PlayerInfo_L2test, VideoCodecs_Success) {
     uint32_t status = InvokeServiceMethod(PLAYERINFO_CALLSIGN, "videocodecs", params, result);
     std::cout << "Service method invoked, status=" << status << std::endl;
     EXPECT_EQ(status, Core::ERROR_NONE);
+
+    // Validate result object as per API spec
+    ASSERT_TRUE(result.HasLabel("codecs"));
+    auto codecs = result["codecs"].Array();
+    ASSERT_EQ(codecs.Length(), 1); 
+    EXPECT_EQ(codecs[0].String(), "H264"); 
+
 }
