@@ -21,6 +21,11 @@
 #include <cryptography/cryptography.h>
 #include <interfaces/IConfiguration.h>
 
+#include <grp.h>
+
+#define CONNECTOR_PATH "/tmp/icryptography"
+#define APPS_GROUP_NAME "apps"
+
 namespace WPEFramework {
 
 namespace Plugin {
@@ -70,7 +75,7 @@ namespace Plugin {
 
             Config()
                 : Core::JSON::Container()
-                , Connector(_T("/tmp/icryptography"))
+                , Connector(_T(CONNECTOR_PATH))
             {
                 Add(_T("connector"), &Connector);
             }
@@ -128,6 +133,25 @@ namespace Plugin {
                         _cryptography->Release();
                         _cryptography = nullptr;
                     }
+                }
+                else {
+                    struct stat deStat;
+                    if (0 == stat(CONNECTOR_PATH, &deStat)) {
+                        if (chmod(CONNECTOR_PATH, deStat.st_mode | S_IRGRP | S_IWGRP) != 0)
+                            TRACE(Trace::Information, (_T("chmod() failed: %s"), strerror(errno)));
+
+                        struct group *grpData = getgrnam(APPS_GROUP_NAME);
+                        if (grpData != nullptr) {
+                            gid_t group = grpData->gr_gid;
+
+                            if (chown(CONNECTOR_PATH, deStat.st_uid, group) != 0)
+                                TRACE(Trace::Information, (_T("chown() failed: %s"), strerror(errno)));
+                        }
+                        else
+                            TRACE(Trace::Information, (_T("getgrnam() failed: %s"), strerror(errno)));
+                    }
+                    else
+                        TRACE(Trace::Information, (_T("stat() failed: %s"), strerror(errno)));
                 }
             }
 
