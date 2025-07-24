@@ -151,10 +151,13 @@ void AudioPlayer::DeInit()
     waitForMainLoop();
     SAPLOG_INFO("SAP: AudioPlayer after waitForMainLoop \n");
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
+        SAPLOG_INFO("SAP: AudioPlayer g_main_loop_is_running \n");
         g_main_loop_quit(m_main_loop);
+	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit1 \n");
         g_main_loop_unref(m_main_loop);
+	SAPLOG_INFO("SAP: AudioPlayer g_main_loop_unref \n");
     }
-    SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit \n");
+    SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit out \n");
     m_main_loop = nullptr;
 
     if(m_main_loop_thread)
