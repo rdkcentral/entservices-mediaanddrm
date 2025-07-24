@@ -149,16 +149,18 @@ void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
     waitForMainLoop();
-
+    SAPLOG_INFO("SAP: AudioPlayer after waitForMainLoop \n");
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
         g_main_loop_quit(m_main_loop);
         g_main_loop_unref(m_main_loop);
     }
+    SAPLOG_INFO("SAP: AudioPlayer g_main_loop_quit \n");
     m_main_loop = nullptr;
 
     if(m_main_loop_thread)
         g_thread_join(m_main_loop_thread);
     m_main_loop_thread = nullptr;
+   SAPLOG_INFO("SAP: AudioPlayer g_thread_join \n");
 
     std::unique_lock<std::mutex> lock(m_eventMutex);
     systemAudioDeinitialize();
