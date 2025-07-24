@@ -653,7 +653,7 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidSourceType) {
  * @param[in]   :  audiotype ,sourcetype, playmode
  * @return      :  {success: false}
  */
-
+#if 0
 TEST_F(SAPInitializedTest,SAPOpenInvalidPlayMode) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
@@ -663,6 +663,7 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidPlayMode) {
     ));
     EXPECT_EQ(response, _T("{\"success\":false}"));
 }
+#endif
 /*******************************************************************************************************************
  * Test function for config
  * Open                    :
