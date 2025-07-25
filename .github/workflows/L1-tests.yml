@@ -190,7 +190,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: ${{env.INTERFACES_REF}}
+          ref: f1ef439909ea2e5613a86fc205c57d95890478bf
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
@@ -443,7 +443,7 @@ jobs:
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_TEXTTOSPEECH=ON
-          -DPLUGIN_SYSTEMAUDIOPLAYER=OFF
+          -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
@@ -521,7 +521,7 @@ jobs:
           -DDS_FOUND=ON
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_TEXTTOSPEECH=ON
-          -DPLUGIN_SYSTEMAUDIOPLAYER=OFF
+          -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DRDK_SERVICES_L1_TEST=ON
