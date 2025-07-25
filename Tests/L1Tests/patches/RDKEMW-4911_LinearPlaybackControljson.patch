@@ -272,31 +272,3 @@ index 0000000..259ca94
 +    }
 +  }
 \ No newline at end of file
-diff --git a/tools/json_generator/output/LinearPlaybackControl/LinearPlaybackControl.json b/tools/json_generator/output/LinearPlaybackControl/LinearPlaybackControl.json
-index edf553b..259ca94 100644
---- a/tools/json_generator/output/LinearPlaybackControl/LinearPlaybackControl.json
-+++ b/tools/json_generator/output/LinearPlaybackControl/LinearPlaybackControl.json
-@@ -1,5 +1,5 @@
- {
--    "$schema": "https://raw.githubusercontent.com/rdkcentral/rdkservices/main/Tools/json_generator/schemas/interface.schema.json",
-+    "$schema": "interface.schema.json",
-     "jsonrpc": "2.0",
-     "info": {
-         "title": "Linear Playback Control API",
-@@ -7,7 +7,7 @@
-         "description": "Linear Playback Control JSON-RPC interface"
-     },
-     "common": {
--        "$ref": "../common/common.json"
-+        "$ref": "../common.json"
-     },
-     "definitions": {
-         "channel":{
-@@ -264,4 +264,4 @@
-             }
-         }
-     }
--}
-\ No newline at end of file
-+  }
-\ No newline at end of file

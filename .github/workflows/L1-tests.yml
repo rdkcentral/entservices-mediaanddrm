@@ -125,7 +125,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: develop
+          ref: topic/LPC
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
