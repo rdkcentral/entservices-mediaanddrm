@@ -148,7 +148,7 @@ void AudioPlayer::event_loop()
 void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
-    waitForMainLoop();
+   // waitForMainLoop();
     
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
 	g_main_context_wakeup(g_main_loop_get_context(m_main_loop));
