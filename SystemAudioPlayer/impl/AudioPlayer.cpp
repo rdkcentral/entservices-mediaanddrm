@@ -151,9 +151,9 @@ void AudioPlayer::DeInit()
     waitForMainLoop();
     
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
-        g_main_loop_quit(m_main_loop);
 	g_main_context_wakeup(g_main_loop_get_context(m_main_loop));
-	 g_idle_add([](gpointer) -> gboolean {
+	g_idle_add([](gpointer) -> gboolean {
+	    g_main_loop_quit(m_main_loop);
             return G_SOURCE_REMOVE;
         }, nullptr);
         g_main_loop_unref(m_main_loop);
