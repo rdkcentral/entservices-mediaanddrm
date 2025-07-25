@@ -108,6 +108,9 @@ protected:
         }
 
         PluginHost::IFactories::Assign(nullptr);
+	if (SystemAudioPlayerImplementation) {
+            SystemAudioPlayerImplementation.Release();
+        }
     }
 };
 
