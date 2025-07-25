@@ -110,9 +110,6 @@ AudioPlayer::~AudioPlayer()
 void AudioPlayer::Init(SAPEventCallback *callback)
 {
     SAPLOG_INFO("SAP: AudioPlayer Init\n");
-    if (m_isLoopStarted)
-        return;
-
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
 
@@ -152,7 +149,7 @@ void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
     waitForMainLoop();
-    
+
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
         g_main_loop_quit(m_main_loop);
         g_main_loop_unref(m_main_loop);
