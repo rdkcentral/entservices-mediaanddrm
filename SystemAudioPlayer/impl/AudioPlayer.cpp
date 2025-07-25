@@ -158,7 +158,7 @@ void AudioPlayer::DeInit()
     }
     m_main_loop = nullptr;
 
-    if(m_main_loop_thread)
+    if(m_main_loop_thread && m_isLoopStarted == true)
     {
         g_thread_join(m_main_loop_thread);
         m_main_loop_thread = nullptr;
