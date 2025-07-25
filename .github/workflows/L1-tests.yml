@@ -190,14 +190,14 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: ${{env.INTERFACES_REF}}
+          ref: f1ef439909ea2e5613a86fc205c57d95890478bf
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
       - name: Apply patches LinearPlaybackControl
         run: |  
           cd $GITHUB_WORKSPACE/entservices-apis
-          #patch -p1 < $GITHUB_WORKSPACE/entservices-mediaanddrm/Tests/L1Tests/patches/RDKEMW-4911_LinearPlaybackControljson.patch 
+          patch -p1 < $GITHUB_WORKSPACE/entservices-mediaanddrm/Tests/L1Tests/patches/RDKEMW-4911_LinearPlaybackControljson.patch 
           cd -
           
       - name: Build entservices-apis
