@@ -86,7 +86,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
 
-       // EXPECT_EQ(string(""), plugin->Initialize(&service));
+        EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     }
 
@@ -187,7 +187,7 @@ TEST_F(SAPInitializedTest,RegisteredMethods) {
  */
 
 TEST_F(SAPInitializedTest, SAPOpenPCMWebsocketSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -205,7 +205,7 @@ TEST_F(SAPInitializedTest, SAPOpenPCMWebsocketSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMDataSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"data\",\"playmode\": \"system\" }"),
@@ -223,7 +223,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMDataSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMWebsocketApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"app\" }"),
@@ -241,7 +241,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMWebsocketApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMDataApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"data\",\"playmode\": \"app\" }"),
@@ -259,7 +259,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMDataApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMFilesrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"filesrc\",\"playmode\": \"system\" }"),
@@ -277,7 +277,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMFilesrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMFilesrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"filesrc\",\"playmode\": \"app\" }"),
@@ -295,7 +295,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMFilesrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMHttpsrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"httpsrc\",\"playmode\": \"system\" }"),
@@ -313,7 +313,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMHttpsrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenPCMHttpsrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"httpsrc\",\"playmode\": \"app\" }"),
@@ -331,7 +331,7 @@ TEST_F(SAPInitializedTest,SAPOpenPCMHttpsrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3WebsocketSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -349,7 +349,7 @@ TEST_F(SAPInitializedTest,SAPMp3WebsocketSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3WebsocketApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"websocket\",\"playmode\": \"app\" }"),
@@ -367,7 +367,7 @@ TEST_F(SAPInitializedTest,SAPMp3WebsocketApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3DataSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"data\",\"playmode\": \"system\" }"),
@@ -385,7 +385,7 @@ TEST_F(SAPInitializedTest,SAPMp3DataSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3DataApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+  //  EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"data\",\"playmode\": \"app\" }"),
@@ -403,7 +403,7 @@ TEST_F(SAPInitializedTest,SAPMp3DataApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3FilesrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"filesrc\",\"playmode\": \"system\" }"),
@@ -421,7 +421,7 @@ TEST_F(SAPInitializedTest,SAPMp3FilesrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3FilesrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"filesrc\",\"playmode\": \"app\" }"),
@@ -439,7 +439,7 @@ TEST_F(SAPInitializedTest,SAPMp3FilesrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3HttpsrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"httpsrc\",\"playmode\": \"system\" }"),
@@ -457,7 +457,7 @@ TEST_F(SAPInitializedTest,SAPMp3HttpsrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPMp3HttpsrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"httpsrc\",\"playmode\": \"app\" }"),
@@ -475,7 +475,7 @@ TEST_F(SAPInitializedTest,SAPMp3HttpsrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavWebsocketSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -493,7 +493,7 @@ TEST_F(SAPInitializedTest,SAPWavWebsocketSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavWebsocketApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"websocket\",\"playmode\": \"app\" }"),
@@ -511,7 +511,7 @@ TEST_F(SAPInitializedTest,SAPWavWebsocketApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavDataSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"data\",\"playmode\": \"system\" }"),
@@ -529,7 +529,7 @@ TEST_F(SAPInitializedTest,SAPWavDataSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavDataApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"data\",\"playmode\": \"app\" }"),
@@ -547,7 +547,7 @@ TEST_F(SAPInitializedTest,SAPWavDataApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavFileSrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"filesrc\",\"playmode\": \"system\" }"),
@@ -565,7 +565,7 @@ TEST_F(SAPInitializedTest,SAPWavFileSrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavFileSrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"filesrc\",\"playmode\": \"app\" }"),
@@ -583,7 +583,7 @@ TEST_F(SAPInitializedTest,SAPWavFileSrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavHttpSrcSystem) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"httpsrc\",\"playmode\": \"system\" }"),
@@ -601,7 +601,7 @@ TEST_F(SAPInitializedTest,SAPWavHttpSrcSystem) {
  */
 
 TEST_F(SAPInitializedTest,SAPWavHttpSrcApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"httpsrc\",\"playmode\": \"app\" }"),
@@ -619,7 +619,7 @@ TEST_F(SAPInitializedTest,SAPWavHttpSrcApp) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenInvalidAudioType) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"invalid\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -637,7 +637,7 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidAudioType) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenInvalidSourceType) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"invalid\",\"playmode\": \"system\" }"),
@@ -655,7 +655,7 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidSourceType) {
  */
 
 TEST_F(SAPInitializedTest,SAPOpenInvalidPlayMode) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"invalid\" }"),
@@ -682,7 +682,7 @@ TEST_F(SAPInitializedTest,SAPOpenInvalidPlayMode) {
  */
 
 TEST_F(SAPInitializedTest, SAPConfig) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"filesrc\",\"playmode\": \"system\" }"),
@@ -722,7 +722,7 @@ TEST_F(SAPInitializedTest, SAPConfig) {
  */
 
 TEST_F(SAPInitializedTest, SAPConfigForOtherAudioType) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"mp3\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -762,7 +762,7 @@ TEST_F(SAPInitializedTest, SAPConfigForOtherAudioType) {
  */
 
 TEST_F(SAPInitializedTest,SAPConfigWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
     _T("config"),
     _T("{\"id\": 1, "
@@ -794,7 +794,7 @@ TEST_F(SAPInitializedTest,SAPConfigWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayWebsocket) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -829,7 +829,7 @@ TEST_F(SAPInitializedTest, SAPPlayWebsocket) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayDataSrc) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"data\",\"playmode\": \"system\" }"),
@@ -864,7 +864,7 @@ TEST_F(SAPInitializedTest, SAPPlayDataSrc) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayFilesrc) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"wav\",\"sourcetype\": \"filesrc\",\"playmode\": \"system\" }"),
@@ -900,7 +900,7 @@ TEST_F(SAPInitializedTest, SAPPlayFilesrc) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayHttpsrc) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"httpsrc\",\"playmode\": \"system\" }"),
@@ -935,7 +935,7 @@ TEST_F(SAPInitializedTest, SAPPlayHttpsrc) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayDifferentSrcUrl) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"httpsrc\",\"playmode\": \"system\" }"),
@@ -970,7 +970,7 @@ TEST_F(SAPInitializedTest, SAPPlayDifferentSrcUrl) {
  */
 
 TEST_F(SAPInitializedTest,SAPPlayWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, \
         _T("play"),
         _T("{\"id\": 1, \"url\": \"https://example/data\"}"), 
@@ -988,7 +988,7 @@ TEST_F(SAPInitializedTest,SAPPlayWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayInvalidUrl) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));   
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));   
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, 
         _T("play"),
         _T("{\"id\": 1,\"url\": \"invalid\" }"), 
@@ -1017,7 +1017,7 @@ TEST_F(SAPInitializedTest, SAPPlayInvalidUrl) {
  */
 
 TEST_F(SAPInitializedTest, SAPClose) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1052,7 +1052,7 @@ TEST_F(SAPInitializedTest, SAPClose) {
  */
 
 TEST_F(SAPInitializedTest,SAPCloseWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"),
         _T("{\"id\": 1}"),
         response
@@ -1080,7 +1080,7 @@ TEST_F(SAPInitializedTest,SAPCloseWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPResume) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1115,7 +1115,7 @@ TEST_F(SAPInitializedTest, SAPResume) {
  */
 
 TEST_F(SAPInitializedTest,SAPResumeWithOutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("resume"),
         _T("{\"id\": 1}"),
@@ -1144,7 +1144,7 @@ TEST_F(SAPInitializedTest,SAPResumeWithOutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPPause) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1178,7 +1178,7 @@ TEST_F(SAPInitializedTest, SAPPause) {
  * @return      :  {success: false}
  */
 TEST_F(SAPInitializedTest,SAPPauseWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("pause"),
         _T("{\"id\": 1}"),
@@ -1207,7 +1207,7 @@ TEST_F(SAPInitializedTest,SAPPauseWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPStop) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+   // EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1242,7 +1242,7 @@ TEST_F(SAPInitializedTest, SAPStop) {
  */
 
 TEST_F(SAPInitializedTest,SAPStopWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("stop"),
         _T("{\"id\": 1}"),
@@ -1271,7 +1271,7 @@ TEST_F(SAPInitializedTest,SAPStopWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPIsSpeaking) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1306,7 +1306,7 @@ TEST_F(SAPInitializedTest, SAPIsSpeaking) {
  */
 
 TEST_F(SAPInitializedTest,SAPisSpeakingWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("isspeaking"),
         _T("{\"id\": 1}"),
@@ -1334,7 +1334,7 @@ TEST_F(SAPInitializedTest,SAPisSpeakingWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPPlayBuffer) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1369,7 +1369,7 @@ TEST_F(SAPInitializedTest, SAPPlayBuffer) {
  */
 
 TEST_F(SAPInitializedTest,SAPPlayBufferWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("playbuffer"),
         _T("{\"id\": 1 , \"data\": \"180\"}"),
@@ -1400,7 +1400,7 @@ TEST_F(SAPInitializedTest,SAPPlayBufferWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetMixerLevel) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1435,7 +1435,7 @@ TEST_F(SAPInitializedTest, SAPSetMixerLevel) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetMixerLevelPriVolLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1470,7 +1470,7 @@ TEST_F(SAPInitializedTest, SAPSetMixerLevelPriVolLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetMixerLevelPlayerVolLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1505,7 +1505,7 @@ TEST_F(SAPInitializedTest, SAPSetMixerLevelPlayerVolLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetMixerLevelPriVolGreaterThan100) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1540,7 +1540,7 @@ TEST_F(SAPInitializedTest, SAPSetMixerLevelPriVolGreaterThan100) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetMixerLevelPlayerVolGreaterThan100) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1575,7 +1575,7 @@ TEST_F(SAPInitializedTest, SAPSetMixerLevelPlayerVolGreaterThan100) {
  */
 
 TEST_F(SAPInitializedTest,SAPSetMixerLevelsWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setMixerLevels"),
         _T("{\"id\": 1 , \"primaryVolume\": \"180\" ,\"playerVolume\": \"7\" }"), 
@@ -1606,7 +1606,7 @@ TEST_F(SAPInitializedTest,SAPSetMixerLevelsWithoutOpen) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControl) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1641,7 +1641,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControl) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControlThresholdLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1676,7 +1676,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControlThresholdLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControlDetectTimeMsLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1711,7 +1711,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControlDetectTimeMsLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControlHoldTimeMsLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1746,7 +1746,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControlHoldTimeMsLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControlDuckPercentLessThanZero) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1781,7 +1781,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControlDuckPercentLessThanZero) {
  */
 
 TEST_F(SAPInitializedTest, SAPSetSmartVolControlDuckPercentGreaterThan100) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1815,7 +1815,7 @@ TEST_F(SAPInitializedTest, SAPSetSmartVolControlDuckPercentGreaterThan100) {
  * @return      :  {success: false}
  */
 TEST_F(SAPInitializedTest,SAPSetSmartVolControlWithoutOpen) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setSmartVolControl"), 
         _T("{\"id\": 1 , \"enable\": true, \"playerAudioLevelThreshold\": 0.1, \"playerDetectTimeMs\": 200, \"playerHoldTimeMs\": 1000, \"primaryDuckingPercent\": 1 }"), 
@@ -1842,7 +1842,7 @@ TEST_F(SAPInitializedTest,SAPSetSmartVolControlWithoutOpen) {
  * @return      :  {success: true}
  */
 TEST_F(SAPInitializedTest, SAPGetPlayerSessionId) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("open"), 
         _T("{\"audiotype\": \"pcm\",\"sourcetype\": \"websocket\",\"playmode\": \"system\" }"),
@@ -1892,7 +1892,7 @@ TEST_F(SAPInitializedTest, SAPGetPlayerSessionId) {
  * @return      :  {success: true}
  */
 TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalid) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));   
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));   
         EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, 
             _T("getPlayerSessionId"), 
             _T("{\"url\": \"https://www.yahoo.com\" }"), 
@@ -1908,7 +1908,7 @@ TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalid) {
  * @return      :  {success: false}
  */
 TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalidUrl) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));   
+    //EXPECT_EQ(string(""), plugin->Initialize(&service));   
         EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, 
             _T("getPlayerSessionId"), 
             _T("{\"url\": \"invalid\" }"), 
