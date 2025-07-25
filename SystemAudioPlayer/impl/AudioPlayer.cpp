@@ -113,8 +113,10 @@ void AudioPlayer::Init(SAPEventCallback *callback)
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
 
-    m_main_loop_thread = g_thread_new("BusWatch", (void* (*)(void*)) event_loop, NULL);
-    waitForMainLoop();
+    if (!m_main_loop_thread) {
+        m_main_loop_thread = g_thread_new("BusWatch", (void* (*)(void*)) event_loop, NULL);
+        waitForMainLoop();
+    }
     
     std::unique_lock<std::mutex> lock(m_eventMutex);
     if (m_isLoopStarted) {
@@ -148,21 +150,19 @@ void AudioPlayer::event_loop()
 void AudioPlayer::DeInit()
 {
     SAPLOG_INFO("SAP: AudioPlayer DeInit\n");
-   // waitForMainLoop();
+    waitForMainLoop();
     
     if(m_main_loop && g_main_loop_is_running(m_main_loop)) {
-	g_main_context_wakeup(g_main_loop_get_context(m_main_loop));
-	g_idle_add([](gpointer) -> gboolean {
-	    g_main_loop_quit(m_main_loop);
-            return G_SOURCE_REMOVE;
-        }, nullptr);
+	g_main_loop_quit(m_main_loop);
         g_main_loop_unref(m_main_loop);
     }
     m_main_loop = nullptr;
 
     if(m_main_loop_thread)
+    {
         g_thread_join(m_main_loop_thread);
-    m_main_loop_thread = nullptr;
+        m_main_loop_thread = nullptr;
+    }
 
     std::unique_lock<std::mutex> lock(m_eventMutex);
     systemAudioDeinitialize();
