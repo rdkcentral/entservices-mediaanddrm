@@ -108,7 +108,7 @@ protected:
         }
 
         PluginHost::IFactories::Assign(nullptr);
-	sleep(2);
+	sleep(3);
     }
 };
 
