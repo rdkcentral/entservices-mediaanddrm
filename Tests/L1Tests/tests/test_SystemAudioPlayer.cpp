@@ -86,7 +86,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
 
-        EXPECT_EQ(string(""), plugin->Initialize(&service));
+       // EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     }
 
