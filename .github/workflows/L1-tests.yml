@@ -125,7 +125,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: develop
+          ref: topic/RDKEMW-6132
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
