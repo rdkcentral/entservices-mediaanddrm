@@ -194,12 +194,6 @@ jobs:
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
-      - name: Apply patches LinearPlaybackControl
-        run: |  
-          cd $GITHUB_WORKSPACE/entservices-apis
-          patch -p1 < $GITHUB_WORKSPACE/entservices-mediaanddrm/Tests/L1Tests/patches/RDKEMW-4911_LinearPlaybackControljson.patch 
-          cd -
-          
       - name: Build entservices-apis
         run: >
           cmake -G Ninja
