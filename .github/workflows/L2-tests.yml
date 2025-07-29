@@ -110,6 +110,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
+          ref: develop
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
