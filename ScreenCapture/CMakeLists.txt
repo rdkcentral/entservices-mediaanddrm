@@ -76,6 +76,8 @@ else()
     endif()
 endif()
 
+add_subdirectory(Tests)
+
 if (RDK_SERVICE_L2_TEST)
     message ("L2 test Enabled")
     find_library(TESTMOCKLIB_LIBRARIES NAMES TestMocklib)
