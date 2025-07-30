@@ -50,32 +50,37 @@ class ScreenCaptureProxy {
         Exchange::IScreenCapture* _screenCapture;
 };
 
+// Generic Logger class
+class Logger {
+public:
+    template<typename... Args>
+    static void LogEvent(const std::string& eventName, Args&&... args) {
+        std::cout << CurrentTimestamp() << " " << eventName;
+        ((std::cout << (sizeof...(Args) > 1 ? " " : "") << args), ...);
+        std::cout << std::endl;
+    }
+
+    static std::string CurrentTimestamp() {
+        using namespace std::chrono;
+        auto now = system_clock::now();
+        auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+        std::time_t t = system_clock::to_time_t(now);
+        std::tm tm;
+#ifdef _WIN32
+        localtime_s(&tm, &t);
+#else
+        localtime_r(&t, &tm);
+#endif
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S")
+            << '.' << std::setfill('0') << std::setw(3) << ms.count() << "]";
+        return oss.str();
+    }
+};
+
 /********************************* Test All IScreenCapture Events **********************************/
 class ScreenCaptureEventHandler : public Exchange::IScreenCapture::INotification {
-    private:
-        static std::string CurrentTimestamp() {
-            using namespace std::chrono;
-            auto now = system_clock::now();
-            auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
-            std::time_t t = system_clock::to_time_t(now);
-            std::tm tm;
-#ifdef _WIN32
-            localtime_s(&tm, &t);
-#else
-            localtime_r(&t, &tm);
-#endif
-            std::ostringstream oss;
-            oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S")
-                << '.' << std::setfill('0') << std::setw(3) << ms.count() << "]";
-            return oss.str();
-        }
-
-        template<typename... Args>
-            void LogEvent(const std::string& eventName, Args&&... args) const {
-                std::cout << CurrentTimestamp() << " " << eventName;
-                ((std::cout << (sizeof...(Args) > 1 ? " " : "") << args), ...);
-                std::cout << std::endl;
-            }
+    public:
 
     public:
         ScreenCaptureEventHandler() : _refCount(1) {}
@@ -90,9 +95,9 @@ class ScreenCaptureEventHandler : public Exchange::IScreenCapture::INotification
             return count;
         }
 
-		void UploadComplete(const bool& status, const std::string& message, const std::string& call_guid) override{
-			LogEvent("UploadComplete -", "Status:", status, ", Message:", message, ", Call GUID:", call_guid);
-		}
+        void UploadComplete(const bool& status, const std::string& message, const std::string& call_guid) override{
+            Logger::LogEvent("UploadComplete -", "Status:", status, ", Message:", message, ", Call GUID:", call_guid);
+        }
 
         BEGIN_INTERFACE_MAP(ScreenCaptureEventHandler)
             INTERFACE_ENTRY(Exchange::IScreenCapture::INotification)
@@ -105,12 +110,14 @@ class ScreenCaptureEventHandler : public Exchange::IScreenCapture::INotification
 int main(int argc, char* argv[])
 {
     std::string callsign = (argc > 1) ? argv[1] : "org.rdk.ScreenCapture";
+    std::string uploadUrl = (argc > 2) ? argv[2] : "http://localhost:8000/cgi-bin/upload.cgi";
     /******************************************* Init *******************************************/
     // Get environment variables
     const char* thunderAccess = std::getenv("THUNDER_ACCESS");
     std::string envThunderAccess = (thunderAccess != nullptr) ? thunderAccess : "/tmp/communicator";
-    std::cout << "Using THUNDER_ACCESS: " << envThunderAccess << std::endl;
-    std::cout << "Using callsign: " << callsign << std::endl;
+    Logger::LogEvent("Using THUNDER_ACCESS:", envThunderAccess);
+    Logger::LogEvent("Using callsign:", callsign);
+    Logger::LogEvent("Using upload URL:", uploadUrl);
 
     // Initialize COMRPC
     Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), envThunderAccess.c_str());
@@ -118,7 +125,7 @@ int main(int argc, char* argv[])
             Core::NodeId(envThunderAccess.c_str()));
 
     if (client.IsValid() == false) {
-        std::cerr << "Failed to create COMRPC client." << std::endl;
+        Logger::LogEvent("Failed to create COMRPC client.");
         return 1;
     }
 
@@ -126,10 +133,10 @@ int main(int argc, char* argv[])
     // Create a proxy for the ScreenCapture plugin
     Exchange::IScreenCapture* rawScreenCapture = client->Open<Exchange::IScreenCapture>(_T(callsign.c_str()));
     if (rawScreenCapture == nullptr) {
-        std::cerr << "Failed to connect to ScreenCapture plugin." << std::endl;
+        Logger::LogEvent("Failed to connect to ScreenCapture plugin.");
         return 1;
     }
-    std::cout << "Connected to FrameRate plugin." << std::endl;
+    Logger::LogEvent("Connected to FrameRate plugin.");
 
     // Use RAII wrapper for ScreenCapture proxy
     ScreenCaptureProxy screenCapture(rawScreenCapture);
@@ -137,26 +144,28 @@ int main(int argc, char* argv[])
     /************************************ Subscribe to Events ************************************/
     ScreenCaptureEventHandler eventHandler;
     screenCapture->Register(&eventHandler);
-    std::cout << "Event handler registered." << std::endl;
+    Logger::LogEvent("Event handler registered.");
 
     /************************************* Test All Methods **************************************/
-	// virtual Core::hresult UploadScreenCapture(const string& url /* @in */, const string& callGUID /* @in */, Result &result /* @out  */ ) = 0;
+    // virtual Core::hresult UploadScreenCapture(const string& url /* @in */, const string& callGUID /* @in */, Result &result /* @out  */ ) = 0;
 
-	Exchange::IScreenCapture::Result result;
-	if (screenCapture->UploadScreenCapture("http://localhost:8000/cgi-bin/upload.cgi", "test-call-guid-12345", result) == Core::ERROR_NONE) {
-		std::cout << "UploadScreenCapture succeeded." << std::endl;
-	} else {
-		std::cerr << "UploadScreenCapture failed." << std::endl;
-	}
+    Exchange::IScreenCapture::Result result;
+    // Generate unique GUID
+    std::string callGUID = "test-call-guid-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+    if (screenCapture->UploadScreenCapture(uploadUrl, callGUID, result) == Core::ERROR_NONE) {
+        Logger::LogEvent("UploadScreenCapture succeeded.");
+    } else {
+        Logger::LogEvent("UploadScreenCapture failed.");
+    }
 
-    std::cout << "Waiting for events... Press Ctrl+C to exit." << std::endl;
+    Logger::LogEvent("Waiting for events... Press Ctrl+C to exit.");
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(60));
     }
 
     /******************************************* Clean-Up *****************************************/
     // ScreenCaptureProxy destructor will automatically release the proxy
-    std::cout << "Exiting..." << std::endl;
+    Logger::LogEvent("Exiting...");
     screenCapture->Unregister(&eventHandler);
     return 0;
 }
