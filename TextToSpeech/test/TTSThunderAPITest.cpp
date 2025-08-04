@@ -32,7 +32,7 @@
 
 #include "Module.h"
 
-#include "UtilsLogging.h"
+//#include "UtilsLogging.h"
 
 #include <securityagent/SecurityTokenUtil.h>
 #define MAX_LENGTH 1024
