@@ -274,6 +274,9 @@ namespace Plugin {
                 private:
                     virtual uint32_t Worker() override
                     {
+                        char name [16];
+                        snprintf(name, sizeof(name), "OCDM_decrypt");
+                        prctl(PR_SET_NAME, name, 0, 0, 0);
 
                         while (IsRunning() == true) {
 
