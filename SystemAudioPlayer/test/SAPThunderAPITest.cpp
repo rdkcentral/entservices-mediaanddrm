@@ -30,7 +30,6 @@
 #include <map>
 
 #include "Module.h"
-//#include "UtilsLogging.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
