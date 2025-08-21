@@ -20,7 +20,6 @@
 #include <thread>
 #include "RFCURLObserver.h"
 #include "UtilsgetRFCConfig.h"
-//#include "UtilsLogging.h"
 
 #if defined(SECURITY_TOKEN_ENABLED) && ((SECURITY_TOKEN_ENABLED == 0) || (SECURITY_TOKEN_ENABLED == false))
 #define GetSecurityToken(a, b) 0
