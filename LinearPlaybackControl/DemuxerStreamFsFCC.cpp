@@ -57,17 +57,20 @@ inline bool stringToNumber(const std::string &in, T &out) {
 }
 
 IDemuxer::IO_STATUS read(const std::string &name, std::string &data) {
+    std::cout << "naveen: read() called, file=" << name << std::endl;
     std::ifstream file(name);
     syslog(LOG_INFO, "Reading from file: %s", name.c_str());
     if (!file.is_open()) {
         return DemuxerStreamFsFCC::IO_STATUS::READ_ERROR;
     }
     getline(file, data);
+    std::cout << "naveen: read() got data='" << data << "' from file=" << name << std::endl;
     file.close();
     return DemuxerStreamFsFCC::IO_STATUS::OK;
 }
 
 IDemuxer::IO_STATUS write(const std::string &name, const std::string &data) {
+    std::cout << "naveen: write() called, file=" << name << ", data='" << data << "'" << std::endl;
     std::ofstream file(name);
     syslog(LOG_ERR, "Writing to file: %s", name.c_str());
     if (!file.is_open()) {
@@ -106,35 +109,41 @@ IDemuxer::IO_STATUS readArray(const std::string &name, std::vector<T> &array, si
 
 } // namespace anonymous
 
+
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::open()
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::open() called" << std::endl;
     // implementation to be added later
     return DemuxerStreamFsFCC::IO_STATUS::OK;
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::close()
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::close() called" << std::endl;
     // implementation to be added later
     return DemuxerStreamFsFCC::IO_STATUS::OK;
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::setChannel(const std::string& channel)
 {
-
+    std::cout << "naveen: DemuxerStreamFsFCC::setChannel() called, file=" << DemuxerStreamFsFCC::_fileChannel << ", channel='" << channel << "'" << std::endl;
     return write(DemuxerStreamFsFCC::_fileChannel, channel);
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::getChannel(std::string& channel)
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::getChannel() called, file=" << DemuxerStreamFsFCC::_fileChannel << std::endl;
     return read(DemuxerStreamFsFCC::_fileChannel, channel);
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::setSeekPosInSeconds(uint64_t seekSeconds)
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::setSeekPosInSeconds() called, file=" << DemuxerStreamFsFCC::_fileSeek << ", seekSeconds=" << seekSeconds << std::endl;
     return write(DemuxerStreamFsFCC::_fileSeek, numberToString<uint64_t>(seekSeconds));
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::getSeek(SeekType &result) {
+    std::cout << "naveen: DemuxerStreamFsFCC::getSeek() called, file=" << DemuxerStreamFsFCC::_fileSeek << std::endl;
     std::vector<uint64_t> values;
     auto status = readArray<uint64_t>(DemuxerStreamFsFCC::_fileSeek, values, 5);
     if (status == IO_STATUS::OK) {
@@ -143,39 +152,52 @@ IDemuxer::IO_STATUS DemuxerStreamFsFCC::getSeek(SeekType &result) {
         result.currentSizeInSeconds  = values[CURRENT_SIZE_IN_SEC];
         result.currentSizeInBytes    = values[CURRENT_SIZE_IN_BYTES];
         result.maxSizeInBytes        = values[MAX_SIZE_IN_BYTES];
+        std::cout << "naveen: getSeek() values: seekPosInSeconds=" << result.seekPosInSeconds << ", seekPosInBytes=" << result.seekPosInBytes << ", currentSizeInSeconds=" << result.currentSizeInSeconds << ", currentSizeInBytes=" << result.currentSizeInBytes << ", maxSizeInBytes=" << result.maxSizeInBytes << std::endl;
+    } else {
+        std::cout << "naveen: getSeek() failed with status=" << status << std::endl;
     }
     return status;
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::setTrickPlaySpeed(int16_t speed)
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::setTrickPlaySpeed() called, file=" << DemuxerStreamFsFCC::_fileTrickPlay << ", speed=" << speed << std::endl;
     return write(DemuxerStreamFsFCC::_fileTrickPlay, numberToString<int16_t>(speed));
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::getTrickPlaySpeed(int16_t &result)
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::getTrickPlaySpeed() called, file=" << DemuxerStreamFsFCC::_fileTrickPlay << std::endl;
     std::string line;
     if (read(DemuxerStreamFsFCC::_fileTrickPlay, line) == DemuxerStreamFsFCC::IO_STATUS::OK) {
         if (stringToNumber<int16_t>(line, result)) {
+            std::cout << "naveen: getTrickPlaySpeed() got speed=" << result << std::endl;
             return DemuxerStreamFsFCC::IO_STATUS::OK;
         }
+        std::cout << "naveen: getTrickPlaySpeed() parse error" << std::endl;
         return DemuxerStreamFsFCC::IO_STATUS::PARSE_ERROR;
     }
+    std::cout << "naveen: getTrickPlaySpeed() read error" << std::endl;
     return DemuxerStreamFsFCC::IO_STATUS::READ_ERROR;
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::getStreamStatus(StreamStatusType &result)
 {
+    std::cout << "naveen: DemuxerStreamFsFCC::getStreamStatus() called, file=" << DemuxerStreamFsFCC::_fileStatus << std::endl;
     std::vector<uint64_t> values;
     auto status = readArray<uint64_t>(DemuxerStreamFsFCC::_fileStatus, values, 2);
     if (status == IO_STATUS::OK) {
         result.streamSourceLost      = values[STREAM_SOURCE_LOST];
         result.streamSourceLossCount = values[STREAM_SOURCE_LOSS_COUNT];
+        std::cout << "naveen: getStreamStatus() values: streamSourceLost=" << result.streamSourceLost << ", streamSourceLossCount=" << result.streamSourceLossCount << std::endl;
+    } else {
+        std::cout << "naveen: getStreamStatus() failed with status=" << status << std::endl;
     }
     return status;
 }
 
 std::string DemuxerStreamFsFCC::getTrickPlayFile() const {
+    std::cout << "naveen: DemuxerStreamFsFCC::getTrickPlayFile() called" << std::endl;
     return _fileTrickPlay;
 }
 

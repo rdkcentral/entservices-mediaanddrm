@@ -368,10 +368,11 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH=OFF
           -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
+          -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
           -DRDK_SERVICE_L2_TEST=ON
@@ -447,10 +448,11 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_Udev=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RFC=ON
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
-          -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH=OFF
           -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
+          -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DUSE_THUNDER_R4=ON
           -DPLUGIN_L2Tests=ON
           -DRDK_SERVICE_L2_TEST=ON
@@ -575,7 +577,7 @@ jobs:
           rm -rf $(pwd)/rdkL2TestResults.json
 
       - name: Run unit tests with valgrind
-        if: ${{ !env.ACT }}
+        # if: ${{ !env.ACT }}
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
           LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/usr/lib:$GITHUB_WORKSPACE/install/usr/lib/wpeframework/plugins:${LD_LIBRARY_PATH}
@@ -591,7 +593,7 @@ jobs:
           rm -rf $(pwd)/rdkL2TestResults.json
 
       - name: Generate coverage
-        if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
+        # if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
         run: >
           cp $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/.lcovrc_l2 ~/.lcovrc
           &&

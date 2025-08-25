@@ -53,6 +53,7 @@ namespace Plugin {
 
     void LinearPlaybackControl::RegisterAll()
     {
+        std::cout << "naveen: RegisterAll called, registering properties" << std::endl;
         Property<ChannelData>(_T("channel"), &LinearPlaybackControl::endpoint_get_channel, &LinearPlaybackControl::endpoint_set_channel, this);
         Property<SeekData>(_T("seek"), &LinearPlaybackControl::endpoint_get_seek, &LinearPlaybackControl::endpoint_set_seek, this);
         Property<TrickplayData>(_T("trickplay"), &LinearPlaybackControl::endpoint_get_trickplay, &LinearPlaybackControl::endpoint_set_trickplay, this);
@@ -62,6 +63,7 @@ namespace Plugin {
 
     void LinearPlaybackControl::UnregisterAll()
     {
+        std::cout << "LinearPlaybackControl::UnregisterAll called" << std::endl;
         PluginHost::JSONRPC::Unregister(_T("channel"));
         PluginHost::JSONRPC::Unregister(_T("seek"));
         PluginHost::JSONRPC::Unregister(_T("trickplay"));
@@ -83,6 +85,7 @@ namespace Plugin {
     //  - ERROR_WRITE_ERROR: Error writing to file
     uint32_t LinearPlaybackControl::endpoint_set_channel(const string& demuxerId,const ChannelData& params)
     {
+        std::cout << "naveen: endpoint_set_channel called, demuxerId=" << demuxerId << ", channel=" << params.Channel.Value() << std::endl;
         // Make sure that channel URI is defined (empty string is ok), otherwise return ERROR_BAD_REQUEST
         if (params.Channel.IsSet() == false) {
             return Core::ERROR_BAD_REQUEST;
@@ -91,7 +94,9 @@ namespace Plugin {
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_channel");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
-                               return DmxStatusToCoreStatus(dmx->setChannel(params.Channel.Value()));
+                               auto status = dmx->setChannel(params.Channel.Value());
+                               std::cout << "naveen: dmx->setChannel returned " << status << " for channel=" << params.Channel.Value() << std::endl;
+                               return DmxStatusToCoreStatus(status);
                            });
     }
 
@@ -101,13 +106,15 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_channel(const string& demuxerId, ChannelData& params) const
     {
+        std::cout << "naveen: endpoint_get_channel called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_get_channel");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                std::string chan;
-                               auto result = DmxStatusToCoreStatus(dmx->getChannel(chan));
+                               auto status = dmx->getChannel(chan);
+                               std::cout << "naveen: dmx->getChannel returned " << status << ", channel=" << chan << std::endl;
                                params.Channel = chan;
-                               return result;
+                               return DmxStatusToCoreStatus(status);
                            });
     }
 
@@ -118,6 +125,7 @@ namespace Plugin {
     //  - ERROR_WRITE_ERROR: Error writing to file
     uint32_t LinearPlaybackControl::endpoint_set_seek(const string& demuxerId, const SeekData& params)
     {
+        std::cout << "LinearPlaybackControl::endpoint_set_seek called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_seek");
 
         // Make sure that the seek is defined, otherwise return ERROR_BAD_REQUEST
@@ -138,6 +146,7 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_seek(const string& demuxerId, SeekData& params) const
     {
+        std::cout << "LinearPlaybackControl::endpoint_get_seek called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
@@ -157,6 +166,7 @@ namespace Plugin {
     //  - ERROR_WRITE_ERROR: Error writing to file
     uint32_t LinearPlaybackControl::endpoint_set_trickplay(const string& demuxerId, const TrickplayData& params)
     {
+        std::cout << "LinearPlaybackControl::endpoint_set_trickplay called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_trickplay");
 
         // Make sure that speed is defined, otherwise return ERROR_BAD_REQUEST
@@ -177,6 +187,7 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_trickplay(const string& demuxerId, TrickplayData& params) const
     {
+        std::cout << "LinearPlaybackControl::endpoint_get_trickplay called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
@@ -195,9 +206,11 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_status(const string& demuxerId, StatusData& params) const
     {
+        std::cout << "naveen: endpoint_get_status called, demuxerId=" << demuxerId << std::endl;
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_status");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
+                               std::cout << "naveen: callDemuxer lambda entered for get_status" << std::endl;
                                // Parameter declaration
                                int16_t speed;
                                IDemuxer::SeekType seek;
@@ -206,8 +219,11 @@ namespace Plugin {
                                // Note: OR operation is used for concatenating the status since possible
                                // set of status is ERROR_NONE (0) or ERROR_READ_ERROR (39)
                                uint32_t status = DmxStatusToCoreStatus(dmx->getSeek(seek));
+                               std::cout << "naveen: dmx->getSeek returned status=" << status << ", seekPosInSeconds=" << seek.seekPosInSeconds << std::endl;
                                status |= DmxStatusToCoreStatus(dmx->getTrickPlaySpeed(speed));
+                               std::cout << "naveen: dmx->getTrickPlaySpeed returned speed=" << speed << std::endl;
                                status |= DmxStatusToCoreStatus(dmx->getStreamStatus(streamStatus));
+                               std::cout << "naveen: dmx->getStreamStatus returned streamSourceLost=" << streamStatus.streamSourceLost << ", streamSourceLossCount=" << streamStatus.streamSourceLossCount << std::endl;
                                // Set parameters in JSON response
                                if (status == Core::ERROR_NONE) {
                                    params.SeekPosInSeconds      = seek.seekPosInSeconds;
@@ -218,6 +234,9 @@ namespace Plugin {
                                    params.TrickPlaySpeed        = speed;
                                    params.StreamSourceLost      = streamStatus.streamSourceLost;
                                    params.StreamSourceLossCount = streamStatus.streamSourceLossCount;
+                                   std::cout << "naveen: status params set in JSON response" << std::endl;
+                               } else {
+                                   std::cout << "naveen: status error, not setting params" << std::endl;
                                }
                                return status;
                            });
@@ -229,6 +248,7 @@ namespace Plugin {
     //  - ERROR_BAD_REQUEST: Bad JSON param data format
     uint32_t LinearPlaybackControl::endpoint_set_tracing(const TracingData& params)
     {
+        std::cout << "LinearPlaybackControl::endpoint_set_tracing called" << std::endl;
         // The following stub implementation is added for testing only.
         uint32_t result = Core::ERROR_NONE;
         const bool enabled = params.Tracing.Value();
@@ -242,15 +262,18 @@ namespace Plugin {
     //  - ERROR_BAD_REQUEST: Bad JSON param data format
     uint32_t LinearPlaybackControl::endpoint_get_tracing(TracingData &params) const
     {
+        std::cout << "LinearPlaybackControl::endpoint_get_tracing called" << std::endl;
         // The following stub implementation is added for testing only.
         uint32_t result = Core::ERROR_NONE;
         params.Tracing = true;
+        std::cout << "endpoint_get_tracing: params.Tracing = " << (params.Tracing.Value() ? "true" : "false") << std::endl;
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_get_tracing");
         return result;
     }
 
     uint32_t LinearPlaybackControl::callDemuxer(const string& demuxerId, const std::function<endpoint_func>& func) const
     {
+        
         if(!_isStreamFSEnabled) {
             syslog(LOG_ERR, "No demuxer set");
             return Core::ERROR_BAD_REQUEST;
