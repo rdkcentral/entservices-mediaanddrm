@@ -28,6 +28,7 @@
 #include <thread>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 
 using namespace WPEFramework;
 
@@ -37,11 +38,37 @@ using namespace WPEFramework;
 
 class LinearPlaybackControlL2Test : public L2TestMocks {
 protected:
-    std::string mountPoint = "/mnt/streamfs";
-    std::string fccDir = mountPoint + "/fcc";
-    std::string channelFile = fccDir + "/chan_select0";
+    std::string mountPoint;
+    std::string fccDir;
+    std::string channelFile;
 
     void SetUp() override {
+        // Try to create the expected directory first, fall back to temp directory if it fails
+        std::string expectedPath = "/mnt/streamfs";
+        std::string cmd1 = "mkdir -p " + expectedPath + "/fcc 2>/dev/null";
+        int result1 = system(cmd1.c_str());
+        
+        if (result1 == 0) {
+            // Successfully created expected directory
+            mountPoint = expectedPath;
+            std::cout << "Using expected mount point: " << mountPoint << std::endl;
+        } else {
+            // Fall back to temporary directory
+            char tmpTemplate[] = "/tmp/streamfs_test_XXXXXX";
+            char* tmpDir = mkdtemp(tmpTemplate);
+            ASSERT_NE(tmpDir, nullptr) << "Failed to create temporary directory";
+            
+            mountPoint = std::string(tmpDir);
+            std::cout << "Using temporary mount point: " << mountPoint << std::endl;
+            
+            // Try to create symbolic link to expected location (best effort)
+            std::string linkCmd = "mkdir -p /mnt 2>/dev/null && ln -sf " + mountPoint + " " + expectedPath + " 2>/dev/null || true";
+            system(linkCmd.c_str());
+        }
+        
+        fccDir = mountPoint + "/fcc";
+        channelFile = fccDir + "/chan_select0";
+
         // Create required directories recursively with proper error handling
         std::cout << "Creating directory structure: " << fccDir << std::endl;
         std::string cmd = "mkdir -p " + fccDir;
@@ -76,11 +103,11 @@ protected:
         EXPECT_EQ(0, chmod((fccDir + "/trick_play0").c_str(), 0666)) << "Failed to set permissions on trick play file";
 
         std::cout << "Creating status file" << std::endl;
-        std::ofstream statusFile(fccDir + "/stream_status0");
+        std::ofstream statusFile(fccDir + "/stream_status");
         EXPECT_TRUE(statusFile.is_open()) << "Failed to create status file";
         statusFile << "0,0"; // 2 values for stream status
         statusFile.close();
-        EXPECT_EQ(0, chmod((fccDir + "/stream_status0").c_str(), 0666)) << "Failed to set permissions on status file";
+        EXPECT_EQ(0, chmod((fccDir + "/stream_status").c_str(), 0666)) << "Failed to set permissions on status file";
 
         // Add small delay to ensure filesystem operations complete
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -101,11 +128,20 @@ protected:
         std::remove(channelFile.c_str());
         std::remove((fccDir + "/seek0").c_str());
         std::remove((fccDir + "/trick_play0").c_str());
-        std::remove((fccDir + "/stream_status0").c_str());
+        std::remove((fccDir + "/stream_status").c_str());
         
-        // Use system commands for reliable cleanup
-        std::string cmd = "rm -rf " + mountPoint;
-        system(cmd.c_str());
+        // Clean up directories - handle both expected and temp paths
+        if (mountPoint.find("/tmp/") == 0) {
+            // This is a temp directory, remove it completely
+            std::string cmd = "rm -rf " + mountPoint;
+            system(cmd.c_str());
+            // Also try to clean up any symbolic link
+            system("rm -f /mnt/streamfs 2>/dev/null || true");
+        } else {
+            // This is the expected directory, just clean up our files
+            std::string cmd = "rm -rf " + fccDir;
+            system(cmd.c_str());
+        }
     }
 
     virtual ~LinearPlaybackControlL2Test() override {}
@@ -167,6 +203,176 @@ TEST_F(LinearPlaybackControlL2Test, GetChannel_Test) {
     EXPECT_EQ(getResults["channel"].String(), "239.0.0.1:1234");
     std::cout << "GetChannel_Test Finished" << std::endl;
 }
+
+
+// /*
+//  * If not stated otherwise in this file or this component's LICENSE file the
+//  * following copyright and licenses apply:
+//  *
+//  * Copyright 2025 RDK Management
+//  *
+//  * Licensed under the Apache License, Version 2.0 (the "License");
+//  * you may not use this file except in compliance with the License.
+//  * You may obtain a copy of the License at
+//  *
+//  * http://www.apache.org/licenses/LICENSE-2.0
+//  *
+//  * Unless required by applicable law or agreed to in writing, software
+//  * distributed under the License is distributed on an "AS IS" BASIS,
+//  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  * See the License for the specific language governing permissions and
+//  * limitations under the License.
+//  */
+
+// #include <gtest/gtest.h>
+// #include <gmock/gmock.h>
+// #include "L2Tests.h"
+// #include "L2TestsMock.h"
+// #include <sys/stat.h>
+// #include <unistd.h>
+// #include <fstream>
+// #include <thread>
+// #include <chrono>
+// #include <cstdlib>
+
+// using namespace WPEFramework;
+
+// #define LINEARPLAYBACKCONTROL_CALLSIGN _T("LinearPlaybackControl")
+// #define LINEARPLAYBACKCONTROLL2TEST_CALLSIGN _T("L2tests.1")
+// #define JSON_TIMEOUT (1000)
+
+// class LinearPlaybackControlL2Test : public L2TestMocks {
+// protected:
+//     std::string mountPoint = "/mnt/streamfs";
+//     std::string fccDir = mountPoint + "/fcc";
+//     std::string channelFile = fccDir + "/chan_select0";
+
+//     void SetUp() override {
+//         // Create required directories recursively with proper error handling
+//         std::cout << "Creating directory structure: " << fccDir << std::endl;
+//         std::string cmd = "mkdir -p " + fccDir;
+//         int result = system(cmd.c_str());
+//         EXPECT_EQ(0, result) << "Failed to create directory: " << fccDir;
+        
+//         // Set permissions with error checking
+//         std::cout << "Setting permissions on directories" << std::endl;
+//         EXPECT_EQ(0, chmod(mountPoint.c_str(), 0777)) << "Failed to set permissions on " << mountPoint;
+//         EXPECT_EQ(0, chmod(fccDir.c_str(), 0777)) << "Failed to set permissions on " << fccDir;
+        
+//         // Create the channel file with verification
+//         std::cout << "Creating channel file: " << channelFile << std::endl;
+//         std::ofstream ofs(channelFile);
+//         EXPECT_TRUE(ofs.is_open()) << "Failed to create channel file: " << channelFile;
+//         ofs.close();
+//         EXPECT_EQ(0, chmod(channelFile.c_str(), 0666)) << "Failed to set permissions on channel file";
+
+//         // Create required files for status property with verification
+//         std::cout << "Creating seek file" << std::endl;
+//         std::ofstream seekFile(fccDir + "/seek0");
+//         EXPECT_TRUE(seekFile.is_open()) << "Failed to create seek file";
+//         seekFile << "0,0,0,0,0"; // 5 values for seek
+//         seekFile.close();
+//         EXPECT_EQ(0, chmod((fccDir + "/seek0").c_str(), 0666)) << "Failed to set permissions on seek file";
+
+//         std::cout << "Creating trick play file" << std::endl;
+//         std::ofstream trickFile(fccDir + "/trick_play0");
+//         EXPECT_TRUE(trickFile.is_open()) << "Failed to create trick play file";
+//         trickFile << "-4"; // example trick play speed
+//         trickFile.close();
+//         EXPECT_EQ(0, chmod((fccDir + "/trick_play0").c_str(), 0666)) << "Failed to set permissions on trick play file";
+
+//         std::cout << "Creating status file" << std::endl;
+//         std::ofstream statusFile(fccDir + "/stream_status0");
+//         EXPECT_TRUE(statusFile.is_open()) << "Failed to create status file";
+//         statusFile << "0,0"; // 2 values for stream status
+//         statusFile.close();
+//         EXPECT_EQ(0, chmod((fccDir + "/stream_status0").c_str(), 0666)) << "Failed to set permissions on status file";
+
+//         // Add small delay to ensure filesystem operations complete
+//         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+//         std::cout << "Activating LinearPlaybackControl service" << std::endl;
+//         uint32_t status = Core::ERROR_GENERAL;
+//         status = ActivateService("LinearPlaybackControl");
+//         EXPECT_EQ(Core::ERROR_NONE, status);
+//         std::cout << "Setup completed successfully" << std::endl;
+//     }
+
+//     void TearDown() override {
+//         uint32_t status = Core::ERROR_GENERAL;
+//         status = DeactivateService("LinearPlaybackControl");
+//         EXPECT_EQ(Core::ERROR_NONE, status);
+        
+//         // Clean up files and directories with error handling
+//         std::remove(channelFile.c_str());
+//         std::remove((fccDir + "/seek0").c_str());
+//         std::remove((fccDir + "/trick_play0").c_str());
+//         std::remove((fccDir + "/stream_status0").c_str());
+        
+//         // Use system commands for reliable cleanup
+//         std::string cmd = "rm -rf " + mountPoint;
+//         system(cmd.c_str());
+//     }
+
+//     virtual ~LinearPlaybackControlL2Test() override {}
+// };
+
+
+// /********************************************************
+// ************Test case Details **************************
+// ** 1. TEST SET CHANNEL
+// *******************************************************/
+// TEST_F(LinearPlaybackControlL2Test, SetChannel_Test) {
+//     std::cout << "SetChannel_Test Started" << std::endl;
+    
+//     // Verify channel file exists and is writable before test
+//     std::ifstream testFile(channelFile);
+//     EXPECT_TRUE(testFile.is_open()) << "Channel file should exist and be readable: " << channelFile;
+//     testFile.close();
+    
+//     // Example channel URI
+//     std::string testChannel = "239.0.0.1:1234";
+//     // Prepare set request (channel@0)
+//     JsonObject setParams;
+//     setParams["channel"] = testChannel;
+//     JsonObject setResults;
+//     uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", setParams, setResults);
+//     EXPECT_EQ(Core::ERROR_NONE, setResult);
+
+//     std::cout << "SetChannel_Test Finished" << std::endl;
+// }
+
+// /********************************************************
+// ************Test case Details **************************
+// ** 2. TEST GET CHANNEL
+// *******************************************************/
+// TEST_F(LinearPlaybackControlL2Test, GetChannel_Test) {
+//     std::cout << "GetChannel_Test Started" << std::endl;
+    
+//     // Verify channel file exists before test
+//     std::ifstream testFile(channelFile);
+//     EXPECT_TRUE(testFile.is_open()) << "Channel file should exist and be readable: " << channelFile;
+//     testFile.close();
+    
+//     // First, set a valid channel
+//     JsonObject setParams;
+//     setParams["channel"] = "239.0.0.1:1234";
+//     JsonObject setResults;
+//     uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", setParams, setResults);
+//     EXPECT_EQ(Core::ERROR_NONE, setResult);
+
+//     // Small delay to ensure file operations complete
+//     std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+//     // Now, get the channel 
+//     JsonObject getResults;
+//     uint32_t getResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", getResults);
+//     EXPECT_EQ(Core::ERROR_NONE, getResult);
+    
+//     EXPECT_TRUE(getResults.HasLabel("channel"));
+//     EXPECT_EQ(getResults["channel"].String(), "239.0.0.1:1234");
+//     std::cout << "GetChannel_Test Finished" << std::endl;
+// }
 
 
 // /********************************************************
