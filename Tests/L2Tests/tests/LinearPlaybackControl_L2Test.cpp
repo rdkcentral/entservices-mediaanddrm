@@ -111,6 +111,64 @@ protected:
     virtual ~LinearPlaybackControlL2Test() override {}
 };
 
+
+/********************************************************
+************Test case Details **************************
+** 1. TEST SET CHANNEL
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, SetChannel_Test) {
+    std::cout << "SetChannel_Test Started" << std::endl;
+    
+    // Verify channel file exists and is writable before test
+    std::ifstream testFile(channelFile);
+    EXPECT_TRUE(testFile.is_open()) << "Channel file should exist and be readable: " << channelFile;
+    testFile.close();
+    
+    // Example channel URI
+    std::string testChannel = "239.0.0.1:1234";
+    // Prepare set request (channel@0)
+    JsonObject setParams;
+    setParams["channel"] = testChannel;
+    JsonObject setResults;
+    uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", setParams, setResults);
+    EXPECT_EQ(Core::ERROR_NONE, setResult);
+
+    std::cout << "SetChannel_Test Finished" << std::endl;
+}
+
+/********************************************************
+************Test case Details **************************
+** 2. TEST GET CHANNEL
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, GetChannel_Test) {
+    std::cout << "GetChannel_Test Started" << std::endl;
+    
+    // Verify channel file exists before test
+    std::ifstream testFile(channelFile);
+    EXPECT_TRUE(testFile.is_open()) << "Channel file should exist and be readable: " << channelFile;
+    testFile.close();
+    
+    // First, set a valid channel
+    JsonObject setParams;
+    setParams["channel"] = "239.0.0.1:1234";
+    JsonObject setResults;
+    uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", setParams, setResults);
+    EXPECT_EQ(Core::ERROR_NONE, setResult);
+
+    // Small delay to ensure file operations complete
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    // Now, get the channel 
+    JsonObject getResults;
+    uint32_t getResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "channel@0", getResults);
+    EXPECT_EQ(Core::ERROR_NONE, getResult);
+    
+    EXPECT_TRUE(getResults.HasLabel("channel"));
+    EXPECT_EQ(getResults["channel"].String(), "239.0.0.1:1234");
+    std::cout << "GetChannel_Test Finished" << std::endl;
+}
+
+
 /********************************************************
 ************Test case Details **************************
 ** 3. TEST SET SEEK
@@ -173,6 +231,87 @@ TEST_F(LinearPlaybackControlL2Test, GetSeek_Test) {
     EXPECT_TRUE(getResults.HasLabel("seekPosInSeconds"));
     EXPECT_EQ(getResults["seekPosInSeconds"].Number(), 10);
     std::cout << "GetSeek_Test Finished" << std::endl;
+}
+
+
+/********************************************************
+************Test case Details **************************
+** 5. TEST SET TRICKPLAY
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, SetTrickplay_Test) {
+    std::cout << "SetTrickplay_Test Started" << std::endl;
+    
+    // Verify trick play file exists and is writable before test
+    std::string trickPlayFilePath = fccDir + "/trick_play0";
+    std::ifstream testFile(trickPlayFilePath);
+    EXPECT_TRUE(testFile.is_open()) << "Trick play file should exist and be readable: " << trickPlayFilePath;
+    testFile.close();
+    
+    JsonObject setParams;
+    setParams["speed"] = -4;
+    JsonObject setResults;
+    uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "trickplay@0", setParams, setResults);
+    EXPECT_EQ(Core::ERROR_NONE, setResult);
+    std::cout << "SetTrickplay_Test Finished" << std::endl;
+}
+
+/********************************************************
+************Test case Details **************************
+** 6. TEST GET TRICKPLAY
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, GetTrickplay_Test) {
+    std::cout << "GetTrickplay_Test Started" << std::endl;
+    
+    // Verify trick play file exists before test
+    std::string trickPlayFilePath = fccDir + "/trick_play0";
+    std::ifstream testFile(trickPlayFilePath);
+    EXPECT_TRUE(testFile.is_open()) << "Trick play file should exist and be readable: " << trickPlayFilePath;
+    testFile.close();
+    
+    // First, set a valid trickplay speed
+    JsonObject setParams;
+    setParams["speed"] = -4;
+    JsonObject setResults;
+    uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "trickplay@0", setParams, setResults);
+    EXPECT_EQ(Core::ERROR_NONE, setResult);
+
+    // Small delay to ensure file operations complete
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    // Now, get the trickplay speed 
+    JsonObject getResults;
+    uint32_t getResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "trickplay@0", getResults);
+    EXPECT_EQ(Core::ERROR_NONE, getResult);
+    std::cout << "GetTrickplay_Test: speed = " << (getResults.HasLabel("speed") ? getResults["speed"].Number() : -999) << std::endl;
+    EXPECT_TRUE(getResults.HasLabel("speed"));
+    EXPECT_EQ(getResults["speed"].Number(), -4);
+    std::cout << "GetTrickplay_Test Finished" << std::endl;
+}
+
+/********************************************************
+************Test case Details **************************
+** 8. TEST SET TRACING
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, SetTracing_Test) {
+    std::cout << "SetTracing_Test Started" << std::endl;
+    JsonObject setParams;
+    setParams["tracing"] = true;
+    JsonObject setResults;
+    uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "tracing", setParams, setResults);
+    EXPECT_EQ(Core::ERROR_NONE, setResult);
+    std::cout << "SetTracing_Test Finished" << std::endl;
+}
+
+/********************************************************
+************Test case Details **************************
+** 9. TEST GET TRACING
+*******************************************************/
+TEST_F(LinearPlaybackControlL2Test, GetTracing_Test) {
+    std::cout << "GetTracing_Test Started" << std::endl;
+    Core::JSON::Boolean tracingResult;
+    uint32_t getResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "tracing", tracingResult);
+    EXPECT_EQ(Core::ERROR_NONE, getResult);
+    std::cout << "GetTracing_Test Finished" << std::endl;
 }
 
 
