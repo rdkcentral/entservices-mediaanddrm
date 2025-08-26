@@ -110,7 +110,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: develop
+          ref: feature/RDKEMW-7051_LinearPlayBackControl_TestFile_failing
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
