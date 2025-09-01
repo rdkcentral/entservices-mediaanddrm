@@ -22,7 +22,7 @@
 
 #include "MediaPlayer.h"
 #include "libmediaplayer.h"
-#include "AnyCasCASServiceImpl.h"
+#include <memory>
 
 using namespace libmediaplayer;
 
