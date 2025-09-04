@@ -32,7 +32,7 @@ TTSManager::TTSManager(TTSEventCallback *callback) :
     m_speaker(NULL){
 
     TTSLOG_TRACE("TTSManager::TTSManager");
-
+    std::cout << "RAJAN-DBG: TTSManager Constructed" << std::endl;
     // Setup Speaker passing the read configuration
     m_speaker = new TTSSpeaker(m_defaultConfiguration);
     m_downloader = NULL;
@@ -64,7 +64,7 @@ TTS_Error TTSManager::enableTTS(bool enable) {
         TTSLOG_INFO("TTS is %s", m_defaultConfiguration.enabled()? "Enabled" : "Disabled");
         m_defaultConfiguration.updateConfigStore();
         m_callback->onTTSStateChanged(m_defaultConfiguration.enabled());
-        m_speaker->ensurePipeline(m_defaultConfiguration.enabled());
+        m_speaker->ensurePlayer(m_defaultConfiguration.enabled());
         force = false;
     }
     return TTS_OK;
@@ -305,12 +305,12 @@ TTS_Error TTSManager::speak(int speechId, std::string callsign, std::string text
         TTSLOG_ERROR("Configuration is not set, can't speak");
         return TTS_INVALID_CONFIGURATION;
     }
-    
+
     if(text.empty() || text.find_first_not_of(' ') == std::string::npos) {
         TTSLOG_ERROR("Invalid Text Provided from app");
         return TTS_FAIL;
     }
-    
+
     if(m_speaker) {
         // TODO: Currently 'secure' is set to true. Need to decide about this variable while Resident app integration.
         if(checkAccess("speak", callsign))
