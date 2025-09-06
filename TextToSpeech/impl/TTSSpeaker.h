@@ -20,10 +20,6 @@
 #ifndef _TTS_SPEAKER_H_
 #define _TTS_SPEAKER_H_
 
-#include <gst/gst.h>
-#include <gst/audio/audio.h>
-#include <gst/app/gstappsink.h>
-
 #include <map>
 #include <list>
 #include <mutex>
@@ -31,9 +27,8 @@
 #include <vector>
 #include <condition_variable>
 
-#include "TTSCommon.h"
 #include "TTSConfiguration.h"
-// --- //
+#include "TTSSystemAudioPlayer.h"
 
 namespace TTS {
 
@@ -41,12 +36,6 @@ namespace TTS {
 #define DEFAULT_WPM 200
 #define MAX_VOLUME 100
 
-//Local Endpoint
-#define LOOPBACK_ENDPOINT "http://127.0.0.1:50050/"
-#define LOCALHOST_ENDPOINT "http://localhost:50050/"
-
-// --- //
-  
 class TTSSpeakerClient {
 public:
     virtual TTSConfiguration* configuration() = 0;
@@ -83,18 +72,12 @@ struct SpeechData {
         int8_t primVolDuck;
 };
 
-enum PipelineType
-{
-  MP3,
-  PCM
-};
-
 class TTSSpeaker {
 public:
     TTSSpeaker(TTSConfiguration &config);
     ~TTSSpeaker();
 
-    void ensurePipeline(bool flag=true);
+    void ensurePlayer(bool flag=true);
 
     // Speak Functions
     int speak(TTSSpeakerClient* client, uint32_t id, std::string callsign, std::string text, bool secure,int8_t primVolDuck); // Formalize data to speak API
@@ -105,78 +88,53 @@ public:
 
     bool pause(uint32_t id = 0);
     bool resume(uint32_t id = 0);
-    PipelineType getPipelineType();
-
 private:
 
     // Private Data
-    TTSConfiguration &m_defaultConfig;
-    TTSSpeakerClient *m_clientSpeaking;
-    SpeechData *m_currentSpeech;
-    bool m_isSpeaking;
-    bool m_isPaused;
-
-    std::mutex m_stateMutex;
-    std::condition_variable m_condition;
-
-    std::list<SpeechData> m_queue;
-    std::mutex m_queueMutex;
     void queueData(SpeechData);
     void flushQueue();
     SpeechData dequeueData();
-    PipelineType m_pipelinetype;
 
     // Private functions
     inline void setSpeakingState(bool state, TTSSpeakerClient *client=NULL);
-
-    // GStreamer Releated members
-    GstElement  *m_pipeline;
-    GstElement  *m_source;
-    GstElement  *m_audioSink;
-    GstElement  *m_audioVolume;
-    GMainLoop   *m_main_loop;
-    GMainContext *m_main_context;
-    GThread     *m_main_loop_thread;
-    bool        m_pipelineError;
-    bool        m_networkError;
-    bool        m_remoteError;
-    bool        m_runThread;
-    bool        m_busThread;
-    bool        m_flushed;
-    bool        m_isEOS;
-    bool        m_pcmAudioEnabled;
-    bool        m_ensurePipeline;
-    std::thread *m_gstThread;
-    guint       m_busWatch;
-    gint64      m_duration;
-    uint8_t     m_pipelineConstructionFailures;
-    const uint8_t     m_maxPipelineConstructionFailures;
-
     static void GStreamerThreadFunc(void *ctx);
-    void createPipeline(PipelineType type=MP3);
-    void resetPipeline();
-    PipelineType getUrlPipelineType(string url);
-    void destroyPipeline();
-
-    // GStreamer Helper functions
-    bool needsPipelineUpdate();
     std::string constructURL(TTSConfiguration &config, SpeechData &d);
     void speakText(TTSConfiguration &config, SpeechData &data);
     bool shouldUseLocalEndpoint();
-    bool waitForStatus(GstState expected_state, uint32_t timeout_ms);
-    void waitForAudioToFinishTimeout(float timeout_s);
-    bool handleMessage(GstMessage*);
-    void play(string url,SpeechData &data,bool authrequired,string token);
-    static int GstBusCallback(GstBus *bus, GstMessage *message, gpointer data);
-    static void event_loop(void *data);
+    void play(string url, SpeechData &data, bool authrequired, string token);
+
+    bool m_playerError;
+    bool m_networkError;
+    bool m_ensurePlayer;
+    bool m_remoteError;
+    bool m_runThread;
+    bool m_flushed;
+    bool m_isSpeaking;
+    bool m_isPaused;
+    uint8_t m_playerConstructionFailures;
+    const uint8_t m_maxPlayerConstructionFailures;
+    TTSConfiguration &m_defaultConfig;
+    TTSSpeakerClient *m_clientSpeaking;
+    SpeechData *m_currentSpeech;
+    TTSSystemAudioPlayer *m_player;
+
+
+    std::mutex m_stateMutex;
+    std::condition_variable m_condition;
+    
+    std::mutex m_queueMutex;
+    std::list<SpeechData> m_queue;
+
+    std::thread *m_gstThread;
+
 };
 
 } // namespace TTS
 
 namespace WPEFramework {
 namespace Plugin {
-bool _readFromFile(std::string filename, TTS::TTSConfiguration &ttsConfig);
-bool _writeToFile(std::string filename, TTS::TTSConfiguration &ttsConfig);
+bool _readFromFile(std::string filename, ::TTS::TTSConfiguration &ttsConfig);
+bool _writeToFile(std::string filename, ::TTS::TTSConfiguration &ttsConfig);
 }//namespace Plugin
 }//namespace WPEFramework
 
