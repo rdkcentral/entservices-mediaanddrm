@@ -118,7 +118,7 @@ public:
                           int nopenfd, int flags));
     MOCK_METHOD1(opendir, DIR*(const char* pathname));
     MOCK_METHOD1(readdir, struct dirent*(DIR* dirp));
-    MOCK_METHOD1(closedir, int(DIR* dirp));
+    MOCK_METHOD1(closedir, int(DIR* dirp)); 
 };
 
 // Global test fixture to initialize Wraps::impl
