@@ -19,6 +19,9 @@
 // Include Wraps.h for WrapsImpl interface
 #include "Wraps.h"
 
+#undef curl_easy_setopt
+#undef curl_easy_getinfo
+
 using namespace WPEFramework;
 using namespace WPEFramework::Plugin;
 using namespace JsonData::LinearPlaybackControl;
@@ -119,13 +122,14 @@ public:
     MOCK_METHOD1(opendir, DIR*(const char* pathname));
     MOCK_METHOD1(readdir, struct dirent*(DIR* dirp));
     MOCK_METHOD1(closedir, int(DIR* dirp)); 
-    MOCK_METHOD2(fopen, FILE*(const char* pathname, const char* mode));
-    MOCK_METHOD3(curl_easy_setopt, CURLcode(CURL* curl, CURLoption option, void* param));
-    MOCK_METHOD1(curl_easy_perform, CURLcode(CURL* curl));
-    MOCK_METHOD3(curl_easy_getinfo, CURLcode(CURL* curl, CURLINFO info, long* value));
-    MOCK_METHOD1(curl_easy_strerror, const char*(CURLcode errornum));
-    MOCK_METHOD0(curl_easy_init, CURL*());
-    MOCK_METHOD1(curl_easy_cleanup, void(CURL* handle));
+
+    MOCK_METHOD(FILE*, fopen, (const char* pathname, const char* mode), (override));
+    MOCK_METHOD(CURLcode, curl_easy_setopt, (CURL* curl, CURLoption option, void* param), (override));
+    MOCK_METHOD(CURLcode, curl_easy_perform, (CURL* curl), (override));
+    MOCK_METHOD(CURLcode, curl_easy_getinfo, (CURL* curl, CURLINFO info, long* value), (override));
+    MOCK_METHOD(const char*, curl_easy_strerror, (CURLcode errornum), (override));
+    MOCK_METHOD(CURL*, curl_easy_init, (), (override));
+    MOCK_METHOD(void, curl_easy_cleanup, (CURL* handle), (override));
 };
 
 // Global test fixture to initialize Wraps::impl
