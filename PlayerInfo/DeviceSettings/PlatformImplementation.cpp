@@ -31,14 +31,14 @@
 
 #include "libIBus.h"
 #include "libIBusDaemon.h"
-#include "dsMgr.h"
+//#include "dsMgr.h"
 
 #include "manager.hpp"
 
 namespace WPEFramework {
 namespace Plugin {
 
-class PlayerInfoImplementation : public Exchange::IPlayerProperties, public Exchange::Dolby::IOutput
+class PlayerInfoImplementation : public Exchange::IPlayerProperties, public Exchange::Dolby::IOutput, public device::Host::IAudioOutputPortEvents
 {
 private:
 
@@ -120,10 +120,11 @@ public:
         gst_init(0, nullptr);
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
-        Utils::IARM::init();
-        device::Manager::Initialize();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        //Utils::IARM::init();
+        //device::Manager::Initialize();
+        //IARM_Result_t res;
+        //IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        device::Host::getInstance().Register(this, "WPE::PlayerInfo");
         PlayerInfoImplementation::_instance = this;
     }
 
@@ -133,8 +134,9 @@ public:
     {
         _audioCodecs.clear();
         _videoCodecs.clear();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        //IARM_Result_t res;
+        //IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        device::Host::getInstance().UnRegister(this);
         PlayerInfoImplementation::_instance = nullptr;
     }
 
@@ -257,20 +259,21 @@ public:
         return (Core::ERROR_NONE);
     }
 
-    static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
+    //static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
+    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode);
     {
         if(PlayerInfoImplementation::_instance)
         {
-            dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
-            Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            IARM_Bus_DSMgr_EventData_t *eventData = (IARM_Bus_DSMgr_EventData_t *)data;
-            amode = static_cast<dsAudioStereoMode_t>(eventData->data.Audioport.mode);
-            if (amode == device::AudioStereoMode::kSurround) mode = SURROUND;
-            else if(amode == device::AudioStereoMode::kStereo) mode = STEREO;
-            else if(amode == device::AudioStereoMode::kMono) mode = MONO;
-            else if(amode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
-            else mode = UNKNOWN;
-            PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
+            //dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
+            //Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
+            //IARM_Bus_DSMgr_EventData_t *eventData = (IARM_Bus_DSMgr_EventData_t *)data;
+            //amode = static_cast<dsAudioStereoMode_t>(eventData->data.Audioport.mode);
+            //if (amode == device::AudioStereoMode::kSurround) mode = SURROUND;
+            //else if(amode == device::AudioStereoMode::kStereo) mode = STEREO;
+            //else if(amode == device::AudioStereoMode::kMono) mode = MONO;
+            //else if(amode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
+            //else mode = UNKNOWN;
+            PlayerInfoImplementation::_instance->audiomodeChanged(audioStereoMode, true);
         }
     }
 
