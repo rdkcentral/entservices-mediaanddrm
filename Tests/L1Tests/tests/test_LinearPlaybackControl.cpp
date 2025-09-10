@@ -119,6 +119,13 @@ public:
     MOCK_METHOD1(opendir, DIR*(const char* pathname));
     MOCK_METHOD1(readdir, struct dirent*(DIR* dirp));
     MOCK_METHOD1(closedir, int(DIR* dirp)); 
+    MOCK_METHOD2(fopen, FILE*(const char* pathname, const char* mode));
+    MOCK_METHOD3(curl_easy_setopt, CURLcode(CURL* curl, CURLoption option, void* param));
+    MOCK_METHOD1(curl_easy_perform, CURLcode(CURL* curl));
+    MOCK_METHOD3(curl_easy_getinfo, CURLcode(CURL* curl, CURLINFO info, long* value));
+    MOCK_METHOD1(curl_easy_strerror, const char*(CURLcode errornum));
+    MOCK_METHOD0(curl_easy_init, CURL*());
+    MOCK_METHOD1(curl_easy_cleanup, void(CURL* handle));
 };
 
 // Global test fixture to initialize Wraps::impl
