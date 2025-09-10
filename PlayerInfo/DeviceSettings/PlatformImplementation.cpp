@@ -33,6 +33,7 @@
 #include "libIBusDaemon.h"
 //#include "dsMgr.h"
 
+#include "UtilsLogging.h"
 #include "manager.hpp"
 
 namespace WPEFramework {
@@ -260,7 +261,7 @@ public:
     }
 
     //static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
-    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode);
+    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode)
     {
         if(PlayerInfoImplementation::_instance)
         {
