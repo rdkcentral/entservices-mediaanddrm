@@ -266,15 +266,15 @@ public:
         if(PlayerInfoImplementation::_instance)
         {
             //dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
-            //Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
+            Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
             //IARM_Bus_DSMgr_EventData_t *eventData = (IARM_Bus_DSMgr_EventData_t *)data;
             //amode = static_cast<dsAudioStereoMode_t>(eventData->data.Audioport.mode);
-            //if (amode == device::AudioStereoMode::kSurround) mode = SURROUND;
-            //else if(amode == device::AudioStereoMode::kStereo) mode = STEREO;
-            //else if(amode == device::AudioStereoMode::kMono) mode = MONO;
-            //else if(amode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
-            //else mode = UNKNOWN;
-            PlayerInfoImplementation::_instance->audiomodeChanged(audioStereoMode, true);
+            if (audioStereoMode == device::AudioStereoMode::kSurround) mode = SURROUND;
+            else if(audioStereoMode == device::AudioStereoMode::kStereo) mode = STEREO;
+            else if(audioStereoMode == device::AudioStereoMode::kMono) mode = MONO;
+            else if(audioStereoMode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
+            else mode = UNKNOWN;
+            PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
     }
 
