@@ -33,7 +33,7 @@
 #include "libIBusDaemon.h"
 //#include "dsMgr.h"
 
-#include "UtilsLogging.h"
+#include "UtilsJsonRpc.h"
 #include "manager.hpp"
 
 namespace WPEFramework {

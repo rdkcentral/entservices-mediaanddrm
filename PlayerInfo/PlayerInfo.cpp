@@ -20,7 +20,7 @@
 #include "PlayerInfo.h"
 #include "manager.hpp"
 #include <exception>
-#include "UtilsLogging.h"
+#include "UtilsJsonRpc.h"
 
 #define API_VERSION_NUMBER_MAJOR 1
 #define API_VERSION_NUMBER_MINOR 0
