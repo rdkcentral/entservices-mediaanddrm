@@ -32,7 +32,6 @@
 #include "libIBus.h"
 #include "libIBusDaemon.h"
 
-#include "UtilsJsonRpc.h"
 #include "manager.hpp"
 
 namespace WPEFramework {
@@ -271,7 +270,7 @@ public:
         return (Core::ERROR_NONE);
     }
 
-    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode)
+    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode) override
     {
         if(PlayerInfoImplementation::_instance)
         {
