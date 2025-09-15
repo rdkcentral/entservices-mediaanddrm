@@ -31,6 +31,18 @@ if(NOT WPEFRAMEWORK_SECURITYUTIL_FOUND)
     add_definitions(-DSECURITY_TOKEN_ENABLED=0)
 endif()
 
+#TTS_TEXT_LOG is used to disable unwanted logs in prod build
+if(TTS_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "_______________ TTS Release MODE _______________")
+    add_definitions(-DTTS_TEXT_LOG=0)
+elseif(TTS_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "_______________ TTS Debug MODE _______________")
+    add_definitions(-DTTS_TEXT_LOG=1)
+else()
+    message(WARNING "TTS_BUILD_TYPE not set! Defaulting to Debug mode.")
+    add_definitions(-DTTS_TEXT_LOG=1)
+endif()
+
 set_source_files_properties(
         TextToSpeechImplementation.cpp
         PROPERTIES COMPILE_FLAGS "-fexceptions")
