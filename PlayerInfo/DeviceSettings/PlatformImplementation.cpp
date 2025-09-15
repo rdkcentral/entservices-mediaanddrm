@@ -31,7 +31,6 @@
 
 #include "libIBus.h"
 #include "libIBusDaemon.h"
-//#include "dsMgr.h"
 
 #include "UtilsJsonRpc.h"
 #include "manager.hpp"
@@ -121,10 +120,15 @@ public:
         gst_init(0, nullptr);
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
-        //Utils::IARM::init();
-        //device::Manager::Initialize();
-        //IARM_Result_t res;
-        //IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        try
+        {
+            device::Manager::Initialize();
+            LOGINFO("device::Manager::Initialize success");
+        }
+        catch(const std::exception& e)
+        {
+        LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
+        }
         device::Host::getInstance().Register(this, "WPE::PlayerInfo");
         PlayerInfoImplementation::_instance = this;
     }
@@ -135,10 +139,17 @@ public:
     {
         _audioCodecs.clear();
         _videoCodecs.clear();
-        //IARM_Result_t res;
-        //IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
         device::Host::getInstance().UnRegister(this);
         PlayerInfoImplementation::_instance = nullptr;
+        try
+        {
+            device::Manager::DeInitialize();
+            LOGINFO("device::Manager::DeInitialize success");
+        }
+        catch(const std::exception& e)
+        {
+            LOGERR("device::Manager::DeInitialize failed, Exception: {%s}", e.what());
+        }
     }
 
 public:
@@ -260,15 +271,11 @@ public:
         return (Core::ERROR_NONE);
     }
 
-    //static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
     void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode)
     {
         if(PlayerInfoImplementation::_instance)
         {
-            //dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
             Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            //IARM_Bus_DSMgr_EventData_t *eventData = (IARM_Bus_DSMgr_EventData_t *)data;
-            //amode = static_cast<dsAudioStereoMode_t>(eventData->data.Audioport.mode);
             if (audioStereoMode == device::AudioStereoMode::kSurround) mode = SURROUND;
             else if(audioStereoMode == device::AudioStereoMode::kStereo) mode = STEREO;
             else if(audioStereoMode == device::AudioStereoMode::kMono) mode = MONO;

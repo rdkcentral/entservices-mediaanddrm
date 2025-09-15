@@ -18,9 +18,6 @@
  */
 
 #include "PlayerInfo.h"
-#include "manager.hpp"
-#include <exception>
-#include "UtilsJsonRpc.h"
 
 #define API_VERSION_NUMBER_MAJOR 1
 #define API_VERSION_NUMBER_MINOR 0
@@ -60,16 +57,6 @@ namespace Plugin {
         Config config;
         config.FromString(service->ConfigLine());
         _skipURL = static_cast<uint8_t>(service->WebPrefix().length());
-
-        try
-        {
-            device::Manager::Initialize();
-            LOGINFO("device::Manager::Initialize success");
-        }
-        catch(const std::exception& e)
-        {
-        LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
-        }
 
         _service = service;
         _service->AddRef();
@@ -148,16 +135,6 @@ namespace Plugin {
                 connection->Terminate();
                 connection->Release();
             }
-        }
-
-        try
-        {
-            device::Manager::DeInitialize();
-            LOGINFO("device::Manager::DeInitialize success");
-        }
-        catch(const std::exception& e)
-        {
-            LOGERR("device::Manager::DeInitialize failed, Exception: {%s}", e.what());
         }
 
         _service->Release();
