@@ -113,6 +113,13 @@ private:
     typedef std::map<const string, const Exchange::IPlayerProperties::AudioCodec> AudioCaps;
     typedef std::map<const string, const Exchange::IPlayerProperties::VideoCodec> VideoCaps;
 
+    template <typename T>
+    T* baseInterface()
+    {
+        static_assert(std::is_base_of<T, PlayerInfoImplementation>(), "base type mismatch");
+        return static_cast<T*>(this);
+    }
+
 public:
     PlayerInfoImplementation()
     {
