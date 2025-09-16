@@ -128,7 +128,7 @@ public:
         {
         LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
         }
-        device::Host::getInstance().Register(this, "WPE::PlayerInfo");
+        device::Host::getInstance().Register(baseInterface<device::Host::IAudioOutputPortEvents>(), "WPE::PlayerInfo");
         PlayerInfoImplementation::_instance = this;
     }
 
@@ -138,7 +138,7 @@ public:
     {
         _audioCodecs.clear();
         _videoCodecs.clear();
-        device::Host::getInstance().UnRegister(this);
+        device::Host::getInstance().UnRegister(baseInterface<device::Host::IAudioOutputPortEvents>());
         PlayerInfoImplementation::_instance = nullptr;
         try
         {
