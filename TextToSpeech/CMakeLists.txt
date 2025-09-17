@@ -32,7 +32,7 @@ if(NOT WPEFRAMEWORK_SECURITYUTIL_FOUND)
 endif()
 
 #TTS_TEXT_LOG is used to disable unwanted logs in prod build
-if(TTS_BUILD_TYPE STREQUAL "Release")
+if(PLUGIN_BUILD_TYPE STREQUAL "Release")
     message(STATUS "_______________ TTS Release MODE _______________")
     add_definitions(-DTTS_TEXT_LOG=0)
 else()
