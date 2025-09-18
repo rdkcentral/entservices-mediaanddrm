@@ -852,7 +852,10 @@ std::string TTSSpeaker::constructURL(TTSConfiguration &config, SpeechData &d) {
           TTSLOG_INFO("re-use existing pipeline.");
        }
     }
+#if TTS_TEXT_LOG
+    /* This log should not be present in prod builds*/
     TTSLOG_WARNING("Constructed final URL is %s", tts_request.c_str());
+#endif
     return tts_request;
 }
 
