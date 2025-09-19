@@ -279,6 +279,7 @@ public:
 
     void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode) override
     {
+        LOGINFO("Received OnAudioModeEvent callback");
         if(PlayerInfoImplementation::_instance)
         {
             Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
