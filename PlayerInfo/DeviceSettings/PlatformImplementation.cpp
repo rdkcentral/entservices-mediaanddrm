@@ -283,7 +283,7 @@ public:
         if(PlayerInfoImplementation::_instance)
         {
             Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            switch(audioStereoMode){
+            switch(static_cast<int>(audioStereoMode)){
                 case device::AudioStereoMode::kSurround:
                 mode = SURROUND;
                 break;
