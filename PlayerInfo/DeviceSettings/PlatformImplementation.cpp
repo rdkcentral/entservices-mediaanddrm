@@ -283,22 +283,11 @@ public:
         if(PlayerInfoImplementation::_instance)
         {
             Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            switch(static_cast<int>(audioStereoMode)){
-                case device::AudioStereoMode::kSurround:
-                mode = SURROUND;
-                break;
-                case device::AudioStereoMode::kStereo:
-                mode = STEREO;
-                break;
-                case device::AudioStereoMode::kMono:
-                mode = MONO;
-                break;
-                case device::AudioStereoMode::kPassThru:
-                mode = PASSTHRU;
-                break;
-                default:
-                mode = UNKNOWN;
-            }
+            if (device::AudioStereoMode::kSurround == audioStereoMode) mode = SURROUND;
+            else if(device::AudioStereoMode::kStereo == audioStereoMode) mode = STEREO;
+            else if(device::AudioStereoMode::kMono == audioStereoMode) mode = MONO;
+            else if(device::AudioStereoMode::kPassThru == audioStereoMode) mode = PASSTHRU;
+            else mode = UNKNOWN;
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
     }
