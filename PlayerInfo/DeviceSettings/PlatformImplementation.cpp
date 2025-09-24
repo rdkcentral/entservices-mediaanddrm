@@ -133,7 +133,7 @@ public:
         }
         catch(const std::exception& e)
         {
-        LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
+            LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
         }
         device::Host::getInstance().Register(baseInterface<device::Host::IAudioOutputPortEvents>(), "WPE::PlayerInfo");
         PlayerInfoImplementation::_instance = this;
