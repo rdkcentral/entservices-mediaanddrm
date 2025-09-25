@@ -288,7 +288,8 @@ public:
             else if(device::AudioStereoMode::kMono == audioStereoMode) mode = MONO;
             else if(device::AudioStereoMode::kPassThru == audioStereoMode) mode = PASSTHRU;
             else mode = UNKNOWN;
-            LOGINFO("Sound mode: %s", WPEFramework::Core::ToString(mode).c_str());
+            LOGINFO("Sound mode: %s", WPEFramework::Core::ToString(mode).Data);
+            LOGINFO("audioStereoMode: %s", WPEFramework::Core::ToString(audioStereoMode).Data);
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
     }
