@@ -409,6 +409,7 @@ TTSSpeaker::~TTSSpeaker() {
 
     if(m_gstThread) {
         m_gstThread->join();
+		delete m_gstThread;
         m_gstThread = NULL;
     }
 
@@ -700,11 +701,20 @@ void TTSSpeaker::createPipeline(PipelineType type) {
             TTSLOG_ERROR( "Unable to create capsfilter for PCM audio.");
             return;
         }
-        result = systemAudioGeneratePipeline(m_pipeline,m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#ifndef UNIT_TESTING
+            result = systemAudioGeneratePipeline(m_pipeline,m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#else
+            result = systemAudioGeneratePipeline(&m_pipeline,&m_source,capsfilter,&m_audioSink,&m_audioVolume,AudioType::PCM,APP,HTTPSRC,false);
+#endif
     }
     else
     {
+#ifndef UNIT_TESTING
         result = systemAudioGeneratePipeline(m_pipeline,m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
+#else
+        result = systemAudioGeneratePipeline(&m_pipeline,&m_source,NULL,&m_audioSink,&m_audioVolume,AudioType::MP3,APP,HTTPSRC,false);
+#endif
+
     }
        
     if(!result) {
@@ -852,7 +862,10 @@ std::string TTSSpeaker::constructURL(TTSConfiguration &config, SpeechData &d) {
           TTSLOG_INFO("re-use existing pipeline.");
        }
     }
+#if TTS_TEXT_LOG
+    /* This log should not be present in prod build */
     TTSLOG_WARNING("Constructed final URL is %s", tts_request.c_str());
+#endif
     return tts_request;
 }
 

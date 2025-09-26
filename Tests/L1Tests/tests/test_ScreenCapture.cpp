@@ -140,7 +140,6 @@ TEST_F(ScreenCaptureTest, RegisteredMethods)
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("uploadScreenCapture")));
 }
 
-#if 0
 TEST_F(ScreenCaptureDRMTest, Upload)
 {   
     DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
@@ -201,15 +200,17 @@ TEST_F(ScreenCaptureDRMTest, Upload)
         const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
         ASSERT_FALSE(connection < 0);
         char buffer[2048] = { 0 };
-        ASSERT_TRUE(read(connection, buffer, 2048) > 0);
+        ssize_t bytesRead = read(connection, buffer, 2048);
+        ASSERT_TRUE(bytesRead > 0);
 
-        std::string reqHeader(buffer);
+        std::string reqHeader(buffer, bytesRead);
         EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
 
         std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
-        send(connection, response.c_str(), response.size(), 0);
+        ssize_t bytesSent = send(connection, response.c_str(), response.size(), 0);
 
         close(connection);
+        ASSERT_TRUE(bytesSent > 0);
     });
 
     EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
@@ -222,8 +223,6 @@ TEST_F(ScreenCaptureDRMTest, Upload)
     EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
     free(buffer);
-    thread.join();
     close(sockfd);
+    thread.join();
 }
-#endif
-

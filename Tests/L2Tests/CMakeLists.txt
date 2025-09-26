@@ -22,12 +22,33 @@ set(THUNDER_PORT 9998)
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 
+find_package(PkgConfig REQUIRED) 
+
+pkg_check_modules(GSTREAMERBASE REQUIRED gstreamer-app-1.0)
+pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+
+include(FetchContent)
+FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/e39786088138f2749d64e9e90e0f9902daa77c40.zip
+)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+FetchContent_MakeAvailable(googletest)
+
 if(PLUGIN_TEXTTOSPEECH)
-    #set(SRC_FILES ${SRC_FILES} tests/TextToSpeech_L2test.cpp)
+    set(SRC_FILES ${SRC_FILES} tests/TextToSpeech_L2test.cpp)
 endif()
 
 if(PLUGIN_SCREENCAPTURE)
     set(SRC_FILES ${SRC_FILES} tests/ScreenCapture_L2Test.cpp)
+endif()
+
+if(PLUGIN_UNIFIEDCASMANAGEMENT)
+    set(SRC_FILES ${SRC_FILES} tests/UnifiedCASManagement_L2Test.cpp)
+endif()
+
+if(PLUGIN_LINEARPLAYBACKCONTROL)
+    set(SRC_FILES ${SRC_FILES} tests/LinearPlaybackControl_L2Test.cpp)
 endif()
 
 add_library(${MODULE_NAME} SHARED ${SRC_FILES})
@@ -72,5 +93,10 @@ target_include_directories(
     ../../../entservices-testframework/Tests/L2Tests/L2TestsPlugin
     ${CMAKE_INSTALL_PREFIX}/include
     )
+target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMER_INCLUDES})
+target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMERBASE_INCLUDE_DIRS})
+
+target_link_libraries(${MODULE_NAME} PRIVATE ${GSTREAMER_LIBRARIES})
+target_link_libraries(${MODULE_NAME} PRIVATE ${GSTREAMERBASE_LIBRARIES})
 
 install(TARGETS ${MODULE_NAME} DESTINATION lib)

@@ -19,15 +19,24 @@ set(PLUGIN_NAME UnifiedCASManagement)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
 find_package(${NAMESPACE}Plugins REQUIRED)
+if (NOT RDK_SERVICES_L1_TEST AND NOT RDK_SERVICE_L2_TEST)
 find_package(${NAMESPACE}Protocols REQUIRED)
 find_package(${NAMESPACE}Definitions REQUIRED)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 find_package(IARMBus)
 
+if (NOT RDK_SERVICES_L1_TEST AND NOT RDK_SERVICE_L2_TEST)
 find_package(LMPLAYER REQUIRED)
+else()
+include_directories(
+        ${PROJECT_SOURCE_DIR}/../entservices-testframework/Tests/mocks/
+        ${PROJECT_SOURCE_DIR}/helpers
+)
+endif()
 
 if (LMPLAYER_FOUND)
 	add_library(${MODULE_NAME} SHARED
@@ -57,6 +66,17 @@ add_definitions( -DRT_PLATFORM_LINUX=1 )
 set_target_properties(${MODULE_NAME} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES)
+
+if (RDK_SERVICE_L2_TEST)
+    message ("L2 test Enabled")
+    find_library(TESTMOCKLIB_LIBRARIES NAMES TestMocklib)
+    if (TESTMOCKLIB_LIBRARIES)
+        message ("linking mock libraries ${TESTMOCKLIB_LIBRARIES} library")
+        target_link_libraries(${MODULE_NAME} PRIVATE ${TESTMOCKLIB_LIBRARIES})
+    else (TESTMOCKLIB_LIBRARIES)
+        message ("Require ${TESTMOCKLIB_LIBRARIES} library")
+    endif (TESTMOCKLIB_LIBRARIES)
+endif()
 
 target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
 

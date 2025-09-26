@@ -31,14 +31,13 @@
 
 #include "libIBus.h"
 #include "libIBusDaemon.h"
-#include "dsMgr.h"
 
 #include "manager.hpp"
 
 namespace WPEFramework {
 namespace Plugin {
 
-class PlayerInfoImplementation : public Exchange::IPlayerProperties, public Exchange::Dolby::IOutput
+class PlayerInfoImplementation : public Exchange::IPlayerProperties, public Exchange::Dolby::IOutput, public device::Host::IAudioOutputPortEvents
 {
 private:
 
@@ -114,16 +113,29 @@ private:
     typedef std::map<const string, const Exchange::IPlayerProperties::AudioCodec> AudioCaps;
     typedef std::map<const string, const Exchange::IPlayerProperties::VideoCodec> VideoCaps;
 
+    template <typename T>
+    T* baseInterface()
+    {
+        static_assert(std::is_base_of<T, PlayerInfoImplementation>(), "base type mismatch");
+        return static_cast<T*>(this);
+    }
+
 public:
     PlayerInfoImplementation()
     {
         gst_init(0, nullptr);
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
-        Utils::IARM::init();
-        device::Manager::Initialize();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        try
+        {
+            device::Manager::Initialize();
+            LOGINFO("device::Manager::Initialize success");
+        }
+        catch(const std::exception& e)
+        {
+            LOGERR("device::Manager::Initialize failed, Exception: {%s}", e.what());
+        }
+        device::Host::getInstance().Register(baseInterface<device::Host::IAudioOutputPortEvents>(), "WPE::PlayerInfo");
         PlayerInfoImplementation::_instance = this;
     }
 
@@ -133,9 +145,17 @@ public:
     {
         _audioCodecs.clear();
         _videoCodecs.clear();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        device::Host::getInstance().UnRegister(baseInterface<device::Host::IAudioOutputPortEvents>());
         PlayerInfoImplementation::_instance = nullptr;
+        try
+        {
+            device::Manager::DeInitialize();
+            LOGINFO("device::Manager::DeInitialize success");
+        }
+        catch(const std::exception& e)
+        {
+            LOGERR("device::Manager::DeInitialize failed, Exception: {%s}", e.what());
+        }
     }
 
 public:
@@ -257,18 +277,16 @@ public:
         return (Core::ERROR_NONE);
     }
 
-    static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
+    void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode) override
     {
+        LOGINFO("Received OnAudioModeEvent callback");
         if(PlayerInfoImplementation::_instance)
         {
-            dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
             Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            IARM_Bus_DSMgr_EventData_t *eventData = (IARM_Bus_DSMgr_EventData_t *)data;
-            amode = static_cast<dsAudioStereoMode_t>(eventData->data.Audioport.mode);
-            if (amode == device::AudioStereoMode::kSurround) mode = SURROUND;
-            else if(amode == device::AudioStereoMode::kStereo) mode = STEREO;
-            else if(amode == device::AudioStereoMode::kMono) mode = MONO;
-            else if(amode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
+            if (device::AudioStereoMode::kSurround == audioStereoMode) mode = SURROUND;
+            else if(device::AudioStereoMode::kStereo == audioStereoMode) mode = STEREO;
+            else if(device::AudioStereoMode::kMono == audioStereoMode) mode = MONO;
+            else if(device::AudioStereoMode::kPassThru == audioStereoMode) mode = PASSTHRU;
             else mode = UNKNOWN;
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }

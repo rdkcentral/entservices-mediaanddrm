@@ -114,23 +114,16 @@ add_plugin_test_ex(PLUGIN_PLAYERINFO tests/test_PlayerInfo.cpp "${PLAYERINFO_INC
 set (LINEARPLAYBACKCONTROL_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/LinearPlaybackControl ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
 add_plugin_test_ex(PLUGIN_LINEARPLAYBACKCONTROL tests/test_LinearPlaybackControl.cpp "${LINEARPLAYBACKCONTROL_INC}" "${NAMESPACE}LinearPlaybackControl")
 
+# PLUGIN_UNIFIEDCASMANAGEMENT
+set (UNIFIEDCASMANAGEMENT_INC ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/UnifiedCASManagement ${CMAKE_SOURCE_DIR}/../entservices-mediaanddrm/helpers)
+add_plugin_test_ex(PLUGIN_UNIFIEDCASMANAGEMENT tests/test_UnifiedCASManagement.cpp "${UNIFIEDCASMANAGEMENT_INC}" "${NAMESPACE}UnifiedCASManagement")
+
 # PLUGIN_SYSTEMAUDIOPLAYER
 add_plugin_test(SystemAudioPlayer tests/test_SystemAudioPlayer.cpp)
 
 # PLUGIN_TEXTTOSPEECH
 add_plugin_test(TextToSpeech tests/test_TextToSpeech.cpp)
 add_library(${MODULE_NAME} SHARED ${TEST_SRC})
-
-if (RDK_SERVICES_L1_TEST)
-   find_library(TESTMOCKLIB_LIBRARIES NAMES L1TestMocklib)
-   if (TESTMOCKLIB_LIBRARIES)
-       message ("Found mock libraries ${TESTMOCKLIB_LIBRARIES} library")
-       target_link_libraries(${MODULE_NAME} ${TESTMOCKLIB_LIBRARIES})
-   else (TESTMOCKLIB_LIBRARIES)
-       message ("Require ${TESTMOCKLIB_LIBRARIES} library")
-   endif (TESTMOCKLIB_LIBRARIES)
-endif (RDK_SERVICES_L1_TEST)
-
 
 include_directories(${TEST_INC})
 
