@@ -143,6 +143,12 @@ namespace Plugin {
     protected:
         void Deactivated(RPC::IRemoteConnection* connection);
         void Info(JsonData::PlayerInfo::CodecsData&) const;
+        
+        // NEW CODE: Custom JSON-RPC method that reuses existing Info method logic (L2 test only)
+        #ifdef RDK_SERVICE_L2_TEST
+        uint32_t get_audiocodecs(const JsonObject& parameters, JsonObject& response);
+        uint32_t get_videocodecs(const JsonObject& parameters, JsonObject& response); // Added for L2 test
+        #endif
 
     // private:
     protected:
