@@ -175,7 +175,7 @@ namespace Plugin {
         return 0;
     }
 
-    void TextToSpeechImplementation::Register(Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::Register(Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -188,9 +188,11 @@ namespace Plugin {
         _adminLock.Unlock();
 
         TRACE_L1("Registered a sink on the browser %p", sink);
+
+        return Core::ERROR_NONE;
     }
 
-    void TextToSpeechImplementation::Unregister(Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::Unregister(Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -215,9 +217,11 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+
+        return Core::ERROR_NONE;
     }
 
-    void TextToSpeechImplementation::RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
         TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign);
@@ -229,6 +233,8 @@ namespace Plugin {
         _adminLock.Unlock();
 
         TRACE_L1("Registered a sink on the browser %p", sink);
+
+        return Core::ERROR_NONE;
     }
 
     uint32_t TextToSpeechImplementation::Request(PluginHost::IStateControl::command command)
@@ -237,7 +243,7 @@ namespace Plugin {
         return Core::ERROR_GENERAL;
     }
 
-    uint32_t TextToSpeechImplementation::Enable(const bool enable)
+    Core::hresult TextToSpeechImplementation::Enable(const bool enable)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -250,7 +256,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::ListVoices(const string language,RPC::IStringIterator*& voices) const
+    Core::hresult TextToSpeechImplementation::ListVoices(const string language,RPC::IStringIterator*& voices) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
@@ -267,7 +273,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) Exchange::ITextToSpeech::TTS_INVALID_CONFIGURATION;
 
@@ -309,7 +315,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::SetFallbackText(const string scenario,const string value)
+    Core::hresult TextToSpeechImplementation::SetFallbackText(const string scenario,const string value)
     {
         FallbackData data;
         data.scenario = scenario;
@@ -324,7 +330,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetPrimaryVolDuck(const uint8_t prim)
+    Core::hresult TextToSpeechImplementation::SetPrimaryVolDuck(const uint8_t prim)
     {
         if(!InputValidation::Instance().validate("setPrimaryVolDuck", prim))
             return Core::ERROR_GENERAL;
@@ -337,7 +343,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetAPIKey(const string apikey)
+    Core::hresult TextToSpeechImplementation::SetAPIKey(const string apikey)
     {
         _adminLock.Lock();
         _ttsManager->setAPIKey(apikey);
@@ -347,7 +353,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetACL(const string method,const string apps)
+    Core::hresult TextToSpeechImplementation::SetACL(const string method,const string apps)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -366,7 +372,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
     
-    uint32_t TextToSpeechImplementation::GetConfiguration(Exchange::ITextToSpeech::Configuration &exchangeConfig) const
+    Core::hresult TextToSpeechImplementation::GetConfiguration(Exchange::ITextToSpeech::Configuration &exchangeConfig) const
     {
         TTS::Configuration ttsConfig;
 
@@ -397,7 +403,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Enable(bool &enable) const
+    Core::hresult TextToSpeechImplementation::Enable(bool &enable) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -418,7 +424,7 @@ namespace Plugin {
         return ++counter;
     }
 
-    uint32_t TextToSpeechImplementation::Speak(const string callsign,const string text,uint32_t &speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Speak(const string callsign,const string text,uint32_t &speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -438,7 +444,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Cancel(const uint32_t speechid)
+    Core::hresult TextToSpeechImplementation::Cancel(const uint32_t speechid)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         auto status = TTS::TTS_FAIL;
@@ -454,7 +460,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Pause(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Pause(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -468,7 +474,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Resume(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Resume(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -483,7 +489,7 @@ namespace Plugin {
     }
 
 
-    uint32_t TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid,Exchange::ITextToSpeech::SpeechState &estate)
+    Core::hresult TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid,Exchange::ITextToSpeech::SpeechState &estate)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         TTS::SpeechState state;
