@@ -203,7 +203,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: ${{env.INTERFACES_REF}}
+          ref: e9502ddee767df60171b6bc5bff3cb8b2a703cd8
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
