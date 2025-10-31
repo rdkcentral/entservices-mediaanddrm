@@ -360,66 +360,68 @@ public:
 
     uint32_t SoundMode(Exchange::Dolby::IOutput::SoundModes& mode /* @out */) const override
     {
-        /* For implementation details, please refer to Flow diagram attached in RDKTV-10066*/
-
-        string audioPort;
-        if (device::Host::getInstance().isHDMIOutPortPresent())
-            audioPort = "HDMI0"; //this device has an HDMI out port. This is an STB device
-        else
-            audioPort = "SPEAKER0"; // This device is likely to be TV. Default audio outport are speakers.
-
-        device::AudioStereoMode soundmode = device::AudioStereoMode::kStereo;
         mode = UNKNOWN;
+        std::vector<std::string> hdmiArcPorts, hdmiPorts, speakerPorts, spdifPorts, headphonePorts;
 
-        try
-        {
-            /* Check if the device has an HDMI_ARC out. If ARC is connected, then speakers and SPDIF are disabled
-               So, return the SoundMode of HDMI_ARC*/
+        try {
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
-            for (size_t i = 0; i < aPorts.size(); i++)
-            {
+            for (size_t i = 0; i < aPorts.size(); i++) {
                 device::AudioOutputPort &aPort = aPorts.at(i);
-                /* Does this device have an SPDIF port and is it connected? If so, lets set the AudioPort to that, as SPDIF has precedence
-                   over the deafault audio output port. But keep searching if the device has an HDMI_ARC connected, as ARC is highest precedence*/
-                if (aPort.getName().find("SPDIF") != std::string::npos && device::Host::getInstance().getAudioOutputPort("SPDIF0").isConnected())
-                {
-                    audioPort = "SPDIF0";
-                }
-                /* Does this device support HDMI_ARC output and is the port connected? If yes, then that the audio port whose sound mode we'll return */
-                if(aPort.getName().find("HDMI_ARC") != std::string::npos && device::Host::getInstance().getAudioOutputPort("HDMI_ARC0").isConnected())
-                {
-                    //the platform supports HDMI_ARC. Get the sound mode of the ARC port
-                    LOGINFO(" HDMI ARC port detected on platform");
-                    audioPort = "HDMI_ARC0";
-                    break;
+                if (!aPort.getName().empty() && aPort.isEnabled() && aPort.isConnected()) {
+                    auto typeId = aPort.getType().getId();
+                    if (typeId == device::AudioOutputPortType::kARC || aPort.getName().find("HDMI_ARC") != std::string::npos)
+                        hdmiArcPorts.push_back(aPort.getName());
+                    else if (typeId == device::AudioOutputPortType::kHDMI || aPort.getName().find("HDMI") != std::string::npos)
+                        hdmiPorts.push_back(aPort.getName());
+                    else if (typeId == device::AudioOutputPortType::kSPEAKER || aPort.getName().find("SPEAKER") != std::string::npos)
+                        speakerPorts.push_back(aPort.getName());
+                    else if (typeId == device::AudioOutputPortType::kSPDIF || aPort.getName().find("SPDIF") != std::string::npos)
+                        spdifPorts.push_back(aPort.getName());
+                    else if (typeId == device::AudioOutputPortType::kHEADPHONE || aPort.getName().find("HEADPHONE") != std::string::npos)
+                        headphonePorts.push_back(aPort.getName());
                 }
             }
 
-            /*When we reach here, we have determined the audio output port correctly. Now, check the sound mode on that port */
-            device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort(audioPort);
-            if (aPort.isConnected())
-            {
-                soundmode = aPort.getStereoMode();
-                if (soundmode == device::AudioStereoMode::kSurround) mode = SURROUND;
-                else if(soundmode == device::AudioStereoMode::kStereo) mode = STEREO;
-                else if(soundmode == device::AudioStereoMode::kMono) mode = MONO;
-                else if(soundmode == device::AudioStereoMode::kPassThru) mode = PASSTHRU;
-                else mode = UNKNOWN;
+            // Strict precedence: HDMI_ARC > HDMI0 > SPEAKER > SPDIF > HEADPHONE
+            std::string selectedPort;
+            if (!hdmiArcPorts.empty())
+                selectedPort = hdmiArcPorts.front();
+            else if (!hdmiPorts.empty())
+                selectedPort = hdmiPorts.front();
+            else if (!speakerPorts.empty())
+                selectedPort = speakerPorts.front();
+            else if (!spdifPorts.empty())
+                selectedPort = spdifPorts.front();
+            else if (!headphonePorts.empty())
+                selectedPort = headphonePorts.front();
 
-                /* Auto mode applicable for HDMI Arc and SPDIF */
-                if((aPort.getType().getId() == device::AudioOutputPortType::kARC || aPort.getType().getId() == device::AudioOutputPortType::kSPDIF)
-                        && aPort.getStereoAuto())
-                {
+            if (!selectedPort.empty()) {
+                device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort(selectedPort);
+                device::AudioStereoMode soundmode = aPort.getStereoMode();
+                auto mapStereoMode = [](const device::AudioStereoMode& smode) -> Exchange::Dolby::IOutput::SoundModes {
+                    if (smode == device::AudioStereoMode::kMono) return MONO;
+                    if (smode == device::AudioStereoMode::kStereo) return STEREO;
+                    if (smode == device::AudioStereoMode::kSurround) return SURROUND;
+                    if (smode == device::AudioStereoMode::kPassThru) return PASSTHRU;
+                    if (smode == device::AudioStereoMode::kDD) return DOLBYDIGITAL;
+                    if (smode == device::AudioStereoMode::kDDPlus) return DOLBYDIGITALPLUS;
+                    LOGWARN("Unknown AudioStereoMode encountered, returning UNKNOWN");
+                    return UNKNOWN;
+                };
+                mode = mapStereoMode(soundmode);
+                // Auto mode for HDMI ARC and SPDIF
+                if ((aPort.getType().getId() == device::AudioOutputPortType::kARC || aPort.getType().getId() == device::AudioOutputPortType::kSPDIF)
+                        && aPort.getStereoAuto()) {
                     mode = SOUNDMODE_AUTO;
                 }
+                LOGINFO("Audio port %s has sound mode %d", selectedPort.c_str(), mode);
+            } else {
+                LOGWARN("No enabled and connected audio port found matching precedence.");
             }
-        }
-        catch (const device::Exception& err)
-        {
+        } catch (const device::Exception& err) {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
         }
-
-        return (Core::ERROR_NONE);
+        return Core::ERROR_NONE;
     }
 
     uint32_t EnableAtmosOutput(const bool& enable /* @in */)
