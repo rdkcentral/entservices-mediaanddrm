@@ -524,6 +524,7 @@ private:
         {"720p30", RESOLUTION_720P30},
         {"720p50", RESOLUTION_720P50},
         {"720p", RESOLUTION_720P},
+        {"768p", RESOLUTION_768P},
         {"1080i24", RESOLUTION_1080I24},
         {"1080i25", RESOLUTION_1080I25},
         {"1080i30", RESOLUTION_1080I30},
