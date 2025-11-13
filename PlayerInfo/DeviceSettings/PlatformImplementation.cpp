@@ -367,7 +367,7 @@ public:
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
             for (size_t i = 0; i < aPorts.size(); i++) {
                 device::AudioOutputPort &aPort = aPorts.at(i);
-                if (!aPort.getName().empty() && aPort.isEnabled() && aPort.isConnected()) {
+                if (aPort.isEnabled() && aPort.isConnected()) {
                     auto typeId = aPort.getType().getId();
                     if (typeId == device::AudioOutputPortType::kARC || aPort.getName().find("HDMI_ARC") != std::string::npos)
                         hdmiArcPorts.push_back(aPort.getName());
