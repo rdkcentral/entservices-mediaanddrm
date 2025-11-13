@@ -287,6 +287,8 @@ public:
             else if(device::AudioStereoMode::kStereo == audioStereoMode) mode = STEREO;
             else if(device::AudioStereoMode::kMono == audioStereoMode) mode = MONO;
             else if(device::AudioStereoMode::kPassThru == audioStereoMode) mode = PASSTHRU;
+            else if(device::AudioStereoMode::kDD == audioStereoMode) mode = DOLBYDIGITAL;
+            else if(device::AudioStereoMode::kDDPlus == audioStereoMode) mode = DOLBYDIGITALPLUS;
             else mode = UNKNOWN;
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
@@ -383,6 +385,7 @@ public:
             }
 
             // Strict precedence: HDMI_ARC > HDMI > SPEAKER > SPDIF > HEADPHONE
+            // first enumerated port is intentionally selected if multiple is there.
             std::string selectedPort;
             if (!hdmiArcPorts.empty()) {
                 selectedPort = hdmiArcPorts.front();
