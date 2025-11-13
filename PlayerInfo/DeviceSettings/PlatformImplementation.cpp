@@ -371,7 +371,7 @@ public:
                     auto typeId = aPort.getType().getId();
                     if (typeId == device::AudioOutputPortType::kARC || aPort.getName().find("HDMI_ARC") != std::string::npos)
                         hdmiArcPorts.push_back(aPort.getName());
-                    else if (typeId == device::AudioOutputPortType::kHDMI || aPort.getName().find("HDMI") != std::string::npos)
+                    else if (typeId == device::AudioOutputPortType::kHDMI || (aPort.getName().find("HDMI") != std::string::npos && aPort.getName().find("HDMI_ARC") == std::string::npos))
                         hdmiPorts.push_back(aPort.getName());
                     else if (typeId == device::AudioOutputPortType::kSPEAKER || aPort.getName().find("SPEAKER") != std::string::npos)
                         speakerPorts.push_back(aPort.getName());
