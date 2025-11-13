@@ -382,7 +382,7 @@ public:
                 }
             }
 
-            // Strict precedence: HDMI_ARC > HDMI0 > SPEAKER > SPDIF > HEADPHONE
+            // Strict precedence: HDMI_ARC > HDMI > SPEAKER > SPDIF > HEADPHONE
             std::string selectedPort;
             if (!hdmiArcPorts.empty())
                 selectedPort = hdmiArcPorts.front();
