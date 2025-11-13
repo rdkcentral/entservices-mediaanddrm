@@ -378,7 +378,7 @@ public:
             }
 
             // Strict precedence: HDMI_ARC > HDMI > SPEAKER > SPDIF > HEADPHONE
-            // first enumerated port is intentionally selected if multiple is there.
+            // first enumerated port is intentionally selected if multiple exist.
             std::string selectedPort;
             if (!hdmiArcPorts.empty()) {
                 selectedPort = hdmiArcPorts.front();
