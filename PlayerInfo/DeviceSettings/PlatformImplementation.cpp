@@ -369,15 +369,15 @@ public:
                 device::AudioOutputPort &aPort = aPorts.at(i);
                 if (aPort.isEnabled() && aPort.isConnected()) {
                     auto typeId = aPort.getType().getId();
-                    if (typeId == device::AudioOutputPortType::kARC || aPort.getName().find("HDMI_ARC") != std::string::npos)
+                    if (typeId == device::AudioOutputPortType::kARC)
                         hdmiArcPorts.push_back(aPort.getName());
-                    else if (typeId == device::AudioOutputPortType::kHDMI || (aPort.getName().find("HDMI") != std::string::npos && aPort.getName().find("HDMI_ARC") == std::string::npos))
+                    else if (typeId == device::AudioOutputPortType::kHDMI)
                         hdmiPorts.push_back(aPort.getName());
-                    else if (typeId == device::AudioOutputPortType::kSPEAKER || aPort.getName().find("SPEAKER") != std::string::npos)
+                    else if (typeId == device::AudioOutputPortType::kSPEAKER)
                         speakerPorts.push_back(aPort.getName());
-                    else if (typeId == device::AudioOutputPortType::kSPDIF || aPort.getName().find("SPDIF") != std::string::npos)
+                    else if (typeId == device::AudioOutputPortType::kSPDIF)
                         spdifPorts.push_back(aPort.getName());
-                    else if (typeId == device::AudioOutputPortType::kHEADPHONE || aPort.getName().find("HEADPHONE") != std::string::npos)
+                    else if (typeId == device::AudioOutputPortType::kHEADPHONE)
                         headphonePorts.push_back(aPort.getName());
                 }
             }
