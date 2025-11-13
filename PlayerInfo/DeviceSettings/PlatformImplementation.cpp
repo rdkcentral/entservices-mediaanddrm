@@ -384,16 +384,17 @@ public:
 
             // Strict precedence: HDMI_ARC > HDMI > SPEAKER > SPDIF > HEADPHONE
             std::string selectedPort;
-            if (!hdmiArcPorts.empty())
+            if (!hdmiArcPorts.empty()) {
                 selectedPort = hdmiArcPorts.front();
-            else if (!hdmiPorts.empty())
+            } else if (!hdmiPorts.empty()) {
                 selectedPort = hdmiPorts.front();
-            else if (!speakerPorts.empty())
+            } else if (!speakerPorts.empty()) {
                 selectedPort = speakerPorts.front();
-            else if (!spdifPorts.empty())
+            } else if (!spdifPorts.empty()) {
                 selectedPort = spdifPorts.front();
-            else if (!headphonePorts.empty())
+            } else if (!headphonePorts.empty()) {
                 selectedPort = headphonePorts.front();
+            }
 
             if (!selectedPort.empty()) {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort(selectedPort);
