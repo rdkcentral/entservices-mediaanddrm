@@ -398,29 +398,25 @@ public:
 
             if (!selectedPort.empty()) {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort(selectedPort);
-                if (aPort.isEnabled() && aPort.isConnected()) {
-                    device::AudioStereoMode soundmode = aPort.getStereoMode();
-                    auto mapStereoMode = [](const device::AudioStereoMode& smode) -> Exchange::Dolby::IOutput::SoundModes {
-                        if (smode == device::AudioStereoMode::kMono) return MONO;
-                        if (smode == device::AudioStereoMode::kStereo) return STEREO;
-                        if (smode == device::AudioStereoMode::kSurround) return SURROUND;
-                        if (smode == device::AudioStereoMode::kPassThru) return PASSTHRU;
-                        if (smode == device::AudioStereoMode::kDD) return DOLBYDIGITAL;
-                        if (smode == device::AudioStereoMode::kDDPlus) return DOLBYDIGITALPLUS;
-                        LOGWARN("Unknown AudioStereoMode encountered, returning UNKNOWN");
-                        return UNKNOWN;
-                    };
-                    mode = mapStereoMode(soundmode);
-                    // Auto mode for HDMI ARC and SPDIF
-                    if ((aPort.getType().getId() == device::AudioOutputPortType::kARC
-                        || aPort.getType().getId() == device::AudioOutputPortType::kSPDIF)
-                        && aPort.getStereoAuto()) {
-                        mode = SOUNDMODE_AUTO;
-                    }
-                    LOGINFO("Audio port %s has sound mode %d", selectedPort.c_str(), mode);
-                } else {
-                    LOGINFO("Audio port %s is not enabled or not connected, returning Unknown", selectedPort.c_str());
+                device::AudioStereoMode soundmode = aPort.getStereoMode();
+                auto mapStereoMode = [](const device::AudioStereoMode& smode) -> Exchange::Dolby::IOutput::SoundModes {
+                    if (smode == device::AudioStereoMode::kMono) return MONO;
+                    if (smode == device::AudioStereoMode::kStereo) return STEREO;
+                    if (smode == device::AudioStereoMode::kSurround) return SURROUND;
+                    if (smode == device::AudioStereoMode::kPassThru) return PASSTHRU;
+                    if (smode == device::AudioStereoMode::kDD) return DOLBYDIGITAL;
+                    if (smode == device::AudioStereoMode::kDDPlus) return DOLBYDIGITALPLUS;
+                    LOGWARN("Unknown AudioStereoMode encountered, returning UNKNOWN");
+                    return UNKNOWN;
+                };
+                mode = mapStereoMode(soundmode);
+                // Auto mode for HDMI ARC and SPDIF
+                if ((aPort.getType().getId() == device::AudioOutputPortType::kARC
+                    || aPort.getType().getId() == device::AudioOutputPortType::kSPDIF)
+                    && aPort.getStereoAuto()) {
+                    mode = SOUNDMODE_AUTO;
                 }
+                LOGINFO("Audio port %s has sound mode %d", selectedPort.c_str(), mode);
             } else {
                 LOGWARN("No enabled and connected audio port found matching precedence.");
             }
