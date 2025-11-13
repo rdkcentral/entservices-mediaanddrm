@@ -419,7 +419,7 @@ public:
                     }
                     LOGINFO("Audio port %s has sound mode %d", selectedPort.c_str(), mode);
                 } else {
-                    LOGINFO("Audio port %s has changed its status, return Unknown", selectedPort.c_str());
+                    LOGINFO("Audio port %s is not enabled or not connected, returning Unknown", selectedPort.c_str());
                 }
             } else {
                 LOGWARN("No enabled and connected audio port found matching precedence.");
