@@ -282,14 +282,7 @@ public:
         LOGINFO("Received OnAudioModeEvent callback");
         if(PlayerInfoImplementation::_instance)
         {
-            Exchange::Dolby::IOutput::SoundModes mode = UNKNOWN;
-            if (device::AudioStereoMode::kSurround == audioStereoMode) mode = SURROUND;
-            else if(device::AudioStereoMode::kStereo == audioStereoMode) mode = STEREO;
-            else if(device::AudioStereoMode::kMono == audioStereoMode) mode = MONO;
-            else if(device::AudioStereoMode::kPassThru == audioStereoMode) mode = PASSTHRU;
-            else if(device::AudioStereoMode::kDD == audioStereoMode) mode = DOLBYDIGITAL;
-            else if(device::AudioStereoMode::kDDPlus == audioStereoMode) mode = DOLBYDIGITALPLUS;
-            else mode = UNKNOWN;
+            Exchange::Dolby::IOutput::SoundModes mode = dsAudioModeToSoundMode(audioStereoMode);
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
     }
@@ -401,20 +394,9 @@ public:
 
             if (!selectedPort.empty()) {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort(selectedPort);
-                device::AudioStereoMode soundmode = aPort.getStereoMode();
                 if (aPort.isConnected()) {
                     device::AudioStereoMode soundmode = aPort.getStereoMode();
-                    auto mapStereoMode = [](const device::AudioStereoMode& smode) -> Exchange::Dolby::IOutput::SoundModes {
-                        if (smode == device::AudioStereoMode::kMono) return MONO;
-                        if (smode == device::AudioStereoMode::kStereo) return STEREO;
-                        if (smode == device::AudioStereoMode::kSurround) return SURROUND;
-                        if (smode == device::AudioStereoMode::kPassThru) return PASSTHRU;
-                        if (smode == device::AudioStereoMode::kDD) return DOLBYDIGITAL;
-                        if (smode == device::AudioStereoMode::kDDPlus) return DOLBYDIGITALPLUS;
-                        LOGWARN("Unknown AudioStereoMode encountered, returning UNKNOWN");
-                        return UNKNOWN;
-                    };
-                    mode = mapStereoMode(soundmode);
+                    mode = dsAudioModeToSoundMode(soundmode);
                     // Auto mode for HDMI ARC and SPDIF
                     if ((aPort.getType().getId() == device::AudioOutputPortType::kARC || aPort.getType().getId() == device::AudioOutputPortType::kSPDIF)
                             && aPort.getStereoAuto()) {
@@ -464,7 +446,17 @@ public:
     END_INTERFACE_MAP
 
 private:
-
+    static Exchange::Dolby::IOutput::SoundModes dsAudioModeToSoundMode(const device::AudioStereoMode& smode)
+    {
+        if (smode == device::AudioStereoMode::kMono) return MONO;
+        if (smode == device::AudioStereoMode::kStereo) return STEREO;
+        if (smode == device::AudioStereoMode::kSurround) return SURROUND;
+        if (smode == device::AudioStereoMode::kPassThru) return PASSTHRU;
+        if (smode == device::AudioStereoMode::kDD) return DOLBYDIGITAL;
+        if (smode == device::AudioStereoMode::kDDPlus) return DOLBYDIGITALPLUS;
+        LOGWARN("Unknown AudioStereoMode encountered, returning UNKNOWN");
+        return UNKNOWN;
+    }
 
     void UpdateAudioCodecInfo()
     {
