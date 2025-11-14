@@ -86,7 +86,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 		drmModePlane *plane = nullptr;
 
 		context->fd = open(DEFAULT_DEVICE, O_RDWR);
-		if(!context->fd) {
+		if(!context->fd < 0) {
 			cout << "[SCREENCAP] fail to open " <<  DEFAULT_DEVICE << endl;
 			ret = false;
 			break;
