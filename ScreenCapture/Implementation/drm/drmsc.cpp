@@ -198,18 +198,48 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 		}
 
 		// copy frame
-		void *vaddr = NULL;
-		vaddr =(void*) mmap64(NULL, size, PROT_READ , MAP_SHARED, handle->dmabuf_fd, 0);
-
-		if (vaddr == MAP_FAILED) {
-			cout << "[SCREENCAP] mmap failed" << endl;
-			ret = false;
-			break;
+		// Map DMA-BUF
+        vaddr = mmap64(nullptr, size, PROT_READ, MAP_SHARED, handle->dmabuf_fd, 0);
+        if (vaddr == MAP_FAILED) {
+            cout << "[SCREENCAP] mmap failed, errno=" << errno << endl;
+            vaddr = nullptr;  // prevent accidental munmap
+            ret = false;
+            break;
         }
-		memcpy(output,(unsigned char*)vaddr, size);
-		munmap(vaddr, size);
+
+        // Validate pages using mincore
+        size_t pageCount = (size + getpagesize() - 1) / getpagesize();
+        std::vector<unsigned char> vec(pageCount);
+
+        if (mincore(vaddr, size, vec.data()) != 0) {
+            cout << "[SCREENCAP] mincore check failed, errno=" << errno << endl;
+            ret = false;
+            break;
+        }
+
+        bool allInvalid = true;
+        for (auto v : vec) {
+            if (v & 0x1) {  // page resident
+                allInvalid = false;
+                break;
+            }
+        }
+
+        if (allInvalid) {
+            cout << "[SCREENCAP] mapped region not resident/invalid" << endl;
+            ret = false;
+            break;
+        }
+
+        // Safe copy
+        memcpy(output, vaddr, size);
 
 	} while(false);
+	
+	// Cleanup
+    if (vaddr) {
+        munmap(vaddr, size);
+    }
 
 	return ret;
 }
