@@ -444,6 +444,11 @@ namespace WPEFramework
             // create header
             struct curl_slist *chunk = NULL;
             chunk = curl_slist_append(chunk, "Content-Type: image/png");
+            if (chunk == NULL) {
+                LOGERR("Failed to append HTTP header (Content-Type: image/png)");
+                curl_easy_cleanup(curl);
+                return false;
+            }
 
             // set url and data
             res = curl_easy_setopt(curl, CURLOPT_URL, url);
