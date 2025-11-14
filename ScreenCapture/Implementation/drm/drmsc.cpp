@@ -154,7 +154,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			break;
 		}
 
-                struct drm_prime_handle drm_prime;
+                struct drm_prime_handle drm_prime = {0};
                 int drmRet = 0;
 
 		drm_prime.handle = fb->handle;
