@@ -494,15 +494,25 @@ namespace WPEFramework
 
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-                if (600 > response_code && response_code >= 400)
+                if (info_res != CURLE_OK)
                 {
-                    LOGERR("uploading failed with response code %ld\n", response_code);
-                    error_str = std::string("response code:") + std::to_string(response_code);
+                    LOGERR("Failed to get response code: %s", curl_easy_strerror(info_res));
+                    error_str = "Failed to get response code";
                     call_succeeded = false;
                 }
                 else
-                    LOGWARN("upload done");
-            }
+                {
+                    if (600 > response_code && response_code >= 400)
+                    {
+                        LOGERR("uploading failed with response code %ld\n", response_code);
+                        error_str = std::string("response code:") + std::to_string(response_code);
+                        call_succeeded = false;
+                    }
+                    else
+                    {
+                        LOGWARN("upload done");
+                    }
+                }
             else
             {
                 LOGERR("upload failed with error %d:'%s'", res, curl_easy_strerror(res));
