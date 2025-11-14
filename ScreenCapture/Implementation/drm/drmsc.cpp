@@ -116,12 +116,15 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			// try again
 			cout << "[SCREENCAP] try get primary buffer again" << endl;
 			kms_get_plane(context->fd, context->kms);
+			drmModePlane* prev_plane = plane; 
 			plane = drmModeGetPlane(context->fd, context->kms->primary_plane_id );
 			if(!plane) {
 				cout << "[SCREENCAP] fail to drmModeGetPlane" <<  endl;
+				drmModeFreePlane(prev_plane);
 				ret = false;
 				break;
 			}
+			 drmModeFreePlane(prev_plane);
 
 			fb = drmModeGetFB(context->fd, plane->fb_id);
 			if(retryCount > 2) {
@@ -168,7 +171,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 		}
 		handle->dmabuf_fd = drm_prime.fd;
 	} while(false);
-
+	if (plane)
+    drmModeFreePlane(plane);
 	if(fb)
 		drmModeFreeFB(fb);
 
