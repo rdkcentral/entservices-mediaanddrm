@@ -455,21 +455,33 @@ namespace WPEFramework
             if (res != CURLE_OK)
             {
                 LOGERR("CURLOPT_URL failed URL with error code: %s\n", curl_easy_strerror(res));
+                curl_slist_free_all(chunk);
+                curl_easy_cleanup(curl);
+                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_HTTPHEADER with error code  %s\n", curl_easy_strerror(res));
+                curl_slist_free_all(chunk);
+                curl_easy_cleanup(curl);
+                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_POSTFIELDSIZE with error code  %s\n", curl_easy_strerror(res));
+                curl_slist_free_all(chunk);
+                curl_easy_cleanup(curl);
+                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &data[0]);
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_POSTFIELDS with code  %s\n", curl_easy_strerror(res));
+                curl_slist_free_all(chunk);
+                curl_easy_cleanup(curl);
+                return false;
             }
 
             // perform blocking upload call
