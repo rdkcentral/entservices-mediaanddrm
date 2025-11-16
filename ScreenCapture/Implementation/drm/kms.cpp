@@ -71,7 +71,7 @@ exit:
 
 void kms_setup_connector( int fd, kms_ctx *kms )
 {
-    int i = 0;
+
     drmModeConnector *connector = NULL;
 
     for( i = 0; i < kms->res->count_connectors; i++ ) {
