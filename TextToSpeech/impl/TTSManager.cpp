@@ -371,31 +371,19 @@ TTS_Error TTSManager::getSpeechState(uint32_t id, SpeechState &state) {
 void TTSManager::willSpeak(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
-    SpeechData d;
-    d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
-    m_callback->onWillSpeak(d);
+    m_callback->onWillSpeak(SpeechData(speech_id, callsign, text));
 }
 
 void TTSManager::started(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
-    SpeechData d;
-    d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
-    m_callback->onSpeechStart(d);
+    m_callback->onSpeechStart(SpeechData(speech_id, callsign, text));
 }
 
 void TTSManager::spoke(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
-    SpeechData d;
-    d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
-    m_callback->onSpeechComplete(d);
+    m_callback->onSpeechComplete(SpeechData(speech_id, callsign, text));
 }
 
 void TTSManager::paused(uint32_t speech_id, std::string callsign) {
