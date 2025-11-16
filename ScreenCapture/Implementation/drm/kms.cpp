@@ -62,11 +62,14 @@ void kms_setup_connector( int fd, kms_ctx *kms )
     for( i = 0; i < kms->res->count_connectors; i++ ) {
 
         connector = drmModeGetConnector(fd, kms->res->connectors[i]);
-        if( connector ) {
-
+        if(!connector) {
+            continue;
+        }
             if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
                 break;
             }
+        drmModeFreeConnector(connector);
+        connector = NULL;
         }
     }
 
