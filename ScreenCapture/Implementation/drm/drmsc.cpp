@@ -72,6 +72,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 	DRMContext *context;
 	bool ret = true;
 	drmModeFB *fb = nullptr;
+	drmModePlane *plane = nullptr;
 
 	do {
 		if(!handle || !handle->context) {
@@ -86,7 +87,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 		drmModePlane *plane = nullptr;
 
 		context->fd = open(DEFAULT_DEVICE, O_RDWR);
-		if(!context->fd < 0) {
+		if(context->fd < 0) {
 			cout << "[SCREENCAP] fail to open " <<  DEFAULT_DEVICE << endl;
 			ret = false;
 			break;
@@ -182,6 +183,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, uint32_t bufSize) {
 	bool ret = true;
+	void* vaddr = nullptr;
+    uint32_t size = 0;
 
 	do {
 		if(!handle || !output) {
@@ -190,7 +193,8 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 			break;
 		}
 
-		uint32_t size = handle->pitch * handle->height;
+		size = handle->pitch * handle->height;
+
 		if(bufSize < size) {
 			// buffer size not match
 			ret = false;
