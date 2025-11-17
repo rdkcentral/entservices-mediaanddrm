@@ -676,7 +676,7 @@ namespace Plugin {
     }   
 
     std::mutex fileMutex;
-    static JsonObject buildConfig(const TTS::TTSConfiguration& ttsConfig)
+    static JsonObject buildConfig(TTS::TTSConfiguration& ttsConfig)
     {
     JsonObject obj;
 
