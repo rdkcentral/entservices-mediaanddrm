@@ -84,7 +84,6 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 		// open drm device to get screen information
 		int retryCount = 0;
-		drmModePlane *plane = nullptr;
 
 		context->fd = open(DEFAULT_DEVICE, O_RDWR);
 		if(context->fd < 0) {
