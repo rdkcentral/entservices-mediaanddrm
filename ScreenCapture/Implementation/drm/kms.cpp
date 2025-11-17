@@ -74,7 +74,7 @@ void kms_setup_connector( int fd, kms_ctx *kms )
 
     drmModeConnector *connector = NULL;
 
-    for( i = 0; i < kms->res->count_connectors; i++ ) {
+    for(int i = 0; i < kms->res->count_connectors; i++ ) {
 
         connector = drmModeGetConnector(fd, kms->res->connectors[i]);
         if(!connector) {
@@ -86,7 +86,6 @@ void kms_setup_connector( int fd, kms_ctx *kms )
         drmModeFreeConnector(connector);
         connector = NULL;
         }
-    }
 
     if ( connector ) {
 
