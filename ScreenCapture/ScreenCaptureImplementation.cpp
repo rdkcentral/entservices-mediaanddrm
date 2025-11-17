@@ -492,7 +492,7 @@ namespace WPEFramework
             {
                 long response_code;
 
-                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+                CURLcode info_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
                 
                 if (info_res != CURLE_OK)
                 {
