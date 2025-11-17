@@ -372,21 +372,21 @@ void TTSManager::willSpeak(uint32_t speech_id, std::string callsign, std::string
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
     SpeechData data(this, speech_id, callsign, text);
-    m_callback->onWillSpeak;
+    m_callback->onWillSpeak(data);
 }
 
 void TTSManager::started(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
     SpeechData data(this, speech_id, callsign, text);
-    m_callback->onSpeechStart;
+    m_callback->onSpeechStart(data);
 }
 
 void TTSManager::spoke(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
 
     SpeechData data(this, speech_id, callsign, text);
-    m_callback->onSpeechComplete;
+    m_callback->onSpeechComplete(data);
 }
 
 void TTSManager::paused(uint32_t speech_id, std::string callsign) {
