@@ -493,7 +493,7 @@ namespace WPEFramework
                 long response_code;
 
                 curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-
+                
                 if (info_res != CURLE_OK)
                 {
                     LOGERR("Failed to get response code: %s", curl_easy_strerror(info_res));
@@ -513,6 +513,7 @@ namespace WPEFramework
                         LOGWARN("upload done");
                     }
                 }
+            }
             else
             {
                 LOGERR("upload failed with error %d:'%s'", res, curl_easy_strerror(res));
