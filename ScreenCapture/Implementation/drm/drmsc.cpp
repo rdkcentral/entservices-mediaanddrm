@@ -27,6 +27,7 @@
 #include <sys/ioctl.h>
 #include "kms.h"
 #include "drmsc.h"
+#include <vector>
 
 #ifndef DEFAULT_DEVICE
 #define DEFAULT_DEVICE "/dev/dri/card0"
