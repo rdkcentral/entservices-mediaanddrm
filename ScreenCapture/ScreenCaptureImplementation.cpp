@@ -242,7 +242,11 @@ namespace WPEFramework
                          PNG_FILTER_TYPE_BASE);
 
             row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * height);
-
+            if (row_pointers == NULL) {
+                LOGERR("Error: failed to allocate memory for row pointers.");
+                r = -7;
+                goto error;
+            }
             for (i = 0; i < height; ++i)
                 row_pointers[i] = data + i * pitch;
 
