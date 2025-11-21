@@ -657,14 +657,6 @@ jobs:
           cp -rf $(pwd)/rdkL1TestResults.json $GITHUB_WORKSPACE/rdkL1TestResultsWithValgrind.json &&
           rm -rf $(pwd)/rdkL1TestResults.json
 
-      - name: Upload build
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-         name: BuildL1
-         path: |
-          ./
-
       - name: Capture detailed crash info on failure
         if: failure()
         run: |
@@ -717,5 +709,13 @@ jobs:
             rdkL1TestResultsWithoutValgrind.json
             rdkL1TestResultsWithValgrind.json
           if-no-files-found: warn
+
+      - name: Upload build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+         name: BuildL1
+         path: |
+          ./
           
 
