@@ -678,25 +678,25 @@ namespace Plugin {
     std::mutex fileMutex;
     static JsonObject buildConfig(TTS::TTSConfiguration& ttsConfig)
     {
-    JsonObject obj;
+        JsonObject obj;
 
-    obj["enabled"] = JsonValue((bool)ttsConfig.enabled());
-    obj["volume"] = std::to_string(ttsConfig.volume());
-    obj["rate"] = std::to_string(ttsConfig.rate());
-    obj["speechrate"] = ttsConfig.speechRate();
-    obj["primvolduckpercent"] = std::to_string(ttsConfig.primVolDuck());
-    obj["voice"] = ttsConfig.voice();
-    obj["language"] = ttsConfig.language();
+        obj["enabled"] = JsonValue((bool)ttsConfig.enabled());
+        obj["volume"] = std::to_string(ttsConfig.volume());
+        obj["rate"] = std::to_string(ttsConfig.rate());
+        obj["speechrate"] = ttsConfig.speechRate();
+        obj["primvolduckpercent"] = std::to_string(ttsConfig.primVolDuck());
+        obj["voice"] = ttsConfig.voice();
+        obj["language"] = ttsConfig.language();
 
-    if (ttsConfig.isFallbackEnabled()) {
-        JsonObject fallback;
-        fallback["scenario"] = ttsConfig.getFallbackScenario();
-        fallback["value"]    = ttsConfig.getFallbackValue();
-        fallback["path"]     = ttsConfig.getFallbackPath();
-        obj["fallbacktext"]  = fallback;
-    }
+        if (ttsConfig.isFallbackEnabled()) {
+            JsonObject fallback;
+            fallback["scenario"] = ttsConfig.getFallbackScenario();
+            fallback["value"]    = ttsConfig.getFallbackValue();
+            fallback["path"]     = ttsConfig.getFallbackPath();
+            obj["fallbacktext"]  = fallback;
+        }
 
-    return obj;
+        return obj;
     }
     bool _writeToFile(std::string filename, TTS::TTSConfiguration &ttsConfig)
     {
