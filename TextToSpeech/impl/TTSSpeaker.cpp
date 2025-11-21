@@ -1096,7 +1096,7 @@ bool TTSSpeaker::handleMessage(GstMessage *message) {
                 } else if (oldstate == GST_STATE_PAUSED && newstate == GST_STATE_PLAYING) {
                     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "playing-pipeline");
                     std::lock_guard<std::mutex> lock(m_stateMutex);
-                    if(m_clientSpeaking) {
+                    if(m_clientSpeaking && m_currentSpeech) {
                         if(m_isPaused) {
                             m_isPaused = false;
                             systemAudioChangePrimaryVol(MIXGAIN_PRIM, m_currentSpeech->primVolDuck);
@@ -1108,7 +1108,7 @@ bool TTSSpeaker::handleMessage(GstMessage *message) {
                     }
                 } else if (oldstate == GST_STATE_PLAYING && newstate == GST_STATE_PAUSED) {
                     std::lock_guard<std::mutex> lock(m_stateMutex);
-                    if(m_clientSpeaking && m_isPaused) {
+                    if(m_clientSpeaking && m_isPaused && m_currentSpeech) {
                         systemAudioChangePrimaryVol(MIXGAIN_PRIM, 100);
                         m_clientSpeaking->paused(m_currentSpeech->id, m_currentSpeech->callsign);
                         m_condition.notify_one();
