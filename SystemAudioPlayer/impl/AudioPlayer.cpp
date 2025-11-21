@@ -47,22 +47,22 @@ SAPEventCallback* AudioPlayer::m_callback=NULL;
 
 AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode playMode,int objectIdentifier)
 
-    : audioType(audioType)
-    , sourceType(sourceType)
-    , playMode(playMode)
-    , objectIdentifier(objectIdentifier)
-    , m_pipeline(nullptr)
+    : m_pipeline(nullptr)
     , m_audioSink(nullptr)
     , m_audioVolume(nullptr)
     , m_capsfilter(nullptr)
     , m_audioCutter(false)
     , m_thresHold_dB(-40.0000)
+    , objectIdentifier(objectIdentifier)
     , m_isPaused(false)
     , m_busWatch(0)
     , m_duration(0)
     , m_thread(nullptr)
     , bufferQueue(nullptr)
     , m_source(nullptr)
+	, audioType(audioType)
+    , sourceType(sourceType)
+    , playMode(playMode)
     , state(READY)
 {
     SAPLOG_INFO("SAP: AudioPlayer Constructor\n");    
