@@ -612,14 +612,6 @@ jobs:
           echo "Disk space:" >> $GITHUB_WORKSPACE/debug_info.log
           df -h >> $GITHUB_WORKSPACE/debug_info.log
 
-      - name: Upload build
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-         name: BuildL2
-         path: |
-          ./
-
       - name: Generate coverage
         if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
         run: >
@@ -662,3 +654,11 @@ jobs:
             rdkL2TestResultsWithoutValgrind.json
             rdkL2TestResultsWithValgrind.json
           if-no-files-found: warn
+
+      - name: Upload build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+         name: BuildL2
+         path: |
+          ./
