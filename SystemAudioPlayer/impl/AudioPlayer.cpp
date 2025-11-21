@@ -46,15 +46,25 @@ SAPEventCallback* AudioPlayer::m_callback=NULL;
 //static bool sys_playing =false;
 
 AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode playMode,int objectIdentifier)
+
+    : audioType(audioType)
+    , sourceType(sourceType)
+    , playMode(playMode)
+    , objectIdentifier(objectIdentifier)
+    , m_pipeline(nullptr)
+    , m_audioSink(nullptr)
+    , m_audioVolume(nullptr)
+    , m_capsfilter(nullptr)
+    , m_audioCutter(false)
+    , m_thresHold_dB(-40.0000)
+    , m_isPaused(false)
+    , m_busWatch(0)
+    , m_duration(0)
+    , m_thread(nullptr)
+    , bufferQueue(nullptr)
+    , m_source(nullptr)
+    , state(READY)
 {
-    this->audioType = audioType;
-    this->sourceType = sourceType;
-    this->playMode = playMode;
-    this->objectIdentifier = objectIdentifier;
-    m_audioCutter = false;
-    m_thresHold_dB=  -40.0000;
-    m_isPaused = false;
-    state = READY;
     SAPLOG_INFO("SAP: AudioPlayer Constructor\n");    
     if(sourceType == DATA || sourceType == WEBSOCKET)
     {
@@ -96,15 +106,23 @@ AudioPlayer::~AudioPlayer()
     if(sourceType == DATA || sourceType == WEBSOCKET)
     {   
         m_running = false;       
-        bufferQueue->preDelete();
+        if(bufferQueue) {
+            bufferQueue->preDelete();
+        }
 	SAPLOG_INFO("SAP: AudioPlayer Destructor before Pushapp src thread join player id %d\n",getObjectIdentifier());
-	m_thread->join();
-	SAPLOG_INFO("SAP: AudioPlayer Destructor after Pushapp src thread join player id %d\n",getObjectIdentifier());
-        delete bufferQueue;
-        delete m_thread;
+	if(m_thread) {
+	    m_thread->join();
+            SAPLOG_INFO("SAP: AudioPlayer Destructor after Pushapp src thread join player id %d\n",getObjectIdentifier());
+            delete m_thread;
+        }
+        if(bufferQueue) {
+            delete bufferQueue;
+        }
+    }
+    if(m_pipeline) {
+        gst_element_set_state (m_pipeline, GST_STATE_NULL);
+        gst_object_unref (m_pipeline);
     }  
-    gst_element_set_state (m_pipeline, GST_STATE_NULL);
-    gst_object_unref (m_pipeline);  
 }
 
 void AudioPlayer::Init(SAPEventCallback *callback)
