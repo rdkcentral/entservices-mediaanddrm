@@ -46,6 +46,9 @@ void kms_setup_encoder( int fd, kms_ctx *kms )
             return;
         }
 
+        if (!kms->encoder) {
+            continue;
+        }
 
         for( int j = 0; j < kms->res->count_crtcs; j++ ) {
 
@@ -80,9 +83,9 @@ void kms_setup_connector( int fd, kms_ctx *kms )
         if(!connector) {
             continue;
         }
-            if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
-                break;
-            }
+        if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
+            break;
+        }
         drmModeFreeConnector(connector);
         connector = NULL;
         }
