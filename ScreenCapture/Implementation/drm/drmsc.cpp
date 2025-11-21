@@ -173,7 +173,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 		handle->dmabuf_fd = drm_prime.fd;
 	} while(false);
 	if (plane)
-    drmModeFreePlane(plane);
+    	drmModeFreePlane(plane);
 	if(fb)
 		drmModeFreeFB(fb);
 
