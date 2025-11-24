@@ -279,10 +279,10 @@ public:
 
     void OnAudioModeEvent(dsAudioPortType_t audioPortType, dsAudioStereoMode_t audioStereoMode) override
     {
-        LOGINFO("Received OnAudioModeEvent callback");
         if(PlayerInfoImplementation::_instance)
         {
             Exchange::Dolby::IOutput::SoundModes mode = dsAudioModeToSoundMode(audioStereoMode);
+            LOGINFO("OnAudioModeEvent callback: audioPortType=0x%X, dsAudioStereoMode=0x%X, SoundMode=%d", audioPortType, audioStereoMode, mode);
             PlayerInfoImplementation::_instance->audiomodeChanged(mode, true);
         }
     }
@@ -446,6 +446,27 @@ public:
     END_INTERFACE_MAP
 
 private:
+    static Exchange::Dolby::IOutput::SoundModes dsAudioModeToSoundMode(const dsAudioStereoMode_t dsAudioStereoMode)
+    {
+        switch (dsAudioStereoMode) {
+            case dsAUDIO_STEREO_MONO:
+                return MONO;
+            case dsAUDIO_STEREO_STEREO:
+                return STEREO;
+            case dsAUDIO_STEREO_SURROUND:
+                return SURROUND;
+            case dsAUDIO_STEREO_PASSTHRU:
+                return PASSTHRU;
+            case dsAUDIO_STEREO_DD:
+                return DOLBYDIGITAL;
+            case dsAUDIO_STEREO_DDPLUS:
+                return DOLBYDIGITALPLUS;
+            default:
+                LOGWARN("Got unknown dsAudioStereoMode 0x%X, returning UNKNOWN", dsAudioStereoMode);
+                return UNKNOWN;
+        }
+    }
+
     static Exchange::Dolby::IOutput::SoundModes dsAudioModeToSoundMode(const device::AudioStereoMode& smode)
     {
         if (smode == device::AudioStereoMode::kMono) return MONO;
