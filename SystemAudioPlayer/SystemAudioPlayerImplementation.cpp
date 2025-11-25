@@ -120,7 +120,7 @@ namespace Plugin {
             returnResponse(false);
         }
 
-        int id;
+        int id = -1;
         _adminLock.Lock();      
         OpenMapping(audioType,sourceType,playMode,id);        
         _adminLock.Unlock();
@@ -133,7 +133,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Config request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
-        int id, rate, channels;
+        int id = -1, rate = 0, channels = 0;
         bool ret = false;
         string format, layout;
         AudioPlayer *player;
@@ -152,8 +152,8 @@ namespace Plugin {
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("rate");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("channels");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("layout");
-                format = config["format"].String();
-                layout = config["layout"].String();
+                string format = config["format"].String();
+                string layout = config["layout"].String();
                 getNumberConfigParameter("rate",rate);
                 getNumberConfigParameter("channels",channels);
                 SAPLOG_INFO("SAP: Do PCM config ");
@@ -176,7 +176,7 @@ namespace Plugin {
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         string url;
-        int playerid;
+        int playerid = -1;
         url = parameters["url"].String();
         CHECK_SAP_PARAMETER_URL_VALID_RETURN_ON_FAIL(url.c_str());
         extractFileProtocol(url); //we do not store file:// for file playback
@@ -200,7 +200,7 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Play\n");
-        int id;
+        int id = -1;
         string url;
         AudioPlayer *player;
         url = parameters["url"].String(); 
@@ -240,7 +240,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got PlayBuffer request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
-        int id;
+        int id = -1;
         std::string data;
         LOGINFO("PlayBuffer request\n");
         getNumberParameter("id", id);
@@ -270,7 +270,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
-        int id;
+        int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Stop\n");
         _adminLock.Lock();
@@ -288,7 +288,7 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Close request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
-        int id;
+        int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Close\n");
         _adminLock.Lock();
@@ -322,7 +322,7 @@ namespace Plugin {
         int primVol = -1;
         int thisVol = -1;
         AudioPlayer *player;
-        int playerId;
+        int playerId = -1;
         getNumberParameter("id", playerId);
         getNumberParameter("primaryVolume", primVol);
         getNumberParameter("playerVolume", thisVol);
@@ -359,7 +359,7 @@ namespace Plugin {
         int duckPercent = -1;
         bool smartVolumeEnable = false;
         AudioPlayer *player = nullptr;
-        int playerId;
+        int playerId = -1;
         getNumberParameter("id", playerId);
         getBoolParameter("enable",smartVolumeEnable);
         getFloatParameter("playerAudioLevelThreshold", thresHold);
@@ -391,7 +391,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Pause request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
-        int id;
+        int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
         _adminLock.Lock();
@@ -409,7 +409,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Resume request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
-        int id;
+        int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Resume\n");
@@ -428,7 +428,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got IsPlayingrequest :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
-        int id;
+        int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation IsPlaying\n");
