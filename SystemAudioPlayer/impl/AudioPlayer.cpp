@@ -55,6 +55,8 @@ AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode play
     , m_thresHold_dB(-40.0000)
     , objectIdentifier(objectIdentifier)
     , m_isPaused(false)
+	, m_prevPrimVolume(-1)
+    , m_prevThisVolume(-1)
     , m_busWatch(0)
     , m_duration(0)
     , m_thread(nullptr)
@@ -65,8 +67,6 @@ AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode play
     , playMode(playMode)
 	, wsStatus(DISCONNECTED)
     , state(READY)
-	, m_prevPrimVolume(-1)
-    , m_prevThisVolume(-1)
 {
     SAPLOG_INFO("SAP: AudioPlayer Constructor\n");    
     if(sourceType == DATA || sourceType == WEBSOCKET)
