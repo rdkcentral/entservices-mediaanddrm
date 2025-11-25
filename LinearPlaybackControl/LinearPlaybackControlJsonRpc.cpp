@@ -141,7 +141,7 @@ namespace Plugin {
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
-                               IDemuxer::SeekType seek;
+                               IDemuxer::SeekType seek  = {};
                                auto status = DmxStatusToCoreStatus(dmx->getSeek(seek));
                                if (status == Core::ERROR_NONE) {
                                    params.SeekPosInSeconds = seek.seekPosInSeconds;
@@ -180,7 +180,7 @@ namespace Plugin {
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
-                               int16_t speed;
+                               int16_t speed = 0;
                                auto status = DmxStatusToCoreStatus(dmx->getTrickPlaySpeed(speed));
                                if (status == Core::ERROR_NONE) {
                                    params.Speed = speed;
@@ -199,9 +199,9 @@ namespace Plugin {
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                // Parameter declaration
-                               int16_t speed;
-                               IDemuxer::SeekType seek;
-                               IDemuxer::StreamStatusType streamStatus;
+                               int16_t speed = 0;
+                               IDemuxer::SeekType seek = {};
+                               IDemuxer::StreamStatusType streamStatus = {};
                                // Get parameters from selected demuxer.
                                // Note: OR operation is used for concatenating the status since possible
                                // set of status is ERROR_NONE (0) or ERROR_READ_ERROR (39)
