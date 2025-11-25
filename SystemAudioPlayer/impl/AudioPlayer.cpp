@@ -63,7 +63,10 @@ AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode play
 	, audioType(audioType)
     , sourceType(sourceType)
     , playMode(playMode)
+	, wsStatus(DISCONNECTED)
     , state(READY)
+	, m_prevPrimVolume(-1)
+    , m_prevThisVolume(-1)
 {
     SAPLOG_INFO("SAP: AudioPlayer Constructor\n");    
     if(sourceType == DATA || sourceType == WEBSOCKET)
@@ -97,7 +100,6 @@ AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode play
     //Set mixter levels, this can be reflected when playing
     m_primVolume = DEFAULT_PRIM_VOL_LEVEL;
     m_thisVolume = DEFAULT_PLAYER_VOL_LEVEL;
-    m_prevPrimVolume = m_prevThisVolume = -1;
 }
 
 AudioPlayer::~AudioPlayer()
