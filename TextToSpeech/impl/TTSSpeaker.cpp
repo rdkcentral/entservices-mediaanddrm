@@ -583,7 +583,7 @@ bool TTSSpeaker::waitForStatus(GstState expected_state, uint32_t timeout_ms) {
     // wait for the pipeline to get to pause so we know we have the audio device
     if(m_pipeline) {
         GstState state = GST_STATE_NULL;
-        GstState pending;
+        GstState pending  = GST_STATE_NULL;
 
         auto timeout = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout_ms);
 
