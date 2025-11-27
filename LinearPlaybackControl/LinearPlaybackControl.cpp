@@ -62,15 +62,21 @@ namespace Plugin {
         _mountPoint = config.MountPoint.Value();
         _isStreamFSEnabled = config.IsStreamFSEnabled.Value();
 
-        // FIX(Coverity): Use std::make_unique for exception safety
+        // FIX(Coverity): Allocate in try-catch for exception safety (C++11 compatible)
         // Reason: Raw new can leak if subsequent operations throw exceptions
-        // Impact: No API signature changes. Improved exception safety.
+        // Impact: No API signature changes. Improved exception safety without C++14 features.
         if (_isStreamFSEnabled) {
-            // For now we only have one Nokia FCC demuxer interface with demux Id = 0
-            _demuxer = std::make_unique<DemuxerStreamFsFCC>(&config, 0);
-            _trickPlayFileListener = std::make_unique<FileSelectListener>(_demuxer->getTrickPlayFile(), 16,[this](const std::string &data){
-                speedchangedNotify(data);
-            });
+            try {
+                // For now we only have one Nokia FCC demuxer interface with demux Id = 0
+                _demuxer.reset(new DemuxerStreamFsFCC(&config, 0));
+                _trickPlayFileListener.reset(new FileSelectListener(_demuxer->getTrickPlayFile(), 16,[this](const std::string &data){
+                    speedchangedNotify(data);
+                }));
+            } catch (...) {
+                _demuxer.reset();
+                _trickPlayFileListener.reset();
+                throw;
+            }
         }
 
         // Initialize streamfs and associated dependencies here.
