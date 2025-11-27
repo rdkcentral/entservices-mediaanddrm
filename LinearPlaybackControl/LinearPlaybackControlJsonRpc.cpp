@@ -88,7 +88,10 @@ namespace Plugin {
             return Core::ERROR_BAD_REQUEST;
         }
 
-        syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_channel");
+        // FIX(Coverity): Changed from LOG_ERR to LOG_INFO for normal operation
+        // Reason: This is not an error condition, should use INFO or DEBUG
+        // Impact: No API signature changes. Corrected logging level.
+        syslog(LOG_INFO, "Invoked LinearPlaybackControl::endpoint_set_channel");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                return DmxStatusToCoreStatus(dmx->setChannel(params.Channel.Value()));
@@ -202,12 +205,18 @@ namespace Plugin {
                                int16_t speed = 0;
                                IDemuxer::SeekType seek = {};
                                IDemuxer::StreamStatusType streamStatus = {};
-                               // Get parameters from selected demuxer.
-                               // Note: OR operation is used for concatenating the status since possible
-                               // set of status is ERROR_NONE (0) or ERROR_READ_ERROR (39)
+                               // FIX(Coverity): Check each status individually to identify which operation failed
+                               // Reason: OR operation masks which specific operation failed
+                               // Impact: No API signature changes. Improved error detection and reporting.
                                uint32_t status = DmxStatusToCoreStatus(dmx->getSeek(seek));
-                               status |= DmxStatusToCoreStatus(dmx->getTrickPlaySpeed(speed));
-                               status |= DmxStatusToCoreStatus(dmx->getStreamStatus(streamStatus));
+                               if (status != Core::ERROR_NONE) {
+                                   return status;
+                               }
+                               status = DmxStatusToCoreStatus(dmx->getTrickPlaySpeed(speed));
+                               if (status != Core::ERROR_NONE) {
+                                   return status;
+                               }
+                               status = DmxStatusToCoreStatus(dmx->getStreamStatus(streamStatus));
                                // Set parameters in JSON response
                                if (status == Core::ERROR_NONE) {
                                    params.SeekPosInSeconds      = seek.seekPosInSeconds;
@@ -255,6 +264,13 @@ namespace Plugin {
             syslog(LOG_ERR, "No demuxer set");
             return Core::ERROR_BAD_REQUEST;
         }
+        // FIX(Coverity): Add null check before dereferencing _demuxer
+        // Reason: _demuxer could be uninitialized, dereferencing nullptr causes crash
+        // Impact: No API signature changes. Added null check for safety.
+        if (!_demuxer) {
+            syslog(LOG_ERR, "Demuxer not initialized");
+            return Core::ERROR_BAD_REQUEST;
+        }
         // In a future implementation, the concrete demuxer instance shall be obtained based
         // on the demuxerId. For now we just use the _demuxer instance, associated with
         // demuxId = 0, when invoking the lambda function for interacting with the instance.
@@ -262,9 +278,17 @@ namespace Plugin {
     }
 
     void LinearPlaybackControl::speedchangedNotify(const std::string &data) {
-        uint16_t trickPlaySpeed;
+        uint16_t trickPlaySpeed = 0;
         std::istringstream is(data);
         is >> trickPlaySpeed;
+        
+        // FIX(Coverity): Check stream state after extraction
+        // Reason: Invalid input causes undefined behavior without error checking
+        // Impact: No API signature changes. Added input validation.
+        if (is.fail()) {
+            syslog(LOG_ERR, "Failed to parse trickPlaySpeed from data: %s", data.c_str());
+            return;
+        }
 
         SpeedchangedParamsData params;
         params.Speed = trickPlaySpeed;

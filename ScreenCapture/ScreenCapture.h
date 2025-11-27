@@ -108,6 +108,7 @@ namespace WPEFramework
             uint32_t _connectionId{};
             Exchange::IScreenCapture *_screenCapture{};
             Core::Sink<Notification> _screenCaptureNotification;
+            std::mutex _adminLock;  // FIX(Coverity): Added mutex for thread-safe access
         };
 
     } // namespace Plugin

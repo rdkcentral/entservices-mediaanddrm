@@ -22,6 +22,8 @@
 #include <thread>
 #include <functional>
 #include <fstream>
+#include <atomic>
+#include <vector>
 
 class FileSelectListener
 {
@@ -53,7 +55,10 @@ private:
     std::string mFile;
     uint32_t mBufSize;
     std::function<void(const std::string&)> mFunc;
-    bool mStop;
+    // FIX(Coverity): Use std::atomic for mStop to prevent race condition
+    // Reason: mStop accessed from multiple threads without synchronization
+    // Impact: No API signature changes. Made mStop atomic for thread safety.
+    std::atomic<bool> mStop;
 
     std::shared_ptr<std::thread> mThread;
 
@@ -64,8 +69,10 @@ private:
     }
 
     void pollLoop() {
-        char buf[mBufSize];
-        memset(buf, 0, mBufSize);
+        // FIX(Coverity): Allocate buffer on heap to prevent potential stack overflow
+        // Reason: mBufSize could be large, fixed-size stack array is risky
+        // Impact: No API signature changes. Use heap allocation for safety.
+        std::vector<char> buf(mBufSize);
         int fd = -1;
         while (!mStop) {
             if (!file_exists(mFile)) {
@@ -83,6 +90,14 @@ private:
             while (!mStop) {
                 fd_set rfds;
                 struct timeval timeout;
+
+                // FIX(Coverity): Validate fd before FD_SET to prevent buffer overflow
+                // Reason: FD_SET doesn't check if fd >= FD_SETSIZE
+                // Impact: No API signature changes. Added bounds check for safety.
+                if (fd >= FD_SETSIZE) {
+                    syslog(LOG_ERR, "File descriptor %d exceeds FD_SETSIZE", fd);
+                    break;
+                }
 
                 FD_ZERO(&rfds);
                 FD_SET(fd, &rfds);
@@ -102,9 +117,14 @@ private:
                 }
                 lseek(fd, 0, SEEK_SET);
 
-                res = read(fd, buf, mBufSize);
+                // FIX(Coverity): Save errno immediately and ensure buffer bounds
+                // Reason: errno can change between read() and check; res must be <= mBufSize
+                // Impact: No API signature changes. Added errno safety and bounds validation.
+                res = read(fd, buf.data(), mBufSize);
+                int saved_errno = errno;
+                
                 if (res < 0) {
-                    if (errno == ENOTCONN || errno == EBADF || errno == ECONNRESET) {
+                    if (saved_errno == ENOTCONN || saved_errno == EBADF || saved_errno == ECONNRESET) {
                         syslog(LOG_ERR, "Socket error for %s", mFile.c_str());
                         break;
                     } else {
@@ -112,11 +132,17 @@ private:
                         std::this_thread::sleep_for(std::chrono::seconds(2));
                         continue;
                     }
-                } else {
-                    mFunc(std::string(buf, res));
+                } else if (res > 0 && static_cast<size_t>(res) <= mBufSize) {
+                    mFunc(std::string(buf.data(), res));
                 }
             }
-            close(fd);
+            // FIX(Coverity): Ensure fd is always closed and reset
+            // Reason: Prevent resource leak if inner loop breaks
+            // Impact: No API signature changes. Added proper cleanup.
+            if (fd >= 0) {
+                close(fd);
+                fd = -1;
+            }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }

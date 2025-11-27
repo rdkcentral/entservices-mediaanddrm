@@ -114,6 +114,13 @@ namespace Plugin {
 
         string message;
 
+        // FIX(Coverity): Add explicit null check for service parameter
+        // Reason: ASSERT only works in debug builds
+        // Impact: No API signature changes. Added safety check.
+        if (service == nullptr) {
+            return "Invalid service parameter";
+        }
+
         ASSERT(_service == nullptr);
         ASSERT(_memory == nullptr);
         ASSERT(_opencdmi == nullptr);
@@ -141,9 +148,20 @@ namespace Plugin {
             if (connection != nullptr) {
 
                 _memory = WPEFramework::OCDM::MemoryObserver(connection);
-                ASSERT(_memory != nullptr);
-
-                connection->Release();
+                // FIX(Coverity): Add cleanup if MemoryObserver fails
+                // Reason: If MemoryObserver fails, _opencdmi is not released
+                // Impact: No API signature changes. Added proper error cleanup.
+                if (_memory == nullptr) {
+                    message = _T("OCDM MemoryObserver could not be instantiated.");
+                    connection->Release();
+                    _opencdmi->Release();
+                    _opencdmi = nullptr;
+                    _service->Unregister(&_notification);
+                    _service = nullptr;
+                } else {
+                    ASSERT(_memory != nullptr);
+                    connection->Release();
+                }
             }
             else {
                 message = _T("OCDM crashed at initialize!");
@@ -159,15 +177,30 @@ namespace Plugin {
     /*virtual*/ void OCDM::Deinitialize(PluginHost::IShell* service)
     {
         ASSERT(_service == service);
+        // FIX(Coverity): Add explicit null checks before dereferencing pointers in release builds
+        // Reason: ASSERT doesn't work in release builds
+        // Impact: No API signature changes. Added runtime safety checks.
+        if (_memory == nullptr || _opencdmi == nullptr) {
+            return;
+        }
         ASSERT(_memory != nullptr);
         ASSERT(_opencdmi != nullptr);
 
         _service->Unregister(&_notification);
         _memory->Release();
+        _memory = nullptr;
 
         _opencdmi->Deinitialize(service);
         RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
         uint32_t result = _opencdmi->Release();
+        // FIX(Coverity): Set pointer to nullptr after Release() to prevent use-after-free
+        // Reason: Pointer not nullified can cause crashes if accessed later
+        // Impact: No API signature changes. Added safety assignment.
+        _opencdmi = nullptr;
+        
+        if (result != Core::ERROR_DESTRUCTION_SUCCEEDED) {
+            SYSLOG(Logging::Error, (_T("OCDM::Deinitialize: _opencdmi destruction failed with code: %d"), result));
+        }
         ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
 
         PluginHost::ISubSystem* subSystem = service->SubSystems();
