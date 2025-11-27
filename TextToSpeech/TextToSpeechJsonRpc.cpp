@@ -248,7 +248,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     {
         if(_tts) {
              bool isenabled = false;
-             static_cast<const WPEFramework::Exchange::ITextToSpeech*>(_tts)->Enable(isenabled);
+             static_cast<const WPEFramework::Exchange::ITextToSpeech*>(_tts)->GetTTSStatus(isenabled);
              response["isenabled"] = isenabled;
              response["TTS_Status"] = static_cast<uint32_t>(TTS::TTS_OK);
              returnResponse(true);

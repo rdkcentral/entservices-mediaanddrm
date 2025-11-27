@@ -95,9 +95,9 @@ namespace Plugin {
         TextToSpeechImplementation& operator=(const TextToSpeechImplementation&) = delete;
 
         virtual uint32_t Configure(PluginHost::IShell* service) override;
-        virtual Core::hresult Register(Exchange::ITextToSpeech::INotification* sink) override ;
-        virtual Core::hresult Unregister(Exchange::ITextToSpeech::INotification* sink) override ;
-        virtual Core::hresult RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink) override ;
+        virtual Core::hresult Register(Exchange::ITextToSpeech::INotification* sink) override;
+        virtual Core::hresult Unregister(Exchange::ITextToSpeech::INotification* sink) override;
+        virtual Core::hresult RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink) override;
 
         virtual PluginHost::IStateControl::state State() const override { return PluginHost::IStateControl::RESUMED; }
         virtual uint32_t Request(const command state) override;
@@ -106,12 +106,12 @@ namespace Plugin {
        
 
         virtual Core::hresult Enable(const bool enable) override;
-        virtual Core::hresult Enable(bool &enable /* @out */) const override;
+        virtual Core::hresult IsTTSActive(bool &enable /* @out */) const override;
         virtual Core::hresult ListVoices(const string language,RPC::IStringIterator*& voices/* @out */) const override;
-        virtual Core::hresult SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override ;
-        virtual Core::hresult SetFallbackText(const string scenario,const string value) override ;
-        virtual Core::hresult SetAPIKey(const string apikey) override ;
-        virtual Core::hresult SetPrimaryVolDuck(const uint8_t prim) override ;
+        virtual Core::hresult SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
+        virtual Core::hresult SetFallbackText(const string scenario,const string value) override;
+        virtual Core::hresult SetAPIKey(const string apikey) override;
+        virtual Core::hresult SetPrimaryVolDuck(const uint8_t prim) override;
         virtual Core::hresult SetACL(const string method,const string apps) override;
         virtual Core::hresult GetConfiguration(Exchange::ITextToSpeech::Configuration &object/* @out */) const override;
         virtual Core::hresult Speak(const string callsign,const string text,uint32_t &speechid/* @out */,Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
@@ -120,17 +120,17 @@ namespace Plugin {
         virtual Core::hresult Resume(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &status /* @out */) override;
         virtual Core::hresult GetSpeechState(const  uint32_t speechid,Exchange::ITextToSpeech::SpeechState &state/* @out */) override;
 
-        virtual void onTTSStateChanged(bool enabled) override ;
-        virtual void onVoiceChanged(std::string voice) override ;
-        virtual void onWillSpeak(TTS::SpeechData &data) override ;
-        virtual void onSpeechStart(TTS::SpeechData &data) override ;
-        virtual void onSpeechPause(uint32_t speechId,string callsign) override ;
-        virtual void onSpeechResume(uint32_t speechId,string callsign) override ;
-        virtual void onSpeechCancelled(std::vector<uint32_t> speechIds,string callsign) override ;
-        virtual void onSpeechInterrupted(uint32_t speechId,string callsign) override ;
-        virtual void onNetworkError(uint32_t speechId,string callsign) override ;
-        virtual void onPlaybackError(uint32_t speechId,string callsign) override ;
-        virtual void onSpeechComplete(TTS::SpeechData &data) override ;
+        virtual void onTTSStateChanged(bool enabled) override;
+        virtual void onVoiceChanged(std::string voice) override;
+        virtual void onWillSpeak(TTS::SpeechData &data) override;
+        virtual void onSpeechStart(TTS::SpeechData &data) override;
+        virtual void onSpeechPause(uint32_t speechId,string callsign) override;
+        virtual void onSpeechResume(uint32_t speechId,string callsign) override;
+        virtual void onSpeechCancelled(std::vector<uint32_t> speechIds,string callsign) override;
+        virtual void onSpeechInterrupted(uint32_t speechId,string callsign) override;
+        virtual void onNetworkError(uint32_t speechId,string callsign) override;
+        virtual void onPlaybackError(uint32_t speechId,string callsign) override;
+        virtual void onSpeechComplete(TTS::SpeechData &data) override;
 
         BEGIN_INTERFACE_MAP(TextToSpeechImplementation)
         INTERFACE_ENTRY(Exchange::ITextToSpeech)

@@ -403,7 +403,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::Enable(bool &enable) const
+    Core::hresult TextToSpeechImplementation::GetTTSStatus(bool &enable) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -521,16 +521,16 @@ namespace Plugin {
 
         while (index != _notificationClients.end()) {
             switch(event) {
-                case STATE_CHANGED:     (*index)->Enabled(params.Boolean()); break;
-                case VOICE_CHANGED:     (*index)->VoiceChanged(params.String()); break;
-                case WILL_SPEAK:        (*index)->WillSpeak(params.Number()); break;
-                case SPEECH_START:      (*index)->SpeechStart(params.Number()); break;
-                case SPEECH_PAUSE:      (*index)->SpeechPause(params.Number()); break;
-                case SPEECH_RESUME:     (*index)->SpeechResume(params.Number()); break;
-                case SPEECH_INTERRUPT:  (*index)->SpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (*index)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (*index)->PlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (*index)->SpeechComplete(params.Number()); break;
+                case STATE_CHANGED:     (*index)->onSpeechEnabled(params.Boolean()); break;
+                case VOICE_CHANGED:     (*index)->onToneChanged(params.String()); break;
+                case WILL_SPEAK:        (*index)->onSpeechPossible(params.Number()); break;
+                case SPEECH_START:      (*index)->onSpeechBegin(params.Number()); break;
+                case SPEECH_PAUSE:      (*index)->onSpeechBreak(params.Number()); break;
+                case SPEECH_RESUME:     (*index)->onSpeechContinue(params.Number()); break;
+                case SPEECH_INTERRUPT:  (*index)->onSpeechDisrupt(params.Number()); break;
+                case NETWORK_ERROR:     (*index)->onConnectionLost(params.Number()); break;
+                case PLAYBACK_ERROR:    (*index)->onAudioIssue(params.Number()); break;
+                case SPEECH_COMPLETE:   (*index)->onSpeechDone(params.Number()); break;
                 default: break;
             }
             ++index;
@@ -541,14 +541,14 @@ namespace Plugin {
         if (callsignindex != _notificationCallsignClients.end()) {
              TTSLOG_INFO("Delivering event to callsign %s \n", (callsignindex->first).c_str());
              switch(event) {
-                case WILL_SPEAK:        (callsignindex->second)->WillSpeak(params.Number()); break;
-                case SPEECH_START:      (callsignindex->second)->SpeechStart(params.Number()); break;
-                case SPEECH_PAUSE:      (callsignindex->second)->SpeechPause(params.Number()); break;
-                case SPEECH_RESUME:     (callsignindex->second)->SpeechResume(params.Number()); break;
-                case SPEECH_INTERRUPT:  (callsignindex->second)->SpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (callsignindex->second)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (callsignindex->second)->PlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (callsignindex->second)->SpeechComplete(params.Number()); break;
+                case WILL_SPEAK:        (callsignindex->second)->onSpeechEnabled(params.Number()); break;
+                case SPEECH_START:      (callsignindex->second)->onSpeechBegin(params.Number()); break;
+                case SPEECH_PAUSE:      (callsignindex->second)->onSpeechBreak(params.Number()); break;
+                case SPEECH_RESUME:     (callsignindex->second)->onSpeechContinue(params.Number()); break;
+                case SPEECH_INTERRUPT:  (callsignindex->second)->onSpeechDisrupt(params.Number()); break;
+                case NETWORK_ERROR:     (callsignindex->second)->onConnectionLost(params.Number()); break;
+                case PLAYBACK_ERROR:    (callsignindex->second)->onAudioIssue(params.Number()); break;
+                case SPEECH_COMPLETE:   (callsignindex->second)->onSpeechDone(params.Number()); break;
                 default: break;            
              }
          }

@@ -61,63 +61,63 @@ namespace Plugin {
                 }
 
             public:
-                virtual void Enabled(const bool state) {
+                virtual void onSpeechEnabled(const bool state) {
                     JsonObject params;
                     params["state"] = JsonValue((bool)state);
                     _parent.Notify("onttsstatechanged",params);
                 }
 
-                virtual void VoiceChanged(const string voice) {
+                virtual void onToneChanged(const string voice) {
                     JsonObject params;
                     params["voice"] = voice;
                     _parent.Notify("onvoicechanged", params);
                 }
 
-                virtual void WillSpeak(const uint32_t speechid) {
+                virtual void onSpeechPossible(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     params["text"]      = "";
                     _parent.Notify("onwillspeak", params);
                 }
 
-                virtual void SpeechStart(const uint32_t speechid) {
+                virtual void onSpeechBegin(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     params["text"]      = "";
                     _parent.Notify("onspeechstart", params);
                 }
 
-                virtual void SpeechPause(const uint32_t speechid) {
+                virtual void onSpeechBreak(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onspeechpause",params);
                 }
 
-                virtual void SpeechResume(const uint32_t speechid) {
+                virtual void onSpeechContinue(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onspeechresume", params);
                 }
 
-                virtual void SpeechInterrupted(const uint32_t speechid) {
+                virtual void onSpeechDisrupt(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onspeechinterrupted", params);
                 }
 
-                virtual void NetworkError(const uint32_t speechid) {
+                virtual void onConnectionLost(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onnetworkerror", params);
                 }
 
-                virtual void PlaybackError(const uint32_t speechid) {
+                virtual void onAudioIssue(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onplaybackerror", params);
                 }
 
-                virtual void SpeechComplete(const uint32_t speechid) {
+                virtual void onSpeechDone(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     params["text"]      = "";
