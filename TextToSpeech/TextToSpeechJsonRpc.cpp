@@ -129,6 +129,10 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
 
     uint32_t TextToSpeech::Enable(const JsonObject& parameters, JsonObject& response)
     {
+        // FIX(Coverity): Add mutex protection for thread-safe Enable/Disable
+        // Reason: Multiple threads can call Enable/Disable simultaneously causing race
+        // Impact: No API signature changes. Added mutex lock for state protection.
+        std::lock_guard<std::mutex> lock(m_AccessMutex);
         if(_tts) {
             CHECK_TTS_PARAMETER_RETURN_ON_FAIL("enabletts");
             _tts->Enable(parameters["enabletts"].Boolean());
@@ -259,6 +263,13 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     uint32_t TextToSpeech::Speak(const JsonObject& parameters, JsonObject& response)
     {
         CHECK_TTS_PARAMETER_RETURN_ON_FAIL("text");
+        // FIX(Coverity): Add null check before dereferencing _tts
+        // Reason: _tts could be nullptr if initialization failed
+        // Impact: No API signature changes. Added defensive null check.
+        if(_tts == nullptr) {
+            response["TTS_Status"] = static_cast<uint32_t>(Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL);
+            returnResponse(false);
+        }
         if(_tts) {
             uint32_t speechid;
             Exchange::ITextToSpeech::TTSErrorDetail status;

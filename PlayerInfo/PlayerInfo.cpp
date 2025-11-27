@@ -70,7 +70,29 @@ namespace Plugin {
             if ((_player->AudioCodecs(_audioCodecs) == Core::ERROR_NONE) && (_audioCodecs != nullptr)) {
 
                 if ((_player->VideoCodecs(_videoCodecs) == Core::ERROR_NONE) && (_videoCodecs != nullptr)) {
-                    Exchange::JPlayerProperties::Register(*this, _player);
+                    // FIX(Coverity): Add error handling for registration failure
+                    // Reason: If Exchange::JPlayerProperties::Register fails, resources leak
+                    // Impact: No API signature changes. Added proper error handling.
+                    try {
+                        Exchange::JPlayerProperties::Register(*this, _player);
+                    } catch (...) {
+                        message = _T("PlayerInfo JSONRPC registration failed.");
+                    }
+                    
+                    if (message.length() != 0) {
+                        if (_videoCodecs != nullptr) {
+                            _videoCodecs->Release();
+                            _videoCodecs = nullptr;
+                        }
+                        if (_audioCodecs != nullptr) {
+                            _audioCodecs->Release();
+                            _audioCodecs = nullptr;
+                        }
+                        _player->Release();
+                        _player = nullptr;
+                        Deinitialize(service);
+                        return message;
+                    }
                     
                     //  L2 Test specific manual registration
                     // 
@@ -128,6 +150,16 @@ namespace Plugin {
     {
         ASSERT(service == _service);
 
+        // FIX(Coverity): Unregister _dolbyOut first before releasing to prevent race
+        // Reason: Unregistering notification before releasing can cause callback during cleanup
+        // Impact: No API signature changes. Corrected cleanup order for thread safety.
+        if (_dolbyOut != nullptr) {
+            Exchange::Dolby::JOutput::Unregister(*this);
+            _dolbyNotification.Deinitialize();
+            _dolbyOut->Release();
+            _dolbyOut = nullptr;
+        }
+
         _service->Unregister(&_notification);
 
         if (_player != nullptr) {
@@ -142,12 +174,7 @@ namespace Plugin {
                 _videoCodecs->Release();
                 _videoCodecs = nullptr;
             }
-            if (_dolbyOut != nullptr) {
-                _dolbyNotification.Deinitialize();
-                Exchange::Dolby::JOutput::Unregister(*this);
-                _dolbyOut->Release();
-                _dolbyOut = nullptr;
-            }
+            // Dolby cleanup already done above before _service->Unregister
 
             RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
             VARIABLE_IS_NOT_USED uint32_t result = _player->Release();
@@ -307,8 +334,14 @@ namespace Plugin {
         // This can potentially be called on a socket thread, so the deactivation (wich in turn kills this object) must be done
         // on a seperate thread. Also make sure this call-stack can be unwound before we are totally destructed.
         if (_connectionId == connection->Id()) {
+            // FIX(Coverity): Add null check and AddRef before job submission
+            // Reason: _service could be nullified by Deinitialize, causing crash
+            // Impact: No API signature changes. Added safety check and reference counting.
             ASSERT(_service != nullptr);
-            Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
+            if (_service != nullptr) {
+                _service->AddRef();
+                Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
+            }
         }
     }
 } // namespace Plugin
