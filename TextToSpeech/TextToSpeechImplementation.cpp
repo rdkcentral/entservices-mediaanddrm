@@ -676,6 +676,9 @@ namespace Plugin {
     }   
 
     std::mutex fileMutex;
+    // RDKEMW-10494: Extracted JSON configuration building to separate function
+    // This ensures all TTSConfiguration fields are consistently initialized and prevents
+    // code duplication, reducing risk of uninitialized JsonObject fields
     static JsonObject buildConfig(TTS::TTSConfiguration& ttsConfig)
     {
         JsonObject obj;
