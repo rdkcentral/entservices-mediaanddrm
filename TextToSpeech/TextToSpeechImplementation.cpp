@@ -521,16 +521,16 @@ namespace Plugin {
 
         while (index != _notificationClients.end()) {
             switch(event) {
-                case STATE_CHANGED:     (*index)->onSpeechEnabled(params.Boolean()); break;
-                case VOICE_CHANGED:     (*index)->onToneChanged(params.String()); break;
-                case WILL_SPEAK:        (*index)->onSpeechPossible(params.Number()); break;
-                case SPEECH_START:      (*index)->onSpeechBegin(params.Number()); break;
-                case SPEECH_PAUSE:      (*index)->onSpeechBreak(params.Number()); break;
-                case SPEECH_RESUME:     (*index)->onSpeechContinue(params.Number()); break;
-                case SPEECH_INTERRUPT:  (*index)->onSpeechDisrupt(params.Number()); break;
+                case STATE_CHANGED:     (*index)->onTTSEnabled(params.Boolean()); break;
+                case VOICE_CHANGED:     (*index)->onVoiceUpdated(params.String()); break;
+                case WILL_SPEAK:        (*index)->onSpeechReady(params.Number()); break;
+                case SPEECH_START:      (*index)->onSpeechStarted(params.Number()); break;
+                case SPEECH_PAUSE:      (*index)->onSpeechPaused(params.Number()); break;
+                case SPEECH_RESUME:     (*index)->onSpeechResumed(params.Number()); break;
+                case SPEECH_INTERRUPT:  (*index)->onSpeechDisrupted(params.Number()); break;
                 case NETWORK_ERROR:     (*index)->onConnectionLost(params.Number()); break;
-                case PLAYBACK_ERROR:    (*index)->onAudioIssue(params.Number()); break;
-                case SPEECH_COMPLETE:   (*index)->onSpeechDone(params.Number()); break;
+                case PLAYBACK_ERROR:    (*index)->onPlaybackFailed(params.Number()); break;
+                case SPEECH_COMPLETE:   (*index)->onSpeechCompleted(params.Number()); break;
                 default: break;
             }
             ++index;
@@ -541,14 +541,14 @@ namespace Plugin {
         if (callsignindex != _notificationCallsignClients.end()) {
              TTSLOG_INFO("Delivering event to callsign %s \n", (callsignindex->first).c_str());
              switch(event) {
-                case WILL_SPEAK:        (callsignindex->second)->onSpeechEnabled(params.Number()); break;
-                case SPEECH_START:      (callsignindex->second)->onSpeechBegin(params.Number()); break;
-                case SPEECH_PAUSE:      (callsignindex->second)->onSpeechBreak(params.Number()); break;
-                case SPEECH_RESUME:     (callsignindex->second)->onSpeechContinue(params.Number()); break;
-                case SPEECH_INTERRUPT:  (callsignindex->second)->onSpeechDisrupt(params.Number()); break;
+                case WILL_SPEAK:        (callsignindex->second)->onSpeechReady(params.Number()); break;
+                case SPEECH_START:      (callsignindex->second)->onSpeechStarted(params.Number()); break;
+                case SPEECH_PAUSE:      (callsignindex->second)->onSpeechPaused(params.Number()); break;
+                case SPEECH_RESUME:     (callsignindex->second)->onSpeechResumed(params.Number()); break;
+                case SPEECH_INTERRUPT:  (callsignindex->second)->onSpeechDisrupted(params.Number()); break;
                 case NETWORK_ERROR:     (callsignindex->second)->onConnectionLost(params.Number()); break;
-                case PLAYBACK_ERROR:    (callsignindex->second)->onAudioIssue(params.Number()); break;
-                case SPEECH_COMPLETE:   (callsignindex->second)->onSpeechDone(params.Number()); break;
+                case PLAYBACK_ERROR:    (callsignindex->second)->onPlaybackFailed(params.Number()); break;
+                case SPEECH_COMPLETE:   (callsignindex->second)->onSpeechCompleted(params.Number()); break;
                 default: break;            
              }
          }

@@ -106,7 +106,7 @@ namespace Plugin {
        
 
         virtual Core::hresult Enable(const bool enable) override;
-        virtual Core::hresult IsTTSActive(bool &enable /* @out */) const override;
+        virtual Core::hresult GetTTSStatus(bool &enable /* @out */) const override;
         virtual Core::hresult ListVoices(const string language,RPC::IStringIterator*& voices/* @out */) const override;
         virtual Core::hresult SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
         virtual Core::hresult SetFallbackText(const string scenario,const string value) override;
