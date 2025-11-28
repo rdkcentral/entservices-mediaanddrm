@@ -119,7 +119,7 @@ namespace Plugin {
             SAPLOG_INFO("SystemAudioPlayerImplementation Open PlayMode :%s is not supported", parameters["playmode"].String().c_str());
             returnResponse(false);
         }
-
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value if OpenMapping fails
         int id = -1;
         _adminLock.Lock();      
         OpenMapping(audioType,sourceType,playMode,id);        
@@ -133,6 +133,8 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Config request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
+        // RDKEMW-10494: Initialize id, rate, channels to prevent use of uninitialized values
+        // if parameter extraction or PCM config validation fails
         int id = -1, rate = 0, channels = 0;
         bool ret = false;
         string format, layout;
@@ -152,6 +154,8 @@ namespace Plugin {
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("rate");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("channels");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("layout");
+                // RDKEMW-10494: Declare format and layout as local variables to prevent
+                // unintended scope issues and ensure proper initialization
                 string format = config["format"].String();
                 string layout = config["layout"].String();
                 getNumberConfigParameter("rate",rate);
@@ -176,6 +180,8 @@ namespace Plugin {
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         string url;
+        // RDKEMW-10494: Initialize playerid to -1 to prevent garbage value
+        // in response if GetSessionFromUrl fails
         int playerid = -1;
         url = parameters["url"].String();
         CHECK_SAP_PARAMETER_URL_VALID_RETURN_ON_FAIL(url.c_str());
@@ -200,6 +206,8 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Play\n");
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value
+        // if parameter extraction fails before getObjectFromMap call
         int id = -1;
         string url;
         AudioPlayer *player;
@@ -240,6 +248,8 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got PlayBuffer request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value
+        // if getNumberParameter fails before getObjectFromMap call
         int id = -1;
         std::string data;
         LOGINFO("PlayBuffer request\n");
@@ -270,6 +280,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value in getObjectFromMap
         int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Stop\n");
@@ -288,6 +299,7 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Close request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
+        // RDKEMW-10494: Initialize id to -1 to prevent uninitialized value in CloseMapping
         int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Close\n");
@@ -322,6 +334,7 @@ namespace Plugin {
         int primVol = -1;
         int thisVol = -1;
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize playerId to -1 to prevent garbage value in getObjectFromMap
         int playerId = -1;
         getNumberParameter("id", playerId);
         getNumberParameter("primaryVolume", primVol);
@@ -354,11 +367,15 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("primaryDuckingPercent");
         bool result = false;
         double thresHold = 0.0;
+        // RDKEMW-10494: Initialize time/percentage values to -1 to allow proper validation
+        // Note: Parameters are checked with CHECK_SAP_PARAMETER_RETURN_ON_FAIL, but
+        // initializing to -1 provides safety if parameter extraction fails
         int detectTimeMs = -1;
         int holdTimeMs = -1;
         int duckPercent = -1;
         bool smartVolumeEnable = false;
         AudioPlayer *player = nullptr;
+        // RDKEMW-10494: Initialize playerId to -1 to prevent garbage value in getObjectFromMap
         int playerId = -1;
         getNumberParameter("id", playerId);
         getBoolParameter("enable",smartVolumeEnable);
@@ -391,6 +408,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Pause request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value in getObjectFromMap
         int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
@@ -409,6 +427,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Resume request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value in getObjectFromMap
         int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
@@ -428,6 +447,7 @@ namespace Plugin {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got IsPlayingrequest :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         AudioPlayer *player;
+        // RDKEMW-10494: Initialize id to -1 to prevent garbage value in getObjectFromMap
         int id = -1;
         bool ret = false;
         getNumberParameter("id", id);
