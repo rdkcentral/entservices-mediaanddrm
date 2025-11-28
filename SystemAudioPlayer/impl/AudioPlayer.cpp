@@ -46,38 +46,25 @@ SAPEventCallback* AudioPlayer::m_callback=NULL;
 //static bool sys_playing =false;
 
 AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode playMode,int objectIdentifier)
-    // RDKEMW-10494: Initialize all GStreamer pipeline pointers to nullptr to prevent crashes
-    // when createPipeline fails or pipeline creation is incomplete
+    // RDKEMW-10494: Initialize critical pointers to prevent crashes and undefined behavior
     : m_pipeline(nullptr)        // Fix: Prevents NULL dereference if createPipeline fails
     , m_audioSink(nullptr)        // Fix: Prevents crash when dereferenced if pipeline creation fails
     , m_audioVolume(nullptr)      // Fix: Prevents crash in setVolume if creation fails
     , m_capsfilter(nullptr)       // Fix: Prevents NULL dereference in configPCMCaps for non-PCM types
-    , m_audioCutter(false)
-    , m_primVolume(DEFAULT_PRIM_VOL_LEVEL)
-    , m_prevPrimVolume(-1)
-    , m_thisVolume(DEFAULT_PLAYER_VOL_LEVEL)
-    , m_prevThisVolume(-1)
-    , m_thresHold(0.0)
-    , m_thresHold_dB(-40.0000)
-    , m_detectTimeMs(0)
-    , m_holdTimeMs(0)
-    , m_duckPercent(0)
-    , objectIdentifier(objectIdentifier)
-    , m_isPaused(false)
-    , m_running(false)
-    , appsrc_firstpacket(true)
-    , m_url("")
     , m_busWatch(0)               // Fix: Initialize to 0 to prevent invalid value in gst_bus_remove_watch
     , m_duration(0)               // Fix: Initialize to prevent garbage value in GST_TIME_ARGS logging
     , m_thread(nullptr)           // Fix: Prevents dangling pointer for non-DATA/WEBSOCKET sources
     , bufferQueue(nullptr)        // Fix: Prevents delete of uninitialized pointer in destructor
     , m_source(nullptr)           // Fix: Prevents NULL dereference in Play/Stop/PlayBuffer operations
-    , audioType(audioType)
-    , sourceType(sourceType)
-    , playMode(playMode)
-    , wsStatus(DISCONNECTED)
-    , state(READY)
 {
+    this->audioType = audioType;
+    this->sourceType = sourceType;
+    this->playMode = playMode;
+    this->objectIdentifier = objectIdentifier;
+    m_audioCutter = false;
+    m_thresHold_dB=  -40.0000;
+    m_isPaused = false;
+    state = READY;
     SAPLOG_INFO("SAP: AudioPlayer Constructor\n");    
     if(sourceType == DATA || sourceType == WEBSOCKET)
     {
@@ -110,6 +97,7 @@ AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode play
     //Set mixter levels, this can be reflected when playing
     m_primVolume = DEFAULT_PRIM_VOL_LEVEL;
     m_thisVolume = DEFAULT_PLAYER_VOL_LEVEL;
+    m_prevPrimVolume = m_prevThisVolume = -1;
 }
 
 AudioPlayer::~AudioPlayer()
