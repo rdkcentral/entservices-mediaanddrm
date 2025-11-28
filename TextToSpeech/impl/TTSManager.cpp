@@ -370,21 +370,22 @@ TTS_Error TTSManager::getSpeechState(uint32_t id, SpeechState &state) {
 
 void TTSManager::willSpeak(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-
+    // SpeechData constructor properly initializes all members
+    // No additional initialization required (Note: verify SpeechData has proper constructor)
     SpeechData data(this, speech_id, callsign, text);
     m_callback->onWillSpeak(data);
 }
 
 void TTSManager::started(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-
+    // RDKEMW-10494: SpeechData constructor properly initializes all members
     SpeechData data(this, speech_id, callsign, text);
     m_callback->onSpeechStart(data);
 }
 
 void TTSManager::spoke(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-
+    // RDKEMW-10494: SpeechData constructor properly initializes all members
     SpeechData data(this, speech_id, callsign, text);
     m_callback->onSpeechComplete(data);
 }

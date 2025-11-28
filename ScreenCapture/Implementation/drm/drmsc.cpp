@@ -85,7 +85,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 		// open drm device to get screen information
 		int retryCount = 0;
-
+		// Correct file descriptor validation - open() returns -1 on error, not 0
+		// fd=0 (stdin) is a valid file descriptor and should not be treated as failure
 		context->fd = open(DEFAULT_DEVICE, O_RDWR);
 		if(context->fd < 0) {
 			cout << "[SCREENCAP] fail to open " <<  DEFAULT_DEVICE << endl;
@@ -117,6 +118,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			// try again
 			cout << "[SCREENCAP] try get primary buffer again" << endl;
 			kms_get_plane(context->fd, context->kms);
+			// Free previous plane allocation before reassignment
+			// to prevent memory leak of DRM plane objects
 			drmModePlane* prev_plane = plane; 
 			plane = drmModeGetPlane(context->fd, context->kms->primary_plane_id );
 			if(!plane) {
@@ -157,7 +160,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			ret = false;
 			break;
 		}
-
+		// Zero-initialize entire drm_prime_handle struct to prevent
+		// uninitialized fields from causing crashes in DRM kernel API
                 struct drm_prime_handle drm_prime = {0};
                 int drmRet = 0;
 
@@ -203,6 +207,8 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 
 		// copy frame
 		// Map DMA-BUF
+		// Validate mmap64 return and verify memory pages with mincore
+		// to prevent segfault from invalid memory mapping in memcpy
         vaddr = mmap64(nullptr, size, PROT_READ, MAP_SHARED, handle->dmabuf_fd, 0);
         if (vaddr == MAP_FAILED) {
             cout << "[SCREENCAP] mmap failed, errno=" << errno << endl;

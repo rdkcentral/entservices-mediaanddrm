@@ -26,13 +26,15 @@
 
 void kms_setup_encoder( int fd, kms_ctx *kms )
 {
+    // Free existing encoder before loop to prevent memory leak
     if (kms->encoder) {
         drmModeFreeEncoder(kms->encoder);
         kms->encoder = NULL;
     }
     
     for( int i = 0; i < kms->res->count_encoders; i++ ) {
-
+        // Free encoder before reassignment in outer loop
+        // to prevent memory leak of DRM encoder objects
         if (kms->encoder) {
             drmModeFreeEncoder(kms->encoder);
             kms->encoder = NULL;
@@ -86,6 +88,8 @@ void kms_setup_connector( int fd, kms_ctx *kms )
         if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
             break;
         }
+        // ree connector on non-matching iterations to prevent
+        // memory leak of DRM connector objects
         drmModeFreeConnector(connector);
         connector = NULL;
         }

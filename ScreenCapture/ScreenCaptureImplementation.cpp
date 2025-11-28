@@ -446,6 +446,8 @@ namespace WPEFramework
             }
 
             // create header
+            // Initialize chunk to NULL and validate curl_slist_append return
+            // to prevent memory leak and NULL pointer usage in cleanup
             struct curl_slist *chunk = NULL;
             chunk = curl_slist_append(chunk, "Content-Type: image/png");
             if (chunk == NULL) {
@@ -455,6 +457,8 @@ namespace WPEFramework
             }
 
             // set url and data
+            // Validate each curl_easy_setopt return value and cleanup on error
+            // to prevent API state corruption and resource leaks
             res = curl_easy_setopt(curl, CURLOPT_URL, url);
             if (res != CURLE_OK)
             {
@@ -495,7 +499,8 @@ namespace WPEFramework
             if (CURLE_OK == res)
             {
                 long response_code;
-
+                // Validate curl_easy_getinfo return to prevent garbage value
+                // in response_code if API call fails
                 CURLcode info_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
                 
                 if (info_res != CURLE_OK)
