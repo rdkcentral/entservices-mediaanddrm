@@ -74,14 +74,8 @@ namespace Plugin {
                 RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
                 printf("CryptographyExtAccess - Remote Connection  - %p\n",connection);
 
-                // FIX(Coverity): Ensure Release() call is not optimized away and check result properly
-                // Reason: VARIABLE_IS_NOT_USED can be optimized away; ASSERT doesn't work in release builds
-                // Impact: No API signature changes. Added runtime check for proper resource cleanup validation.
-                uint32_t result = _implementation->Release();
+                VARIABLE_IS_NOT_USED uint32_t result = _implementation->Release();
                 _implementation = nullptr;
-                if (result != Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                    TRACE(Trace::Error, (_T("CryptographyExtAccess implementation destruction failed with code: %d"), result));
-                }
                 ASSERT(result == Core::ERROR_DESTRUCTION_SUCCEEDED);
 
                 if (connection != nullptr) {

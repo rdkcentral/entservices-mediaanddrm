@@ -200,28 +200,26 @@ namespace Plugin {
          subs_ttxt = DVB_INIT_TELETEXT_ONLY;
       }
 
-      // FIX(Coverity): Return error immediately if APP_InitialiseDVB fails
-      // Reason: Continuing execution after initialization failure causes undefined behavior
-      // Impact: No API signature changes. Added proper error handling for initialization failure.
-      if (!APP_InitialiseDVB(DvbEventHandler, subs_ttxt))
+      if (APP_InitialiseDVB(DvbEventHandler, subs_ttxt))
+      {
+         SYSLOG(Logging::Startup, (_T("DVB initialised")));
+
+         ACFG_COUNTRY_CONFIG country_config;
+
+         memset(&country_config, 0, sizeof(ACFG_COUNTRY_CONFIG));
+
+         country_config.country_name = country_name;
+         country_config.country_code = COUNTRY_CODE_USERDEFINED;
+         country_config.ter_rf_channel_table_ptr = dvbt_tuning_table;
+         country_config.num_ter_rf_channels = sizeof(dvbt_tuning_table) / sizeof(dvbt_tuning_table[0]);
+
+         ACFG_SetCountryConfig(COUNTRY_CODE_USERDEFINED, &country_config);
+         ACFG_SetCountry(COUNTRY_CODE_USERDEFINED);
+      }
+      else
       {
          SYSLOG(Logging::Fatal, (_T("Initialise: Failed to initialise DVBCore")));
-         return Core::ERROR_GENERAL;
       }
-      
-      SYSLOG(Logging::Startup, (_T("DVB initialised")));
-
-      ACFG_COUNTRY_CONFIG country_config;
-
-      memset(&country_config, 0, sizeof(ACFG_COUNTRY_CONFIG));
-
-      country_config.country_name = country_name;
-      country_config.country_code = COUNTRY_CODE_USERDEFINED;
-      country_config.ter_rf_channel_table_ptr = dvbt_tuning_table;
-      country_config.num_ter_rf_channels = sizeof(dvbt_tuning_table) / sizeof(dvbt_tuning_table[0]);
-
-      ACFG_SetCountryConfig(COUNTRY_CODE_USERDEFINED, &country_config);
-      ACFG_SetCountry(COUNTRY_CODE_USERDEFINED);
 
       return Core::ERROR_NONE;
    }
@@ -272,20 +270,11 @@ namespace Plugin {
 
       ACFG_GetCountryList(&country_names, &num_countries);
 
-      // FIX(Coverity): Wrap cleanup in try-catch to ensure ACFG_ReleaseCountryList is always called
-      // Reason: If Core::Service::Create() throws exception, country_names array is not freed
-      // Impact: No API signature changes. Added exception safety for resource cleanup.
       if ((num_countries != 0) && (country_names != NULL))
       {
-         try {
-            for (U8BIT index = 0; index < num_countries; index++)
-            {
-               country_list.push_back(Core::Service<CountryImpl>::Create<IDTV::ICountry>((const char *)country_names[index], ACFG_GetCountryCode(index)));
-            }
-         } catch (...) {
-            // Ensure cleanup happens even if exception occurs
-            ACFG_ReleaseCountryList(country_names, num_countries);
-            throw;
+         for (U8BIT index = 0; index < num_countries; index++)
+         {
+            country_list.push_back(Core::Service<CountryImpl>::Create<IDTV::ICountry>((const char *)country_names[index], ACFG_GetCountryCode(index)));
          }
 
          ACFG_ReleaseCountryList(country_names, num_countries);
