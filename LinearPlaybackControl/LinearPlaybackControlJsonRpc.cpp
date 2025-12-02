@@ -87,6 +87,7 @@ namespace Plugin {
         if (params.Channel.IsSet() == false) {
             return Core::ERROR_BAD_REQUEST;
         }
+
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_channel");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
