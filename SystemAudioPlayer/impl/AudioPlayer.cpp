@@ -114,7 +114,7 @@ AudioPlayer::~AudioPlayer()
         delete m_thread;
     }  
     gst_element_set_state (m_pipeline, GST_STATE_NULL);
-    gst_object_unref (m_pipeline);
+    gst_object_unref (m_pipeline); 
 }
 
 void AudioPlayer::Init(SAPEventCallback *callback)
