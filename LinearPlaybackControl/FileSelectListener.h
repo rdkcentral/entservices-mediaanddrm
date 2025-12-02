@@ -120,7 +120,7 @@ private:
                         std::this_thread::sleep_for(std::chrono::seconds(2));
                         continue;
                     }
-                } else if (res > 0 && static_cast<size_t>(res) <= mBufSize) {
+                } else {
                     mFunc(std::string(buf.data(), res));
                 }
             }
