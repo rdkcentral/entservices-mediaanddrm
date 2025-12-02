@@ -583,9 +583,7 @@ bool TTSSpeaker::waitForStatus(GstState expected_state, uint32_t timeout_ms) {
     // wait for the pipeline to get to pause so we know we have the audio device
     if(m_pipeline) {
         GstState state = GST_STATE_NULL;
-        // RDKEMW-10494: Initialize pending to GST_STATE_NULL to prevent use of
-        // uninitialized value in gst_element_get_state call
-        GstState pending  = GST_STATE_NULL;
+        GstState pending;
 
         auto timeout = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout_ms);
 
@@ -1098,9 +1096,7 @@ bool TTSSpeaker::handleMessage(GstMessage *message) {
                 } else if (oldstate == GST_STATE_PAUSED && newstate == GST_STATE_PLAYING) {
                     GST_DEBUG_BIN_TO_DOT_FILE_WITH_TS(GST_BIN(m_pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "playing-pipeline");
                     std::lock_guard<std::mutex> lock(m_stateMutex);
-                    // RDKEMW-10494: Add m_currentSpeech null check to prevent dereferencing
-                    // dangling pointer if data parameter went out of scope
-                    if(m_clientSpeaking && m_currentSpeech) {
+                    if(m_clientSpeaking) {
                         if(m_isPaused) {
                             m_isPaused = false;
                             systemAudioChangePrimaryVol(MIXGAIN_PRIM, m_currentSpeech->primVolDuck);
@@ -1112,9 +1108,7 @@ bool TTSSpeaker::handleMessage(GstMessage *message) {
                     }
                 } else if (oldstate == GST_STATE_PLAYING && newstate == GST_STATE_PAUSED) {
                     std::lock_guard<std::mutex> lock(m_stateMutex);
-                    // RDKEMW-10494: Add m_currentSpeech null check to prevent dereferencing
-                    // dangling pointer in callbacks
-                    if(m_clientSpeaking && m_isPaused && m_currentSpeech) {
+                    if(m_clientSpeaking && m_isPaused) {
                         systemAudioChangePrimaryVol(MIXGAIN_PRIM, 100);
                         m_clientSpeaking->paused(m_currentSpeech->id, m_currentSpeech->callsign);
                         m_condition.notify_one();

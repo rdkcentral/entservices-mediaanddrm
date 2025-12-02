@@ -370,24 +370,32 @@ TTS_Error TTSManager::getSpeechState(uint32_t id, SpeechState &state) {
 
 void TTSManager::willSpeak(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-    // SpeechData constructor properly initializes all members
-    // No additional initialization required (Note: verify SpeechData has proper constructor)
-    SpeechData data(this, speech_id, callsign, text);
-    m_callback->onWillSpeak(data);
+
+    SpeechData d;
+    d.id = speech_id;
+    d.callsign = callsign;
+    d.text = text;
+    m_callback->onWillSpeak(d);
 }
 
 void TTSManager::started(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-    // RDKEMW-10494: SpeechData constructor properly initializes all members
-    SpeechData data(this, speech_id, callsign, text);
-    m_callback->onSpeechStart(data);
+
+    SpeechData d;
+    d.id = speech_id;
+    d.callsign = callsign;
+    d.text = text;
+    m_callback->onSpeechStart(d);
 }
 
 void TTSManager::spoke(uint32_t speech_id, std::string callsign, std::string text) {
     TTSLOG_TRACE(" [%d, %s]", speech_id, text.c_str());
-    // RDKEMW-10494: SpeechData constructor properly initializes all members
-    SpeechData data(this, speech_id, callsign, text);
-    m_callback->onSpeechComplete(data);
+
+    SpeechData d;
+    d.id = speech_id;
+    d.callsign = callsign;
+    d.text = text;
+    m_callback->onSpeechComplete(d);
 }
 
 void TTSManager::paused(uint32_t speech_id, std::string callsign) {
