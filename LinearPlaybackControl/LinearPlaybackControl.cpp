@@ -47,7 +47,6 @@ namespace Plugin {
 
     /* virtual */ const string LinearPlaybackControl::Initialize(PluginHost::IShell* service)
     {
-        
         ASSERT(_service == nullptr);
 
         LinearConfig::Config config;
