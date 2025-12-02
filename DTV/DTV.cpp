@@ -55,7 +55,7 @@ namespace WPEFramework
       }
 
       const string DTV::Initialize(PluginHost::IShell *service)
-      {  
+      {
          ASSERT(service != nullptr);
          ASSERT(m_dtv == nullptr);
          ASSERT(m_service == nullptr);
