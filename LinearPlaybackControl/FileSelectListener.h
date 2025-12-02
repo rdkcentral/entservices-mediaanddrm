@@ -132,6 +132,7 @@ private:
                     mFunc(std::string(buf.data(), res));
                 }
             }
+            close(fd);
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
