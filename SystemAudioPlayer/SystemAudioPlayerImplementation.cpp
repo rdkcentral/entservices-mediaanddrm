@@ -367,9 +367,6 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("primaryDuckingPercent");
         bool result = false;
         double thresHold = 0.0;
-        // RDKEMW-10494: Initialize time/percentage values to -1 to allow proper validation
-        // Note: Parameters are checked with CHECK_SAP_PARAMETER_RETURN_ON_FAIL, but
-        // initializing to -1 provides safety if parameter extraction fails
         int detectTimeMs = -1;
         int holdTimeMs = -1;
         int duckPercent = -1;
