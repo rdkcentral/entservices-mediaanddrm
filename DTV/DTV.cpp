@@ -509,9 +509,6 @@ namespace WPEFramework
       {
          uint32_t result = Core::ERROR_BAD_REQUEST;
 
-         // FIX(Coverity): Validate input length before sscanf to prevent buffer overflow
-         // Reason: sscanf doesn't validate input length, potential buffer overflow risk
-         // Impact: No API signature changes. Added input validation for safety.
          if (index.length() != 0)
          {
             uint16_t onet_id, trans_id, serv_id;
