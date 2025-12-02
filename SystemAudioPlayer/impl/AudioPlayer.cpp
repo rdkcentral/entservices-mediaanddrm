@@ -105,7 +105,7 @@ AudioPlayer::~AudioPlayer()
     SAPLOG_INFO("SAP: AudioPlayer Destructor\n");
     if(sourceType == DATA || sourceType == WEBSOCKET)
     {   
-     	m_running = false;       
+        m_running = false;       
         bufferQueue->preDelete();
 	SAPLOG_INFO("SAP: AudioPlayer Destructor before Pushapp src thread join player id %d\n",getObjectIdentifier());
 	m_thread->join();
