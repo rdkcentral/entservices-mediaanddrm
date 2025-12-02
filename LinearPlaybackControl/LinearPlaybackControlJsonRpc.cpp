@@ -202,9 +202,6 @@ namespace Plugin {
                                int16_t speed = 0;
                                IDemuxer::SeekType seek = {};
                                IDemuxer::StreamStatusType streamStatus = {};
-                               int16_t speed;
-                               IDemuxer::SeekType seek;
-                               IDemuxer::StreamStatusType streamStatus;
                                // Get parameters from selected demuxer.
                                // Note: OR operation is used for concatenating the status since possible
                                // set of status is ERROR_NONE (0) or ERROR_READ_ERROR (39)
