@@ -105,29 +105,17 @@ AudioPlayer::~AudioPlayer()
     SAPLOG_INFO("SAP: AudioPlayer Destructor\n");
     if(sourceType == DATA || sourceType == WEBSOCKET)
     {   
-        m_running = false;
-        // RDKEMW-10494: Add null checks before dereferencing bufferQueue and m_thread
-        // These pointers are only allocated for DATA/WEBSOCKET sources and initialized
-        // to nullptr in constructor, preventing crashes for HTTPSRC/FILESRC sources
-        if(bufferQueue) {
-            bufferQueue->preDelete();
-        }
+     	m_running = false;       
+        bufferQueue->preDelete();
 	SAPLOG_INFO("SAP: AudioPlayer Destructor before Pushapp src thread join player id %d\n",getObjectIdentifier());
-	if(m_thread) {
-	    m_thread->join();
-            SAPLOG_INFO("SAP: AudioPlayer Destructor after Pushapp src thread join player id %d\n",getObjectIdentifier());
-            delete m_thread;
-        }
-        if(bufferQueue) {
-            delete bufferQueue;
-        }
-    }
-    // RDKEMW-10494: Add null check before accessing m_pipeline to prevent crash
-    // if createPipeline failed during construction
-    if(m_pipeline) {
-        gst_element_set_state (m_pipeline, GST_STATE_NULL);
-        gst_object_unref (m_pipeline);
+	m_thread->join();
+	SAPLOG_INFO("SAP: AudioPlayer Destructor after Pushapp src thread join player id %d\n",getObjectIdentifier());
+        delete bufferQueue;
+        delete m_thread;
     }  
+    gst_element_set_state (m_pipeline, GST_STATE_NULL);
+    gst_object_unref (m_pipeline);     
+	}
 }
 
 void AudioPlayer::Init(SAPEventCallback *callback)
