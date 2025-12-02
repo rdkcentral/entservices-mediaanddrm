@@ -676,39 +676,27 @@ namespace Plugin {
     }   
 
     std::mutex fileMutex;
-    // RDKEMW-10494: Extracted JSON configuration building to separate function
-    // This ensures all TTSConfiguration fields are consistently initialized and prevents
-    // code duplication, reducing risk of uninitialized JsonObject fields
-    static JsonObject buildConfig(TTS::TTSConfiguration& ttsConfig)
-    {
-        JsonObject obj;
-
-        obj["enabled"] = JsonValue((bool)ttsConfig.enabled());
-        obj["volume"] = std::to_string(ttsConfig.volume());
-        obj["rate"] = std::to_string(ttsConfig.rate());
-        obj["speechrate"] = ttsConfig.speechRate();
-        obj["primvolduckpercent"] = std::to_string(ttsConfig.primVolDuck());
-        obj["voice"] = ttsConfig.voice();
-        obj["language"] = ttsConfig.language();
-
-        if (ttsConfig.isFallbackEnabled()) {
-            JsonObject fallback;
-            fallback["scenario"] = ttsConfig.getFallbackScenario();
-            fallback["value"]    = ttsConfig.getFallbackValue();
-            fallback["path"]     = ttsConfig.getFallbackPath();
-            obj["fallbacktext"]  = fallback;
-        }
-
-        return obj;
-    }
     bool _writeToFile(std::string filename, TTS::TTSConfiguration &ttsConfig)
     {
         std::lock_guard<std::mutex> lock(fileMutex);
         Core::File file(filename);
+        JsonObject config;
         file.Create();
-        
-        JsonObject config = buildConfig(ttsConfig);
-        
+        config["enabled"] = JsonValue((bool)ttsConfig.enabled());
+        config["volume"] = std::to_string(ttsConfig.volume());
+        config["rate"] = std::to_string(ttsConfig.rate());
+        config["speechrate"] = ttsConfig.speechRate();
+        config["primvolduckpercent"] = std::to_string(ttsConfig.primVolDuck());
+        config["voice"] = ttsConfig.voice();
+        config["language"] = ttsConfig.language();
+        if(ttsConfig.isFallbackEnabled())
+        {
+            JsonObject fallbackconfig;
+            fallbackconfig["scenario"] = ttsConfig.getFallbackScenario();
+            fallbackconfig["value"] = ttsConfig.getFallbackValue();
+            fallbackconfig["path"] =ttsConfig.getFallbackPath();
+            config["fallbacktext"] = fallbackconfig;
+        }
         config.IElement::ToFile(file);
         fsync((int)file);
         file.Close();
