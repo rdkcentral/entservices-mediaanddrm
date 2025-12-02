@@ -128,16 +128,6 @@ namespace Plugin {
     {
         ASSERT(service == _service);
 
-        // FIX(Coverity): Unregister _dolbyOut first before releasing to prevent race
-        // Reason: Unregistering notification before releasing can cause callback during cleanup
-        // Impact: No API signature changes. Corrected cleanup order for thread safety.
-        if (_dolbyOut != nullptr) {
-            Exchange::Dolby::JOutput::Unregister(*this);
-            _dolbyNotification.Deinitialize();
-            _dolbyOut->Release();
-            _dolbyOut = nullptr;
-        }
-
         _service->Unregister(&_notification);
 
         if (_player != nullptr) {
@@ -152,7 +142,12 @@ namespace Plugin {
                 _videoCodecs->Release();
                 _videoCodecs = nullptr;
             }
-            // Dolby cleanup already done above before _service->Unregister
+            if (_dolbyOut != nullptr) {
+            Exchange::Dolby::JOutput::Unregister(*this);
+            _dolbyNotification.Deinitialize();
+            _dolbyOut->Release();
+            _dolbyOut = nullptr;
+            }
 
             RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));
             VARIABLE_IS_NOT_USED uint32_t result = _player->Release();
