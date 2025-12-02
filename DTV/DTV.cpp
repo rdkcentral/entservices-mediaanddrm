@@ -294,9 +294,6 @@ namespace WPEFramework
          IDTV::ILnb::IIterator *iterator = nullptr;
 
          uint32_t result = m_dtv->GetLnbList(iterator);
-         // FIX(Coverity): Check iterator for nullptr and add RAII-style cleanup
-         // Reason: Iterator allocation could fail; iterator must be released to prevent leak
-         // Impact: No API signature changes. Added null check and proper iterator cleanup.
          if ((result == Core::ERROR_NONE) && (iterator != nullptr))
          {
             IDTV::ILnb *lnb;
@@ -472,9 +469,6 @@ namespace WPEFramework
 
          SYSLOG(Logging::Notification, (_T("DTV::GetNowNextEvents: %s"), service_uri.c_str()));
 
-         // FIX(Coverity): Validate input length before sscanf to prevent buffer overflow
-         // Reason: sscanf doesn't validate input length, potential buffer overflow risk
-         // Impact: No API signature changes. Added input validation for safety.
          if (service_uri.length() != 0)
          {
             uint16_t onet_id, trans_id, serv_id;
