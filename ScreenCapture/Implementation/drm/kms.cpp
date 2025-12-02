@@ -26,19 +26,7 @@
 
 void kms_setup_encoder( int fd, kms_ctx *kms )
 {
-    // Free existing encoder before loop to prevent memory leak
-    if (kms->encoder) {
-        drmModeFreeEncoder(kms->encoder);
-        kms->encoder = NULL;
-    }
-    
     for( int i = 0; i < kms->res->count_encoders; i++ ) {
-        // Free encoder before reassignment in outer loop
-        // to prevent memory leak of DRM encoder objects
-        if (kms->encoder) {
-            drmModeFreeEncoder(kms->encoder);
-            kms->encoder = NULL;
-        }
 
         kms->encoder = drmModeGetEncoder(fd,kms->res->encoders[i]);
 
@@ -48,21 +36,13 @@ void kms_setup_encoder( int fd, kms_ctx *kms )
             return;
         }
 
-        if (!kms->encoder) {
-            continue;
-        }
 
         for( int j = 0; j < kms->res->count_crtcs; j++ ) {
 
             if( kms->encoder->possible_crtcs & ( 1 << j ) ) {
 
                 drmModeFreeEncoder( kms->encoder );
-                kms->encoder = NULL;
-                
                 kms->encoder = drmModeGetEncoder(fd, kms->res->encoders[j]);
-                if (!kms->encoder) {
-                    continue;
-                }
 
                 kms->encoder->crtc_id = kms->crtc_id = j;
                 goto exit;
@@ -76,23 +56,19 @@ exit:
 
 void kms_setup_connector( int fd, kms_ctx *kms )
 {
-
+    int i = 0;
     drmModeConnector *connector = NULL;
 
-    for(int i = 0; i < kms->res->count_connectors; i++ ) {
+    for( i = 0; i < kms->res->count_connectors; i++ ) {
 
         connector = drmModeGetConnector(fd, kms->res->connectors[i]);
-        if(!connector) {
-            continue;
+        if( connector ) {
+
+            if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
+                break;
+            }
         }
-        if( connector->count_modes && ( connector->connection == DRM_MODE_CONNECTED ) ) {
-            break;
-        }
-        // ree connector on non-matching iterations to prevent
-        // memory leak of DRM connector objects
-        drmModeFreeConnector(connector);
-        connector = NULL;
-        }
+    }
 
     if ( connector ) {
 

@@ -242,11 +242,7 @@ namespace WPEFramework
                          PNG_FILTER_TYPE_BASE);
 
             row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * height);
-            if (row_pointers == NULL) {
-                LOGERR("Error: failed to allocate memory for row pointers.");
-                r = -7;
-                goto error;
-            }
+
             for (i = 0; i < height; ++i)
                 row_pointers[i] = data + i * pitch;
 
@@ -446,50 +442,29 @@ namespace WPEFramework
             }
 
             // create header
-            // Initialize chunk to NULL and validate curl_slist_append return
-            // to prevent memory leak and NULL pointer usage in cleanup
             struct curl_slist *chunk = NULL;
             chunk = curl_slist_append(chunk, "Content-Type: image/png");
-            if (chunk == NULL) {
-                LOGERR("Failed to append HTTP header (Content-Type: image/png)");
-                curl_easy_cleanup(curl);
-                return false;
-            }
 
             // set url and data
-            // Validate each curl_easy_setopt return value and cleanup on error
-            // to prevent API state corruption and resource leaks
             res = curl_easy_setopt(curl, CURLOPT_URL, url);
             if (res != CURLE_OK)
             {
                 LOGERR("CURLOPT_URL failed URL with error code: %s\n", curl_easy_strerror(res));
-                curl_slist_free_all(chunk);
-                curl_easy_cleanup(curl);
-                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_HTTPHEADER with error code  %s\n", curl_easy_strerror(res));
-                curl_slist_free_all(chunk);
-                curl_easy_cleanup(curl);
-                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_POSTFIELDSIZE with error code  %s\n", curl_easy_strerror(res));
-                curl_slist_free_all(chunk);
-                curl_easy_cleanup(curl);
-                return false;
             }
             res = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &data[0]);
             if (res != CURLE_OK)
             {
                 LOGERR("Failed to set CURLOPT_POSTFIELDS with code  %s\n", curl_easy_strerror(res));
-                curl_slist_free_all(chunk);
-                curl_easy_cleanup(curl);
-                return false;
             }
 
             // perform blocking upload call
@@ -499,29 +474,17 @@ namespace WPEFramework
             if (CURLE_OK == res)
             {
                 long response_code;
-                // Validate curl_easy_getinfo return to prevent garbage value
-                // in response_code if API call fails
-                CURLcode info_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-                
-                if (info_res != CURLE_OK)
+
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+                if (600 > response_code && response_code >= 400)
                 {
-                    LOGERR("Failed to get response code: %s", curl_easy_strerror(info_res));
-                    error_str = "Failed to get response code";
+                    LOGERR("uploading failed with response code %ld\n", response_code);
+                    error_str = std::string("response code:") + std::to_string(response_code);
                     call_succeeded = false;
                 }
                 else
-                {
-                    if (600 > response_code && response_code >= 400)
-                    {
-                        LOGERR("uploading failed with response code %ld\n", response_code);
-                        error_str = std::string("response code:") + std::to_string(response_code);
-                        call_succeeded = false;
-                    }
-                    else
-                    {
-                        LOGWARN("upload done");
-                    }
-                }
+                    LOGWARN("upload done");
             }
             else
             {

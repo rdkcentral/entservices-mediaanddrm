@@ -44,12 +44,6 @@ namespace Plugin {
             explicit Notification(OCDM* parent)
                 : _parent(*parent)
             {
-                // FIX(Coverity): Add explicit null check for parent parameter in release builds
-                // Reason: ASSERT doesn't work in release builds
-                // Impact: No API signature changes. Added runtime validation.
-                if (parent == nullptr) {
-                    throw std::invalid_argument("OCDM::Notification: parent cannot be null");
-                }
                 ASSERT(parent != nullptr);
             }
             ~Notification()

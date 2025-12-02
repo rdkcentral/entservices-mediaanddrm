@@ -47,36 +47,20 @@ namespace Plugin {
 
     /* virtual */ const string LinearPlaybackControl::Initialize(PluginHost::IShell* service)
     {
-        // FIX(Coverity): Add explicit null check for service parameter
-        // Reason: ASSERT only works in debug builds
-        // Impact: No API signature changes. Added safety check for null service pointer.
-        if (service == nullptr) {
-            return "Invalid service parameter";
-        }
         
         ASSERT(_service == nullptr);
-        _service = service;
 
         LinearConfig::Config config;
         config.FromString(service->ConfigLine());
         _mountPoint = config.MountPoint.Value();
         _isStreamFSEnabled = config.IsStreamFSEnabled.Value();
 
-        // FIX(Coverity): Allocate in try-catch for exception safety (C++11 compatible)
-        // Reason: Raw new can leak if subsequent operations throw exceptions
-        // Impact: No API signature changes. Improved exception safety without C++14 features.
         if (_isStreamFSEnabled) {
-            try {
-                // For now we only have one Nokia FCC demuxer interface with demux Id = 0
-                _demuxer.reset(new DemuxerStreamFsFCC(&config, 0));
-                _trickPlayFileListener.reset(new FileSelectListener(_demuxer->getTrickPlayFile(), 16,[this](const std::string &data){
-                    speedchangedNotify(data);
-                }));
-            } catch (...) {
-                _demuxer.reset();
-                _trickPlayFileListener.reset();
-                throw;
-            }
+            // For now we only have one Nokia FCC demuxer interface with demux Id = 0
+            _demuxer = std::unique_ptr<DemuxerStreamFsFCC>(new DemuxerStreamFsFCC(&config, 0));
+            _trickPlayFileListener = std::unique_ptr<FileSelectListener>(new FileSelectListener(_demuxer->getTrickPlayFile(), 16,[this](const std::string &data){
+                speedchangedNotify(data);
+            }));
         }
 
         // Initialize streamfs and associated dependencies here.
@@ -87,12 +71,6 @@ namespace Plugin {
 
     /* virtual */ void LinearPlaybackControl::Deinitialize(PluginHost::IShell* service)
     {
-        // FIX(Coverity): Add explicit check with error logging for release builds
-        // Reason: ASSERT doesn't work in release builds
-        // Impact: No API signature changes. Added runtime validation.
-        if (_service != service) {
-            // Log error but continue with cleanup
-        }
         ASSERT(_service == service);
 
        // Deinitialize streamfs and associated dependencies here.

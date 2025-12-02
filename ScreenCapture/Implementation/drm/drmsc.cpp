@@ -27,7 +27,6 @@
 #include <sys/ioctl.h>
 #include "kms.h"
 #include "drmsc.h"
-#include <vector>
 
 #ifndef DEFAULT_DEVICE
 #define DEFAULT_DEVICE "/dev/dri/card0"
@@ -73,7 +72,6 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 	DRMContext *context;
 	bool ret = true;
 	drmModeFB *fb = nullptr;
-	drmModePlane *plane = nullptr;
 
 	do {
 		if(!handle || !handle->context) {
@@ -85,10 +83,10 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 		// open drm device to get screen information
 		int retryCount = 0;
-		// Correct file descriptor validation - open() returns -1 on error, not 0
-		// fd=0 (stdin) is a valid file descriptor and should not be treated as failure
+		drmModePlane *plane = nullptr;
+
 		context->fd = open(DEFAULT_DEVICE, O_RDWR);
-		if(context->fd < 0) {
+		if(!context->fd) {
 			cout << "[SCREENCAP] fail to open " <<  DEFAULT_DEVICE << endl;
 			ret = false;
 			break;
@@ -118,17 +116,12 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			// try again
 			cout << "[SCREENCAP] try get primary buffer again" << endl;
 			kms_get_plane(context->fd, context->kms);
-			// Free previous plane allocation before reassignment
-			// to prevent memory leak of DRM plane objects
-			drmModePlane* prev_plane = plane; 
 			plane = drmModeGetPlane(context->fd, context->kms->primary_plane_id );
 			if(!plane) {
 				cout << "[SCREENCAP] fail to drmModeGetPlane" <<  endl;
-				drmModeFreePlane(prev_plane);
 				ret = false;
 				break;
 			}
-			 drmModeFreePlane(prev_plane);
 
 			fb = drmModeGetFB(context->fd, plane->fb_id);
 			if(retryCount > 2) {
@@ -160,9 +153,8 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			ret = false;
 			break;
 		}
-		// Zero-initialize entire drm_prime_handle struct to prevent
-		// uninitialized fields from causing crashes in DRM kernel API
-                struct drm_prime_handle drm_prime = {0};
+
+                struct drm_prime_handle drm_prime;
                 int drmRet = 0;
 
 		drm_prime.handle = fb->handle;
@@ -176,8 +168,7 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 		}
 		handle->dmabuf_fd = drm_prime.fd;
 	} while(false);
-	if (plane)
-    	drmModeFreePlane(plane);
+
 	if(fb)
 		drmModeFreeFB(fb);
 
@@ -187,8 +178,6 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 
 bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, uint32_t bufSize) {
 	bool ret = true;
-	void* vaddr = nullptr;
-    uint32_t size = 0;
 
 	do {
 		if(!handle || !output) {
@@ -197,8 +186,7 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 			break;
 		}
 
-		size = handle->pitch * handle->height;
-
+		uint32_t size = handle->pitch * handle->height;
 		if(bufSize < size) {
 			// buffer size not match
 			ret = false;
@@ -206,50 +194,18 @@ bool DRMScreenCapture_ScreenCapture(DRMScreenCapture* handle, uint8_t* output, u
 		}
 
 		// copy frame
-		// Map DMA-BUF
-		// Validate mmap64 return and verify memory pages with mincore
-		// to prevent segfault from invalid memory mapping in memcpy
-        vaddr = mmap64(nullptr, size, PROT_READ, MAP_SHARED, handle->dmabuf_fd, 0);
-        if (vaddr == MAP_FAILED) {
-            cout << "[SCREENCAP] mmap failed, errno=" << errno << endl;
-            vaddr = nullptr;  // prevent accidental munmap
-            ret = false;
-            break;
+		void *vaddr = NULL;
+		vaddr =(void*) mmap64(NULL, size, PROT_READ , MAP_SHARED, handle->dmabuf_fd, 0);
+
+		if (vaddr == MAP_FAILED) {
+			cout << "[SCREENCAP] mmap failed" << endl;
+			ret = false;
+			break;
         }
-
-        // Validate pages using mincore
-        size_t pageCount = (size + getpagesize() - 1) / getpagesize();
-        std::vector<unsigned char> vec(pageCount);
-
-        if (mincore(vaddr, size, vec.data()) != 0) {
-            cout << "[SCREENCAP] mincore check failed, errno=" << errno << endl;
-            ret = false;
-            break;
-        }
-
-        bool allInvalid = true;
-        for (auto v : vec) {
-            if (v & 0x1) {  // page resident
-                allInvalid = false;
-                break;
-            }
-        }
-
-        if (allInvalid) {
-            cout << "[SCREENCAP] mapped region not resident/invalid" << endl;
-            ret = false;
-            break;
-        }
-
-        // Safe copy
-        memcpy(output, vaddr, size);
+		memcpy(output,(unsigned char*)vaddr, size);
+		munmap(vaddr, size);
 
 	} while(false);
-	
-	// Cleanup
-    if (vaddr) {
-        munmap(vaddr, size);
-    }
 
 	return ret;
 }

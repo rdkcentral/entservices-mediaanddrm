@@ -65,20 +65,9 @@ namespace Plugin {
                 ASSERT(_connectionId != 0);
             #endif
 
-            // FIX(Coverity): Add error handling for Configure/Register/RegisterAll
-            // Reason: If any step fails, resources leak
-            // Impact: No API signature changes. Added proper cleanup on error paths.
-            try {
-                _sap->Configure(_service);
-                _sap->Register(&_notification);
-                RegisterAll();
-            } catch (...) {
-                message = _T("SystemAudioPlayer configuration failed.");
-                _sap->Release();
-                _sap = nullptr;
-                _service->Unregister(&_notification);
-                _service = nullptr;
-            }
+            _sap->Configure(_service);
+            _sap->Register(&_notification);
+            RegisterAll();
         } else {
             message = _T("SystemAudioPlayer could not be instantiated.");
             _service->Unregister(&_notification);
@@ -93,9 +82,6 @@ namespace Plugin {
         ASSERT(_service == service);
         ASSERT(_sap != nullptr);
 
-        // FIX(Coverity): Add nullptr check to prevent double release
-        // Reason: If _sap is nullptr, Release() will cause crash
-        // Impact: No API signature changes. Added defensive runtime check.
         if (!_sap)
             return;
 

@@ -117,14 +117,10 @@ private:
                 }
                 lseek(fd, 0, SEEK_SET);
 
-                // FIX(Coverity): Save errno immediately and ensure buffer bounds
-                // Reason: errno can change between read() and check; res must be <= mBufSize
-                // Impact: No API signature changes. Added errno safety and bounds validation.
                 res = read(fd, buf.data(), mBufSize);
-                int saved_errno = errno;
                 
                 if (res < 0) {
-                    if (saved_errno == ENOTCONN || saved_errno == EBADF || saved_errno == ECONNRESET) {
+                    if (errno == ENOTCONN || errno == EBADF || errno == ECONNRESET) {
                         syslog(LOG_ERR, "Socket error for %s", mFile.c_str());
                         break;
                     } else {
@@ -135,13 +131,6 @@ private:
                 } else if (res > 0 && static_cast<size_t>(res) <= mBufSize) {
                     mFunc(std::string(buf.data(), res));
                 }
-            }
-            // FIX(Coverity): Ensure fd is always closed and reset
-            // Reason: Prevent resource leak if inner loop breaks
-            // Impact: No API signature changes. Added proper cleanup.
-            if (fd >= 0) {
-                close(fd);
-                fd = -1;
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }

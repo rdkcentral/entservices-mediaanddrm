@@ -70,29 +70,7 @@ namespace Plugin {
             if ((_player->AudioCodecs(_audioCodecs) == Core::ERROR_NONE) && (_audioCodecs != nullptr)) {
 
                 if ((_player->VideoCodecs(_videoCodecs) == Core::ERROR_NONE) && (_videoCodecs != nullptr)) {
-                    // FIX(Coverity): Add error handling for registration failure
-                    // Reason: If Exchange::JPlayerProperties::Register fails, resources leak
-                    // Impact: No API signature changes. Added proper error handling.
-                    try {
-                        Exchange::JPlayerProperties::Register(*this, _player);
-                    } catch (...) {
-                        message = _T("PlayerInfo JSONRPC registration failed.");
-                    }
-                    
-                    if (message.length() != 0) {
-                        if (_videoCodecs != nullptr) {
-                            _videoCodecs->Release();
-                            _videoCodecs = nullptr;
-                        }
-                        if (_audioCodecs != nullptr) {
-                            _audioCodecs->Release();
-                            _audioCodecs = nullptr;
-                        }
-                        _player->Release();
-                        _player = nullptr;
-                        Deinitialize(service);
-                        return message;
-                    }
+                    Exchange::JPlayerProperties::Register(*this, _player);
                     
                     //  L2 Test specific manual registration
                     // 
@@ -334,14 +312,8 @@ namespace Plugin {
         // This can potentially be called on a socket thread, so the deactivation (wich in turn kills this object) must be done
         // on a seperate thread. Also make sure this call-stack can be unwound before we are totally destructed.
         if (_connectionId == connection->Id()) {
-            // FIX(Coverity): Add null check and AddRef before job submission
-            // Reason: _service could be nullified by Deinitialize, causing crash
-            // Impact: No API signature changes. Added safety check and reference counting.
             ASSERT(_service != nullptr);
-            if (_service != nullptr) {
-                _service->AddRef();
-                Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
-            }
+            Core::IWorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
         }
     }
 } // namespace Plugin

@@ -81,26 +81,13 @@ namespace WPEFramework
                 auto configConnection = _screenCapture->QueryInterface<Exchange::IConfiguration>();
                 if (configConnection != nullptr)
                 {
-                    // FIX(Coverity): Add error handling for Configure()
-                    // Reason: If connection fails after allocation, object may leak
-                    // Impact: No API signature changes. Added error handling for cleanup.
-                    try {
-                        configConnection->Configure(service);
-                        configConnection->Release();
-                    } catch (...) {
-                        configConnection->Release();
-                        _screenCapture->Release();
-                        _screenCapture = nullptr;
-                        message = _T("ScreenCapture configuration failed");
-                    }
+                    configConnection->Configure(service);
+                    configConnection->Release();
                 }
-                
-                if (message.length() == 0) {
-                    // Register for notifications
-                    _screenCapture->Register(&_screenCaptureNotification);
-                    // Invoking Plugin API register to wpeframework
-                    Exchange::JScreenCapture::Register(*this, _screenCapture);
-                }
+                // Register for notifications
+                _screenCapture->Register(&_screenCaptureNotification);
+                // Invoking Plugin API register to wpeframework
+                Exchange::JScreenCapture::Register(*this, _screenCapture);
             }
             else
             {
@@ -121,11 +108,6 @@ namespace WPEFramework
             ASSERT(_service == service);
 
             SYSLOG(Logging::Shutdown, (string(_T("ScreenCapture::Deinitialize"))));
-
-            // FIX(Coverity): Add mutex to protect _screenCapture access during lifecycle
-            // Reason: Multiple threads could access _screenCapture during Initialize/Deinitialize
-            // Impact: No API signature changes. Added synchronization for thread safety.
-            std::lock_guard<std::mutex> lock(_adminLock);
 
             // Make sure the Activated and Deactivated are no longer called before we start cleaning up..
             if (_service != nullptr)
