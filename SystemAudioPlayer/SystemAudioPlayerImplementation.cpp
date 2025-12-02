@@ -154,10 +154,8 @@ namespace Plugin {
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("rate");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("channels");
                 CHECK_SAP_CONFIG_RETURN_ON_FAIL("layout");
-                // RDKEMW-10494: Declare format and layout as local variables to prevent
-                // unintended scope issues and ensure proper initialization
-                string format = config["format"].String();
-                string layout = config["layout"].String();
+                format = config["format"].String();
+                layout = config["layout"].String();
                 getNumberConfigParameter("rate",rate);
                 getNumberConfigParameter("channels",channels);
                 SAPLOG_INFO("SAP: Do PCM config ");
