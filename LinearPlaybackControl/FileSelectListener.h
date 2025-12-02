@@ -91,14 +91,6 @@ private:
                 fd_set rfds;
                 struct timeval timeout;
 
-                // FIX(Coverity): Validate fd before FD_SET to prevent buffer overflow
-                // Reason: FD_SET doesn't check if fd >= FD_SETSIZE
-                // Impact: No API signature changes. Added bounds check for safety.
-                if (fd >= FD_SETSIZE) {
-                    syslog(LOG_ERR, "File descriptor %d exceeds FD_SETSIZE", fd);
-                    break;
-                }
-
                 FD_ZERO(&rfds);
                 FD_SET(fd, &rfds);
 
