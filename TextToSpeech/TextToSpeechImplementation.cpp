@@ -221,7 +221,7 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign, Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
         TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign);
@@ -256,7 +256,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::ListVoices(const string language,RPC::IStringIterator*& voices) const
+    Core::hresult TextToSpeechImplementation::ListVoices(const string language, RPC::IStringIterator*& voices) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
@@ -273,7 +273,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) Exchange::ITextToSpeech::TTS_INVALID_CONFIGURATION;
 
@@ -315,7 +315,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::SetFallbackText(const string scenario,const string value)
+    Core::hresult TextToSpeechImplementation::SetFallbackText(const string scenario, const string value)
     {
         FallbackData data;
         data.scenario = scenario;
@@ -353,7 +353,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    Core::hresult TextToSpeechImplementation::SetACL(const string method,const string apps)
+    Core::hresult TextToSpeechImplementation::SetACL(const string method, const string apps)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -424,7 +424,7 @@ namespace Plugin {
         return ++counter;
     }
 
-    Core::hresult TextToSpeechImplementation::Speak(const string callsign,const string text,uint32_t &speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Speak(const string callsign, const string text, uint32_t &speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -460,7 +460,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::Pause(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Pause(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -474,7 +474,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::Resume(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Resume(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -489,7 +489,7 @@ namespace Plugin {
     }
 
 
-    Core::hresult TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid,Exchange::ITextToSpeech::SpeechState &estate)
+    Core::hresult TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid, Exchange::ITextToSpeech::SpeechState &estate)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         TTS::SpeechState state;
