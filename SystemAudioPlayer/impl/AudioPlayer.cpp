@@ -46,7 +46,7 @@ SAPEventCallback* AudioPlayer::m_callback=NULL;
 //static bool sys_playing =false;
 
 AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode playMode,int objectIdentifier)
-    // RDKEMW-10494: Initialize critical pointers to prevent crashes and undefined behavior
+    // Copilot fix: Initialize critical pointers to prevent crashes and undefined behavior
     : m_pipeline(nullptr)        // Fix: Prevents NULL dereference if createPipeline fails
     , m_audioSink(nullptr)        // Fix: Prevents crash when dereferenced if pipeline creation fails
     , m_audioVolume(nullptr)      // Fix: Prevents crash in setVolume if creation fails
