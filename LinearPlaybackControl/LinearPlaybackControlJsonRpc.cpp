@@ -255,9 +255,7 @@ namespace Plugin {
             syslog(LOG_ERR, "No demuxer set");
             return Core::ERROR_BAD_REQUEST;
         }
-        // FIX(Coverity): Add null check before dereferencing _demuxer
-        // Reason: _demuxer could be uninitialized, dereferencing nullptr causes crash
-        // Impact: No API signature changes. Added null check for safety.
+        
         if (!_demuxer) {
             syslog(LOG_ERR, "Demuxer not initialized");
             return Core::ERROR_BAD_REQUEST;
