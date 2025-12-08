@@ -107,7 +107,6 @@ private:
                 lseek(fd, 0, SEEK_SET);
 
                 res = read(fd, buf, mBufSize);
-                
                 if (res < 0) {
                     if (errno == ENOTCONN || errno == EBADF || errno == ECONNRESET) {
                         syslog(LOG_ERR, "Socket error for %s", mFile.c_str());
