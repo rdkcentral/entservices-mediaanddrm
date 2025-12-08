@@ -119,7 +119,7 @@ namespace Plugin {
             SAPLOG_INFO("SystemAudioPlayerImplementation Open PlayMode :%s is not supported", parameters["playmode"].String().c_str());
             returnResponse(false);
         }
-       
+
         int id = -1;
         _adminLock.Lock();      
         OpenMapping(audioType,sourceType,playMode,id);        
