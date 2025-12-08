@@ -22,8 +22,6 @@
 #include <thread>
 #include <functional>
 #include <fstream>
-#include <atomic>
-#include <vector>
 
 class FileSelectListener
 {
@@ -55,10 +53,7 @@ private:
     std::string mFile;
     uint32_t mBufSize;
     std::function<void(const std::string&)> mFunc;
-    // FIX(Coverity): Use std::atomic for mStop to prevent race condition
-    // Reason: mStop accessed from multiple threads without synchronization
-    // Impact: No API signature changes. Made mStop atomic for thread safety.
-    std::atomic<bool> mStop;
+    bool mStop;
 
     std::shared_ptr<std::thread> mThread;
 
