@@ -239,9 +239,6 @@ namespace WPEFramework
          IDTV::ICountry::IIterator* iterator = nullptr;
 
          uint32_t result = m_dtv->GetCountryList(iterator);
-         // FIX(Coverity): Check iterator for nullptr after GetCountryList() call
-         // Reason: Iterator creation could fail, dereferencing nullptr causes crash
-         // Impact: No API signature changes. Added null check for iterator safety.
          if ((result == Core::ERROR_NONE) && (iterator != nullptr))
          {
             IDTV::ICountry* country;
