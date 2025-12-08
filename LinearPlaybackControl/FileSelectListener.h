@@ -53,7 +53,7 @@ private:
     std::string mFile;
     uint32_t mBufSize;
     std::function<void(const std::string&)> mFunc;
-    bool mStop;
+    std::atomic<bool> mStop;
 
     std::shared_ptr<std::thread> mThread;
 
