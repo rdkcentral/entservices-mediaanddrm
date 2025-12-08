@@ -69,10 +69,7 @@ private:
     }
 
     void pollLoop() {
-        // FIX(Coverity): Allocate buffer on heap to prevent potential stack overflow
-        // Reason: mBufSize could be large, fixed-size stack array is risky
-        // Impact: No API signature changes. Use heap allocation for safety.
-        std::vector<char> buf(mBufSize);
+        char buf[mBufSize];
         int fd = -1;
         while (!mStop) {
             if (!file_exists(mFile)) {
@@ -109,7 +106,7 @@ private:
                 }
                 lseek(fd, 0, SEEK_SET);
 
-                res = read(fd, buf.data(), mBufSize);
+                res = read(fd, buf, mBufSize);
                 
                 if (res < 0) {
                     if (errno == ENOTCONN || errno == EBADF || errno == ECONNRESET) {
@@ -121,7 +118,7 @@ private:
                         continue;
                     }
                 } else {
-                    mFunc(std::string(buf.data(), res));
+                    mFunc(std::string(buf, res));
                 }
             }
             close(fd);
