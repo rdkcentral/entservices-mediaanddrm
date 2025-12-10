@@ -106,7 +106,7 @@ namespace Plugin {
        
 
         virtual Core::hresult Enable(const bool enable) override;
-        virtual Core::hresult GetTTSStatus(bool &enable /* @out */) const override;
+        virtual Core::hresult Enable(bool &enable /* @out */) const override;
         virtual Core::hresult ListVoices(const string language, RPC::IStringIterator*& voices/* @out */) const override;
         virtual Core::hresult SetConfiguration(const Exchange::ITextToSpeech::Configuration &object, Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
         virtual Core::hresult SetFallbackText(const string scenario, const string value) override;
@@ -131,7 +131,6 @@ namespace Plugin {
         virtual void onNetworkError(uint32_t speechId, string callsign) override;
         virtual void onPlaybackError(uint32_t speechId, string callsign) override;
         virtual void onSpeechComplete(TTS::SpeechData &data) override;
-
         BEGIN_INTERFACE_MAP(TextToSpeechImplementation)
         INTERFACE_ENTRY(Exchange::ITextToSpeech)
         INTERFACE_ENTRY(PluginHost::IStateControl)
