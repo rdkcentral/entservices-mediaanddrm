@@ -528,8 +528,8 @@ namespace Plugin {
                 case SPEECH_PAUSE:      (*index)->OnSpeechPaused(params.Number()); break;
                 case SPEECH_RESUME:     (*index)->OnSpeechResumed(params.Number()); break;
                 case SPEECH_INTERRUPT:  (*index)->OnSpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (*index)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (*index)->PlaybackError(params.Number()); break;
+                case NETWORK_ERROR:     (*index)->OnNetworkError(params.Number()); break;
+                case PLAYBACK_ERROR:    (*index)->OnPlaybackError(params.Number()); break;
                 case SPEECH_COMPLETE:   (*index)->OnSpeechComplete(params.Number()); break;
                 default: break;
             }
@@ -546,8 +546,8 @@ namespace Plugin {
                 case SPEECH_PAUSE:      (callsignindex->second)->OnSpeechPaused(params.Number()); break;
                 case SPEECH_RESUME:     (callsignindex->second)->OnSpeechResumed(params.Number()); break;
                 case SPEECH_INTERRUPT:  (callsignindex->second)->OnSpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (callsignindex->second)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (callsignindex->second)->PlaybackError(params.Number()); break;
+                case NETWORK_ERROR:     (callsignindex->second)->OnNetworkError(params.Number()); break;
+                case PLAYBACK_ERROR:    (callsignindex->second)->OnPlaybackError(params.Number()); break;
                 case SPEECH_COMPLETE:   (callsignindex->second)->OnSpeechComplete(params.Number()); break;
                 default: break;            
              }

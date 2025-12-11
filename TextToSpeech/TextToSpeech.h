@@ -105,13 +105,13 @@ namespace Plugin {
                     _parent.Notify("onspeechinterrupted", params);
                 }
 
-                virtual void NetworkError(const uint32_t speechid) {
+                virtual void OnNetworkError(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onnetworkerror", params);
                 }
 
-                virtual void PlaybackError(const uint32_t speechid) {
+                virtual void OnPlaybackError(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
                     _parent.Notify("onplaybackerror", params);
