@@ -130,6 +130,7 @@ namespace WPEFramework
             Core::hresult Register(Exchange::IScreenCapture::INotification *notification) override;
             Core::hresult Unregister(Exchange::IScreenCapture::INotification *notification) override;
 
+            Core::hresult sendScreenshot(const string &callGUID, Result &result);
             Core::hresult UploadScreenCapture(const string &url, const string &callGUID, Result &result) override;
 
             bool uploadDataToUrl(const std::vector<unsigned char> &data, const char *url, std::string &error_str);

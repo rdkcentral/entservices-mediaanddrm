@@ -20,6 +20,7 @@
 #include "ScreenCaptureImplementation.h"
 
 #include "UtilsJsonRpc.h"
+#include "UtilsgetRFCConfig.h"
 
 #include <png.h>
 #include <curl/curl.h>
@@ -156,6 +157,69 @@ namespace WPEFramework
                 break;
             }
             _adminLock.Unlock();
+        }
+
+        Core::hresult ScreenCaptureImplementation::sendScreenshot(const string &callGUID, Result &result)
+        {
+            // RFC keys
+            static const char* kEnableKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable";
+            static const char* kUrlKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL";
+
+            std::string enableStr;
+            std::string urlStr;
+
+            // Get Enable flag
+            bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
+            if (!enableSet)
+            {
+                LOGERR("Failed to get RFC '%s'", kEnableKey);
+                result.success = false;
+                return Core::ERROR_GENERAL;
+            }
+
+            // Interpret boolean value case-insensitively
+            std::string enableNorm = enableStr;
+            std::transform(enableNorm.begin(), enableNorm.end(), enableNorm.begin(), ::tolower);
+            bool isEnabled = (enableNorm == "true" || enableNorm == "1" || enableNorm == "yes");
+
+            if (!isEnabled)
+            {
+                LOGERR("ScreenCapture is disabled by RFC '%s'", kEnableKey);
+                result.success = false;
+                return Core::ERROR_GENERAL;
+            }
+
+            // Get URL
+            bool urlSet = Utils::getRFCConfig(kUrlKey, urlStr);
+            if (!urlSet)
+            {
+                LOGERR("Failed to get RFC '%s'", kUrlKey);
+                result.success = false;
+                return Core::ERROR_GENERAL;
+            }
+
+            if (urlStr.empty())
+            {
+                LOGERR("RFC '%s' is empty", kUrlKey);
+                result.success = false;
+                return Core::ERROR_GENERAL;
+            }
+
+            // Use same scheduling logic from UploadScreenCapture() lines 174–183
+            std::lock_guard<std::mutex> guard(m_callMutex);
+
+            LOGINFO();
+
+            this->url = urlStr;
+            
+            if (!callGUID.empty())
+            {
+                this->callGUID = callGUID;
+            }
+            screenShotDispatcher->Schedule(Core::Time::Now().Add(0), ScreenShotJob(this));
+
+            result.success = true;
+            return Core::ERROR_NONE;
         }
 
         Core::hresult ScreenCaptureImplementation::UploadScreenCapture(const string &url, const string &callGUID, Result &result)
