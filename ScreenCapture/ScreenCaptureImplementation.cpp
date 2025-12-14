@@ -197,12 +197,12 @@ namespace WPEFramework
                 result.success = false;
                 return Core::ERROR_GENERAL;
             }
-           
-            // Use same scheduling logic from UploadScreenCapture() lines 174–183
+
+            std::string url = urlStr.value;
             std::lock_guard<std::mutex> guard(m_callMutex);
 
             LOGINFO();
-            if (urlStr.value.empty())
+            if (url.empty())
             {
                 LOGERR("RFC '%s' is empty", kUrlKey);
                 result.success = false;
@@ -210,7 +210,7 @@ namespace WPEFramework
             }
 
 
-            this->url = urlStr.value;
+            this->url = url;
             
             if (!callGUID.empty())
             {
