@@ -180,7 +180,7 @@ namespace WPEFramework
             // Interpret boolean value case-insensitively
             std::string enableNorm = enableStr;
             std::transform(enableNorm.begin(), enableNorm.end(), enableNorm.begin(), ::tolower);
-            bool isEnabled = (enableNorm == "true" || enableNorm == "1" || enableNorm == "yes");
+            bool isEnabled = (enableNorm == "true");
 
             if (!isEnabled)
             {
