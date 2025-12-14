@@ -165,8 +165,8 @@ namespace WPEFramework
             static const char* kEnableKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable";
             static const char* kUrlKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL";
 
-            std::string enableStr;
-            std::string urlStr;
+            RFC_ParamData_t enableStr;
+            RFC_ParamData_t urlStr;
 
             // Get Enable flag
             bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
@@ -178,7 +178,7 @@ namespace WPEFramework
             }
 
             // Interpret boolean value case-insensitively
-            std::string enableNorm = enableStr;
+            std::string enableNorm = enableStr.value;
             std::transform(enableNorm.begin(), enableNorm.end(), enableNorm.begin(), ::tolower);
             bool isEnabled = (enableNorm == "true");
 
@@ -197,20 +197,20 @@ namespace WPEFramework
                 result.success = false;
                 return Core::ERROR_GENERAL;
             }
+           
+            // Use same scheduling logic from UploadScreenCapture() lines 174–183
+            std::lock_guard<std::mutex> guard(m_callMutex);
 
-            if (urlStr.empty())
+            LOGINFO();
+            if (urlStr.value.empty())
             {
                 LOGERR("RFC '%s' is empty", kUrlKey);
                 result.success = false;
                 return Core::ERROR_GENERAL;
             }
 
-            // Use same scheduling logic from UploadScreenCapture() lines 174–183
-            std::lock_guard<std::mutex> guard(m_callMutex);
 
-            LOGINFO();
-
-            this->url = urlStr;
+            this->url = urlStr.value;
             
             if (!callGUID.empty())
             {
