@@ -2,7 +2,7 @@ name: Build Component in Native Environment
 
 on:
   push:
-    branches: [ main, 'sprint/**', 'release/**', RDKEMW-10786 ]
+    branches: [ main, 'sprint/**', 'release/**', develop]
   pull_request:
     branches: [ main, 'sprint/**', 'release/**', topic/RDK*, RDKEMW-10786 ]
 
