@@ -159,7 +159,7 @@ namespace WPEFramework
             _adminLock.Unlock();
         }
 
-        Core::hresult ScreenCaptureImplementation::sendScreenshot(const string &callGUID, Result &result)
+        Core::hresult ScreenCaptureImplementation::SendScreenshot(const string &callGUID, Result &result)
         {
             // RFC keys
             static const char* kEnableKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable";
