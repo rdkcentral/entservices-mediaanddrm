@@ -206,7 +206,7 @@ namespace WPEFramework
                 return Core::ERROR_GENERAL;
             }
 
-            this->url = url;
+            this->url = std::move(url);
             
             if (!callGUID.empty())
             {
