@@ -166,7 +166,8 @@ namespace WPEFramework
 
             RFC_ParamData_t enableStr;
             RFC_ParamData_t urlStr;
-
+            
+            std::lock_guard<std::mutex> guard(m_callMutex);
             bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
             if (!enableSet)
             {
@@ -197,8 +198,6 @@ namespace WPEFramework
             }
 
             std::string url = urlStr.value;
-            std::lock_guard<std::mutex> guard(m_callMutex);
-
             LOGINFO();
             if (url.empty())
             {
