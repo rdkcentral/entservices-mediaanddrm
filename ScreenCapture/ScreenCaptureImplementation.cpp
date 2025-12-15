@@ -164,8 +164,8 @@ namespace WPEFramework
             static const char* kEnableKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable";
             static const char* kUrlKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL";
 
-            RFC_ParamData_t enableStr;
-            RFC_ParamData_t urlStr;
+            RFC_ParamData_t enableStr = {0};
+            RFC_ParamData_t urlStr = {0};
             
             std::lock_guard<std::mutex> guard(m_callMutex);
             bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
