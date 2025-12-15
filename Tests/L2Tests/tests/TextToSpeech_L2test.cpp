@@ -223,7 +223,7 @@ TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
     configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
-    EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
 }
 
 TEST_F(TextToSpeechTest, SpeakWithTTSDisabled)
