@@ -16,8 +16,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        ref: RDKEMW-10786
-
+       
       - name: native build
         run: |
           sh -x build_dependencies.sh
