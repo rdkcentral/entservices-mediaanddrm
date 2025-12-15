@@ -212,6 +212,20 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     EXPECT_EQ(configurationParameter["ttsendpoint"], configurationGetResponse["ttsendpoint"]);
 }
 
+TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
+{
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "";
+    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+
+    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
 TEST_F(TextToSpeechTest, SpeakWithTTSDisabled)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -465,7 +479,6 @@ TEST_F(TextToSpeechTest, speechInterruptEventCheck)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
-    /*enable tts*/
     enableTTS(false);
     // Wait for the interrupt thread to finish
     interruptThread.join();
