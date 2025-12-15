@@ -206,7 +206,6 @@ namespace WPEFramework
                 return Core::ERROR_GENERAL;
             }
 
-
             this->url = url;
             
             if (!callGUID.empty())
