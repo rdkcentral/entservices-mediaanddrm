@@ -305,6 +305,39 @@ TEST_F(TextToSpeechTest, willSpeakEventCheck)
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onwillspeak"));
 }
 
+TEST_F(TextToSpeechTest, setAcl)
+{
+    setACL();
+}
+
+TEST_F(TextToSpeechTest, setAclDuringSpeaking)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing this is to verify setAcl during speaking";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    setACL();
+}
+
 TEST_F(TextToSpeechTest, speakStartEventCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
