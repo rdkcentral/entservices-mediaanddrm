@@ -159,16 +159,14 @@ namespace WPEFramework
             _adminLock.Unlock();
         }
 
-        Core::hresult ScreenCaptureImplementation::SendScreenshot(const string &callGUID, Result &result)
+        Core::hresult ScreenCaptureImplementation::sendScreenshot(const string &callGUID, Result &result)
         {
-            // RFC keys
             static const char* kEnableKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable";
             static const char* kUrlKey = "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL";
 
             RFC_ParamData_t enableStr;
             RFC_ParamData_t urlStr;
 
-            // Get Enable flag
             bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
             if (!enableSet)
             {
