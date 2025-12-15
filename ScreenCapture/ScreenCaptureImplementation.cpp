@@ -168,6 +168,13 @@ namespace WPEFramework
             RFC_ParamData_t urlStr = {0};
             
             std::lock_guard<std::mutex> guard(m_callMutex);
+            
+            if (callGUID.empty()) {
+                LOGERR("callGUID is empty");
+                result.success = false;
+                return Core::ERROR_GENERAL;
+            }
+                        
             bool enableSet = Utils::getRFCConfig(kEnableKey, enableStr);
             if (!enableSet)
             {
@@ -207,11 +214,8 @@ namespace WPEFramework
             }
 
             this->url = std::move(url);
-            
-            if (!callGUID.empty())
-            {
-                this->callGUID = callGUID;
-            }
+            this->callGUID = callGUID;
+                        
             screenShotDispatcher->Schedule(Core::Time::Now().Add(0), ScreenShotJob(this));
 
             result.success = true;
