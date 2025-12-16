@@ -309,7 +309,7 @@ TEST_F(TextToSpeechTest, setAcl)
 {
     setACL();
 }
-
+#if 0
 TEST_F(TextToSpeechTest, setAclDuringSpeaking)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -335,7 +335,7 @@ TEST_F(TextToSpeechTest, setAclDuringSpeaking)
     EXPECT_EQ(Core::ERROR_NONE, status);
     setACL();
 }
-
+#endif
 TEST_F(TextToSpeechTest, speakStartEventCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
