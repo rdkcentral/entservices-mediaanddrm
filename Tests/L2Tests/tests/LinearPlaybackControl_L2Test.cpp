@@ -433,11 +433,11 @@ TEST_F(LinearPlaybackControlL2Test, GetTrickplay_Test) {
     uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "trickplay@0", setParams, setResults);
     EXPECT_EQ(Core::ERROR_NONE, setResult);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
     updateFileInBothLocations("trick_play0", "-4");
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Now, get the trickplay speed 
     JsonObject getResults;
