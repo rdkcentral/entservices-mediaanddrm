@@ -77,6 +77,7 @@ namespace Plugin {
 
         JsonObject config;
         config.FromString(service->ConfigLine());
+        printf("kykumar %s\n",service->ConfigLine().c_str());
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
 #ifndef UNIT_TESTING
