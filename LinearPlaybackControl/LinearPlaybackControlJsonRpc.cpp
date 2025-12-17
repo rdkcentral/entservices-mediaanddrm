@@ -141,7 +141,7 @@ namespace Plugin {
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
-                               IDemuxer::SeekType seek;
+                               IDemuxer::SeekType seek  = {};
                                auto status = DmxStatusToCoreStatus(dmx->getSeek(seek));
                                if (status == Core::ERROR_NONE) {
                                    params.SeekPosInSeconds = seek.seekPosInSeconds;
@@ -180,7 +180,7 @@ namespace Plugin {
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
-                               int16_t speed;
+                               int16_t speed = 0;
                                auto status = DmxStatusToCoreStatus(dmx->getTrickPlaySpeed(speed));
                                if (status == Core::ERROR_NONE) {
                                    params.Speed = speed;
@@ -199,9 +199,9 @@ namespace Plugin {
         return callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                // Parameter declaration
-                               int16_t speed;
-                               IDemuxer::SeekType seek;
-                               IDemuxer::StreamStatusType streamStatus;
+                               int16_t speed = 0;
+                               IDemuxer::SeekType seek = {};
+                               IDemuxer::StreamStatusType streamStatus = {};
                                // Get parameters from selected demuxer.
                                // Note: OR operation is used for concatenating the status since possible
                                // set of status is ERROR_NONE (0) or ERROR_READ_ERROR (39)
@@ -255,6 +255,11 @@ namespace Plugin {
             syslog(LOG_ERR, "No demuxer set");
             return Core::ERROR_BAD_REQUEST;
         }
+        
+        if (!_demuxer) {
+            syslog(LOG_ERR, "Demuxer not initialized");
+            return Core::ERROR_BAD_REQUEST;
+        }
         // In a future implementation, the concrete demuxer instance shall be obtained based
         // on the demuxerId. For now we just use the _demuxer instance, associated with
         // demuxId = 0, when invoking the lambda function for interacting with the instance.
@@ -262,7 +267,7 @@ namespace Plugin {
     }
 
     void LinearPlaybackControl::speedchangedNotify(const std::string &data) {
-        uint16_t trickPlaySpeed;
+        uint16_t trickPlaySpeed = 0;
         std::istringstream is(data);
         is >> trickPlaySpeed;
 
