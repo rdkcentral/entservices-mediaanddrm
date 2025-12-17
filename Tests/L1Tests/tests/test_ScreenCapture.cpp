@@ -26,6 +26,7 @@
 #include "WrapsMock.h"
 #include "IarmBusMock.h"
 #include "WorkerPoolImplementation.h"
+#include "RfcApiMock.h"
 
 #include "ScreenCapture.h"
 #include "ScreenCaptureImplementation.h"
@@ -48,6 +49,7 @@ protected:
     string response;
     
     WrapsImplMock  *p_wrapsImplMock   = nullptr ;
+    RfcApiImplMock    *p_rfcApiImplMock  = nullptr;
     Core::ProxyType<Plugin::ScreenCaptureImplementation> ScreenCaptureImpl;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
@@ -63,6 +65,7 @@ protected:
             2, Core::Thread::DefaultStackSize(), 16))
     {
 	p_wrapsImplMock  = new testing::NiceMock <WrapsImplMock>;
+		
     	Wraps::setImpl(p_wrapsImplMock);
         
         ON_CALL(service, COMLink())
@@ -114,6 +117,7 @@ protected:
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
+         
 
         PluginHost::IFactories::Assign(nullptr);
     }
@@ -127,9 +131,16 @@ protected:
         : ScreenCaptureTest()
     {
         DRMScreenCaptureApi::getInstance().impl = &drmScreenCaptureApiImplMock;
+		 p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
+		 RfcApi::setImpl(p_rfcApiImplMock);
     }
     virtual ~ScreenCaptureDRMTest() override
     {
+		RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr) {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
         DRMScreenCaptureApi::getInstance().impl = nullptr;
     }
 };
