@@ -55,12 +55,12 @@ namespace Plugin {
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Destructor\n");
     }
 
-    uint32_t SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
+    Core::hresult SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
     {
         return Core::ERROR_NONE;
     }
 
-    void SystemAudioPlayerImplementation::Register(Exchange::ISystemAudioPlayer::INotification* sink)
+    Core::hresult SystemAudioPlayerImplementation::Register(Exchange::ISystemAudioPlayer::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -73,9 +73,10 @@ namespace Plugin {
         _adminLock.Unlock();
 
         TRACE_L1("Registered a sink on the browser %p", sink);
+        return Core::ERROR_NONE;
     }
 
-    void SystemAudioPlayerImplementation::Unregister(Exchange::ISystemAudioPlayer::INotification* sink)
+    Core::hresult SystemAudioPlayerImplementation::Unregister(Exchange::ISystemAudioPlayer::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -91,9 +92,10 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+        return Core::ERROR_NONE;
     }
 
-    uint32_t SystemAudioPlayerImplementation::Open(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Open(const string &input, string &output)
     {   
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Open request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -128,7 +130,7 @@ namespace Plugin {
         returnResponse(true);
     }
 
-     uint32_t SystemAudioPlayerImplementation::Config(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Config(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Config request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -170,7 +172,7 @@ namespace Plugin {
         returnResponse(false);
     }
     
-    uint32_t SystemAudioPlayerImplementation::GetPlayerSessionId(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::GetPlayerSessionId(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got GetPlayerSessionID request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -193,7 +195,7 @@ namespace Plugin {
         returnResponse(true);
     }
 
-    uint32_t SystemAudioPlayerImplementation::Play(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Play(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Play request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -235,7 +237,7 @@ namespace Plugin {
         returnResponse(false);
     }
 
-    uint32_t SystemAudioPlayerImplementation::PlayBuffer(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::PlayBuffer(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got PlayBuffer request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -265,7 +267,7 @@ namespace Plugin {
         returnResponse(false);
     }
 
-    uint32_t SystemAudioPlayerImplementation::Stop(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Stop(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Stop request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -284,7 +286,7 @@ namespace Plugin {
         returnResponse(false);
     }
 
-    uint32_t SystemAudioPlayerImplementation::Close(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Close(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Close request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -311,7 +313,7 @@ namespace Plugin {
         return ++counter;
     }
 
-    uint32_t SystemAudioPlayerImplementation::SetMixerLevels(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::SetMixerLevels(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got SetMixerLevels request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -342,7 +344,7 @@ namespace Plugin {
         returnResponse(result);
     }
 
-    uint32_t SystemAudioPlayerImplementation::SetSmartVolControl(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::SetSmartVolControl(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got SetSmartVolControl request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -386,7 +388,7 @@ namespace Plugin {
 
     }
 
-    uint32_t SystemAudioPlayerImplementation::Pause(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Pause(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Pause request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -404,7 +406,7 @@ namespace Plugin {
         returnResponse(ret);
     }
 
-    uint32_t SystemAudioPlayerImplementation::Resume(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::Resume(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Resume request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
@@ -423,7 +425,7 @@ namespace Plugin {
         returnResponse(ret);
     }
 
-    uint32_t SystemAudioPlayerImplementation::IsPlaying(const string &input, string &output)
+    Core::hresult SystemAudioPlayerImplementation::IsPlaying(const string &input, string &output)
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got IsPlayingrequest :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
