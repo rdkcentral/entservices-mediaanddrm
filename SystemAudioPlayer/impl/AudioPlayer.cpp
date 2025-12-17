@@ -46,6 +46,15 @@ SAPEventCallback* AudioPlayer::m_callback=NULL;
 //static bool sys_playing =false;
 
 AudioPlayer::AudioPlayer(AudioType audioType,SourceType sourceType,PlayMode playMode,int objectIdentifier)
+    : m_pipeline(nullptr)        // Fix: Prevents NULL dereference if createPipeline fails
+    , m_audioSink(nullptr)        // Fix: Prevents crash when dereferenced if pipeline creation fails
+    , m_audioVolume(nullptr)      // Fix: Prevents crash in setVolume if creation fails
+    , m_capsfilter(nullptr)       // Fix: Prevents NULL dereference in configPCMCaps for non-PCM types
+    , m_busWatch(0)               // Fix: Initialize to 0 to prevent invalid value in gst_bus_remove_watch
+    , m_duration(0)               // Fix: Initialize to prevent garbage value in GST_TIME_ARGS logging
+    , m_thread(nullptr)           // Fix: Prevents dangling pointer for non-DATA/WEBSOCKET sources
+    , bufferQueue(nullptr)        // Fix: Prevents delete of uninitialized pointer in destructor
+    , m_source(nullptr)           // Fix: Prevents NULL dereference in Play/Stop/PlayBuffer operations
 {
     this->audioType = audioType;
     this->sourceType = sourceType;
