@@ -340,3 +340,86 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
     close(sockfd);
     thread.join();
 }
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyCallGUID)
+{
+    // Test with empty callGUID - should fail immediately
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCEnableKeyFailure)
+{
+    // Mock RFC Enable key retrieval failure
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Return(WDMP_FAILURE));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-fail\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabled)
+{
+    // Mock RFC with ScreenCapture disabled (Enable = false)
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "false");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabledCaseInsensitive)
+{
+    // Test case-insensitive handling of "FALSE"
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "FALSE");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled-caps\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCURLKeyFailure)
+{
+    // Mock successful Enable but failed URL retrieval
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "true");
+                return WDMP_SUCCESS;
+            }));
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+        .WillByDefault(::testing::Return(WDMP_FAILURE));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-no-url\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyURL)
+{
+    // Mock successful Enable but empty URL value
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "true");
+                return WDMP_SUCCESS;
+            }));
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-empty-url\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+}
