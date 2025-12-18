@@ -236,10 +236,10 @@ namespace WPEFramework
 
       uint32_t DTV::GetCountryList(Core::JSON::ArrayType<CountryconfigData>& response) const
       {
-         IDTV::ICountry::IIterator* iterator;
+         IDTV::ICountry::IIterator* iterator = nullptr;
 
          uint32_t result = m_dtv->GetCountryList(iterator);
-         if (result == Core::ERROR_NONE)
+         if ((result == Core::ERROR_NONE) && (iterator != nullptr))
          {
             IDTV::ICountry* country;
 
@@ -288,10 +288,10 @@ namespace WPEFramework
 
       uint32_t DTV::GetLnbList(Core::JSON::ArrayType<LnbsettingsInfo>& response) const
       {
-         IDTV::ILnb::IIterator *iterator;
+         IDTV::ILnb::IIterator *iterator = nullptr;
 
          uint32_t result = m_dtv->GetLnbList(iterator);
-         if (result == Core::ERROR_NONE)
+         if ((result == Core::ERROR_NONE) && (iterator != nullptr))
          {
             IDTV::ILnb *lnb;
             LnbsettingsInfo info;
@@ -351,6 +351,11 @@ namespace WPEFramework
                response.Add(info);
 
                iterator->Next();
+            }
+            
+            // Release iterator to prevent leak
+            if (iterator != nullptr) {
+               iterator->Release();
             }
          }
 
