@@ -49,7 +49,7 @@ protected:
     string response;
     
     WrapsImplMock  *p_wrapsImplMock   = nullptr ;
-    RfcApiImplMock    *p_rfcApiImplMock  = nullptr;
+   
     Core::ProxyType<Plugin::ScreenCaptureImplementation> ScreenCaptureImpl;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
@@ -126,7 +126,7 @@ protected:
 class ScreenCaptureDRMTest : public ScreenCaptureTest {
 protected:
     NiceMock<DRMScreenCaptureApiImplMock> drmScreenCaptureApiImplMock;
-
+     RfcApiImplMock    *p_rfcApiImplMock  = nullptr;
     ScreenCaptureDRMTest()
         : ScreenCaptureTest()
     {
