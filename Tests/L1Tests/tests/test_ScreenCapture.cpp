@@ -315,14 +315,14 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
     EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
     // Mock RFC responses for enable and URL
-    ON_CALL(*p_wrapsImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
         .WillByDefault(::testing::Invoke(
             [](const char*, const char*, RFC_ParamData_t* param) {
                 strcpy(param->value, "true");
                 return WDMP_SUCCESS;
             }));
 
-    ON_CALL(*p_wrapsImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
         .WillByDefault(::testing::Invoke(
             [](const char*, const char*, RFC_ParamData_t* param) {
                 strcpy(param->value, "http://127.0.0.1:11112");
