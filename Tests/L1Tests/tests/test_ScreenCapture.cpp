@@ -344,8 +344,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyCallGUID)
 {
     // Test with empty callGUID - should fail immediately
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{}"), response));
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCEnableKeyFailure)
@@ -354,8 +353,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCEnableKeyFailure)
     EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
         .WillOnce(::testing::Return(WDMP_FAILURE));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-fail\"}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-fail\"}"), response));
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabled)
@@ -368,8 +366,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabled)
                 return WDMP_SUCCESS;
             }));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled\"}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled\"}"), response));
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabledCaseInsensitive)
@@ -382,8 +379,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabledCaseInsensitive)
                 return WDMP_SUCCESS;
             }));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled-caps\"}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled-caps\"}"), response));
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCURLKeyFailure)
@@ -399,8 +395,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCURLKeyFailure)
     EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
         .WillOnce(::testing::Return(WDMP_FAILURE));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-no-url\"}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-no-url\"}"), response));
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyURL)
@@ -420,6 +415,5 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyURL)
                 return WDMP_SUCCESS;
             }));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-empty-url\"}"), response));
-    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-empty-url\"}"), response));
 }
