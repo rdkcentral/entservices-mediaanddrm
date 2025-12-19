@@ -130,8 +130,8 @@ jobs:
         if: ${{ inputs.caller_source == 'local' }}
         uses: actions/checkout@v3
         with:
-          path: entservices-mediaanddrm
-          
+          path: entservices-mediaanddrm  
+    
       - name: Checkout entservices-mediaanddrm-testframework
         if: ${{ inputs.caller_source == 'testframework' }}
         uses: actions/checkout@v3
