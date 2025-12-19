@@ -113,6 +113,28 @@ private:
 
     typedef std::map<const string, const Exchange::IPlayerProperties::AudioCodec> AudioCaps;
     typedef std::map<const string, const Exchange::IPlayerProperties::VideoCodec> VideoCaps;
+    bool m_deviceManagerInitialized = false;
+
+    void InitializeDeviceManager()
+    {
+        if (!m_deviceManagerInitialized)
+        {
+            try
+            {
+                device::Manager::Initialize();
+                m_deviceManagerInitialized = true;
+                LOGINFO("Device Manager initialized successfully");
+            }
+            catch(const device::Exception& err)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Initialize library call. code = %d message = %s"), err.getCode(), err.what()));
+            }
+            catch(...)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Initialize library call. code = %d message = %s"), -1, "Unknown error"));
+            }
+        }
+    }
 
 public:
     PlayerInfoImplementation()
@@ -121,7 +143,7 @@ public:
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
         Utils::IARM::init();
-        device::Manager::Initialize();
+        InitializeDeviceManager();
         IARM_Result_t res;
         IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
         PlayerInfoImplementation::_instance = this;
@@ -157,6 +179,7 @@ public:
         string currentResolution = "0";
         try
         {
+            InitializeDeviceManager();
             std::string strVideoPort = device::Host::getInstance().getDefaultVideoPortName();
             device::VideoOutputPort &vPort = device::Host::getInstance().getVideoOutputPort(strVideoPort.c_str());
             currentResolution = vPort.getResolution().getName();
@@ -193,6 +216,7 @@ public:
         isEnbaled = false;
         try
         {
+            InitializeDeviceManager();
             if (device::Host::getInstance().isHDMIOutPortPresent())
             {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort("HDMI0");
@@ -307,6 +331,7 @@ public:
         string audioPort = "HDMI0"; //default to HDMI
         try
         {
+            InitializeDeviceManager();
             /*  Check if the device has an HDMI_ARC out. If ARC is connected, then SPEAKERS and SPDIF are disabled.
                 So, check the atmos capability of the HDMI_ARC first*/
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
@@ -342,19 +367,19 @@ public:
 
     uint32_t SoundMode(Exchange::Dolby::IOutput::SoundModes& mode /* @out */) const override
     {
-        /* For implementation details, please refer to Flow diagram attached in RDKTV-10066*/
-
-        string audioPort;
-        if (device::Host::getInstance().isHDMIOutPortPresent())
-            audioPort = "HDMI0"; //this device has an HDMI out port. This is an STB device
-        else
-            audioPort = "SPEAKER0"; // This device is likely to be TV. Default audio outport are speakers.
-
-        device::AudioStereoMode soundmode = device::AudioStereoMode::kStereo;
-        mode = UNKNOWN;
-
         try
         {
+            InitializeDeviceManager();
+            /* For implementation details, please refer to Flow diagram attached in RDKTV-10066*/
+            string audioPort;
+            if (device::Host::getInstance().isHDMIOutPortPresent())
+                audioPort = "HDMI0"; //this device has an HDMI out port. This is an STB device
+            else
+                audioPort = "SPEAKER0"; // This device is likely to be TV. Default audio outport are speakers.
+
+            device::AudioStereoMode soundmode = device::AudioStereoMode::kStereo;
+            mode = UNKNOWN;
+
             /* Check if the device has an HDMI_ARC out. If ARC is connected, then speakers and SPDIF are disabled
                So, return the SoundMode of HDMI_ARC*/
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
@@ -408,6 +433,7 @@ public:
     {
         try
         {
+            InitializeDeviceManager();
             if (device::Host::getInstance().isHDMIOutPortPresent()) {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort("HDMI0");
                 if (aPort.isConnected()) {
