@@ -152,7 +152,7 @@ private:
         {
             try
             {
-                IARM_Result_t res = IARM_RESULT_SUCCESS;
+                IARM_Result_t res;
                 IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
                 device::Manager::DeInitialize();
                 // Reset the flag only after removing the event handler and deinitializing the device manager are successful
