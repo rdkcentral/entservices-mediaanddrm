@@ -316,7 +316,6 @@ public:
 
     static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
     {
-        std::lock_guard<std::mutex> lock(m_deviceManagerInitMutex);
         if(PlayerInfoImplementation::_instance)
         {
             dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
