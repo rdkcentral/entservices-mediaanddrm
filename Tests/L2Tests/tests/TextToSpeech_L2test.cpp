@@ -212,6 +212,19 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     EXPECT_EQ(configurationParameter["ttsendpoint"], configurationGetResponse["ttsendpoint"]);
 }
 
+TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
+{
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+
+    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
+}
+
 TEST_F(TextToSpeechTest, SpeakWithTTSDisabled)
 {
     uint32_t status = Core::ERROR_GENERAL;
