@@ -36,6 +36,8 @@
 
 #include "manager.hpp"
 
+static std::mutex m_deviceManagerInitMutex;
+
 namespace WPEFramework {
 namespace Plugin {
 
@@ -114,7 +116,6 @@ private:
 
     typedef std::map<const string, const Exchange::IPlayerProperties::AudioCodec> AudioCaps;
     typedef std::map<const string, const Exchange::IPlayerProperties::VideoCodec> VideoCaps;
-    mutable std::mutex m_deviceManagerInitMutex;
     mutable bool m_deviceManagerInitialized = false;
 
     bool InitializeDeviceManager() const
@@ -128,6 +129,7 @@ private:
                 Utils::IARM::init();
                 device::Manager::Initialize();
                 IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+                // Set the flag only after registering the event handler and initializing the device manager are successful
                 m_deviceManagerInitialized = true;
                 TRACE(Trace::Information, (_T("Device Manager initialized successfully")));
             }
@@ -153,6 +155,7 @@ private:
                 IARM_Result_t res = IARM_RESULT_SUCCESS;
                 IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
                 device::Manager::DeInitialize();
+                // Reset the flag only after removing the event handler and deinitializing the device manager are successful
                 m_deviceManagerInitialized = false;
                 TRACE(Trace::Information, (_T("Device Manager deinitialized successfully")));
             }
@@ -170,11 +173,13 @@ private:
 public:
     PlayerInfoImplementation()
     {
+        PlayerInfoImplementation::_instance = this;
         gst_init(0, nullptr);
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
-        InitializeDeviceManager();
-        PlayerInfoImplementation::_instance = this;
+        if (!InitializeDeviceManager()) {
+            TRACE(Trace::Warning, (_T("Device Manager initialization failed in constructor. It will be retried when required")));
+        }
     }
 
     PlayerInfoImplementation(const PlayerInfoImplementation&) = delete;
@@ -311,6 +316,7 @@ public:
 
     static void AudioModeHandler(const char *owner, IARM_EventId_t eventId, void *data, size_t len)
     {
+        std::lock_guard<std::mutex> lock(m_deviceManagerInitMutex);
         if(PlayerInfoImplementation::_instance)
         {
             dsAudioStereoMode_t amode = dsAUDIO_STEREO_UNKNOWN;
