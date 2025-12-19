@@ -579,6 +579,21 @@ TEST_F(ScreenCaptureTest, SendScreenshot_RFCURLKeyFailure)
     EXPECT_EQ(Core::ERROR_GENERAL, status);
 }
 
+TEST_F(ScreenCaptureTest, SendScreenshot_EmptyCallGUID)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JsonObject params;
+    JsonObject result;
+
+    TEST_LOG("Testing SendScreenshot with empty callGUID");
+
+    // Pass an empty string for callGUID 
+    params["callGUID"] = "";
+    
+    status = InvokeServiceMethod("org.rdk.ScreenCapture", "sendScreenshot", params, result);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
+}
+
 TEST_F(ScreenCaptureTest, SendScreenshot_EmptyURL)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -600,7 +615,7 @@ TEST_F(ScreenCaptureTest, SendScreenshot_EmptyURL)
                 return WDMP_SUCCESS;
             }));
 
-    params["callGUID"] = "";
+    params["callGUID"] = "test-guid-l2-empty-ur";
     status = InvokeServiceMethod("org.rdk.ScreenCapture", "sendScreenshot", params, result);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
     TEST_LOG("End of test case ***\n");
