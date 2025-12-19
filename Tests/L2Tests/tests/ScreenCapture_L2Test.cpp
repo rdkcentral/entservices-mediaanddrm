@@ -600,7 +600,7 @@ TEST_F(ScreenCaptureTest, SendScreenshot_EmptyURL)
                 return WDMP_SUCCESS;
             }));
 
-    params["callGUID"] = "test-guid-l2-empty-url";
+    params["callGUID"] = "";
     status = InvokeServiceMethod("org.rdk.ScreenCapture", "sendScreenshot", params, result);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
     TEST_LOG("End of test case ***\n");
