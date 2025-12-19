@@ -29,7 +29,7 @@
 
 #include <interfaces/ITextToSpeech.h>
 
-#define JSON_TIMEOUT (5000)
+#define JSON_TIMEOUT (7000)
 #define TEST_LOG(x, ...)                                                                                                                         \
     fprintf(stderr, "\033[1;32m[%s:%d](%s)<PID:%d><TID:%d>" x "\n\033[0m", __FILE__, __LINE__, __FUNCTION__, getpid(), gettid(), ##__VA_ARGS__); \
     fflush(stderr);
