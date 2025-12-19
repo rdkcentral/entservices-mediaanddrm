@@ -125,7 +125,7 @@ private:
         {
             try
             {
-                IARM_Result_t res = IARM_RESULT_SUCCESS;
+                IARM_Result_t res;
                 Utils::IARM::init();
                 device::Manager::Initialize();
                 IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
@@ -222,6 +222,7 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
 
         if (_resolutions.find(currentResolution) != _resolutions.end())
@@ -275,6 +276,7 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
         TRACE(Trace::Information, (_T("Audio Equivalence = %d"), isEnbaled? "Enabled":"Disabled"));
         return (Core::ERROR_NONE);
@@ -394,6 +396,7 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
 
         if(atmosCapability == dsAUDIO_ATMOS_ATMOSMETADATA) supported = true;
@@ -461,6 +464,7 @@ public:
         catch (const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
         return (Core::ERROR_NONE);
     }
