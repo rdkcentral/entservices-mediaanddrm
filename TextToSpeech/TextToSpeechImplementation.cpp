@@ -77,7 +77,7 @@ namespace Plugin {
 
         JsonObject config;
         config.FromString(service->ConfigLine());
-
+        printf("kykumar end %s sec %s loc %s\n", GET_STR(config, "endpoint", ""), GET_STR(config, "secureendpoint", ""), GET_STR(config, "localendpoint", ""));
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
 #ifndef UNIT_TESTING
         // To-do: DELIA-68409
