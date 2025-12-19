@@ -64,8 +64,7 @@ protected:
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
             2, Core::Thread::DefaultStackSize(), 16))
     {
-	p_wrapsImplMock  = new testing::NiceMock <WrapsImplMock>;
-		
+	    p_wrapsImplMock  = new testing::NiceMock <WrapsImplMock>;	
     	Wraps::setImpl(p_wrapsImplMock);
         
         ON_CALL(service, COMLink())
