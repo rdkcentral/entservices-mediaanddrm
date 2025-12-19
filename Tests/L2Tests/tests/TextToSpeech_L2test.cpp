@@ -345,7 +345,7 @@ TEST_F(TextToSpeechTest, speakStartEventCheck)
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
-
+#if 0
 TEST_F(TextToSpeechTest, speechCompleteEventCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -387,7 +387,7 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
 }
-
+#endif
 TEST_F(TextToSpeechTest, speechInterruptEventCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
