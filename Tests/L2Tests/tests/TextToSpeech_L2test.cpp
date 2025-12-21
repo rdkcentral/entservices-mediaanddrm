@@ -129,6 +129,8 @@ TextToSpeechTest::TextToSpeechTest()
     m_event_signalled = 0;
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
+    status = ActivateService("org.rdk.NetworkManager");
+    EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
 TextToSpeechTest::~TextToSpeechTest()
@@ -136,6 +138,8 @@ TextToSpeechTest::~TextToSpeechTest()
     uint32_t status = Core::ERROR_GENERAL;
 
     status = DeactivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = DeactivateService("org.rdk.NetworkManager");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
