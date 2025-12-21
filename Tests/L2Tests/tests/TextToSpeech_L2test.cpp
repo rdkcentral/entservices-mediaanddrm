@@ -127,8 +127,10 @@ TextToSpeechTest::TextToSpeechTest()
     string response;
     uint32_t status = Core::ERROR_GENERAL;
     m_event_signalled = 0;
+    printf("kykumar activate tts\n");
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
+    printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
