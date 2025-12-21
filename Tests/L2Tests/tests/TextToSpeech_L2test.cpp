@@ -129,7 +129,7 @@ TextToSpeechTest::TextToSpeechTest()
     m_event_signalled = 0;
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    status = ActivateService("org.rdk.NetworkManager");
+    status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
@@ -139,7 +139,7 @@ TextToSpeechTest::~TextToSpeechTest()
 
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    status = DeactivateService("org.rdk.NetworkManager");
+    status = DeactivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
