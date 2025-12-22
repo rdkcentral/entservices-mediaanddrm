@@ -28,12 +28,15 @@
 #include "UtilsIarm.h"
 
 #include <gst/gst.h>
+#include <mutex>
 
 #include "libIBus.h"
 #include "libIBusDaemon.h"
 #include "dsMgr.h"
 
 #include "manager.hpp"
+
+static std::mutex m_deviceManagerInitMutex;
 
 namespace WPEFramework {
 namespace Plugin {
@@ -113,18 +116,70 @@ private:
 
     typedef std::map<const string, const Exchange::IPlayerProperties::AudioCodec> AudioCaps;
     typedef std::map<const string, const Exchange::IPlayerProperties::VideoCodec> VideoCaps;
+    mutable bool m_deviceManagerInitialized = false;
+
+    bool InitializeDeviceManager() const
+    {
+        std::lock_guard<std::mutex> lock(m_deviceManagerInitMutex);
+        if (!m_deviceManagerInitialized)
+        {
+            try
+            {
+                IARM_Result_t res;
+                Utils::IARM::init();
+                device::Manager::Initialize();
+                IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+                // Set the flag only after registering the event handler and initializing the device manager are successful
+                m_deviceManagerInitialized = true;
+                TRACE(Trace::Information, (_T("Device Manager initialized successfully")));
+            }
+            catch(const device::Exception& err)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Initialize library call. code = %d message = %s"), err.getCode(), err.what()));
+            }
+            catch(...)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Initialize library call. Unknown error")));
+            }
+        }
+        return m_deviceManagerInitialized;
+    }
+
+    void DeinitializeDeviceManager() const
+    {
+        std::lock_guard<std::mutex> lock(m_deviceManagerInitMutex);
+        if (m_deviceManagerInitialized)
+        {
+            try
+            {
+                IARM_Result_t res;
+                IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+                device::Manager::DeInitialize();
+                // Reset the flag only after removing the event handler and deinitializing the device manager are successful
+                m_deviceManagerInitialized = false;
+                TRACE(Trace::Information, (_T("Device Manager deinitialized successfully")));
+            }
+            catch(const device::Exception& err)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Deinitialize library call. code = %d message = %s"), err.getCode(), err.what()));
+            }
+            catch(...)
+            {
+                TRACE(Trace::Error, (_T("Exception during device::Manager::Deinitialize library call. Unknown error")));
+            }
+        }
+    }
 
 public:
     PlayerInfoImplementation()
     {
+        PlayerInfoImplementation::_instance = this;
         gst_init(0, nullptr);
         UpdateAudioCodecInfo();
         UpdateVideoCodecInfo();
-        Utils::IARM::init();
-        device::Manager::Initialize();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RegisterEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
-        PlayerInfoImplementation::_instance = this;
+        if (!InitializeDeviceManager()) {
+            TRACE(Trace::Warning, (_T("Device Manager initialization failed in constructor. It will be retried when required")));
+        }
     }
 
     PlayerInfoImplementation(const PlayerInfoImplementation&) = delete;
@@ -133,8 +188,7 @@ public:
     {
         _audioCodecs.clear();
         _videoCodecs.clear();
-        IARM_Result_t res;
-        IARM_CHECK( IARM_Bus_RemoveEventHandler(IARM_BUS_DSMGR_NAME,IARM_BUS_DSMGR_EVENT_AUDIO_MODE, AudioModeHandler) );
+        DeinitializeDeviceManager();
         PlayerInfoImplementation::_instance = nullptr;
     }
 
@@ -157,6 +211,9 @@ public:
         string currentResolution = "0";
         try
         {
+            if (!InitializeDeviceManager()) {
+                return Core::ERROR_GENERAL;
+            }
             std::string strVideoPort = device::Host::getInstance().getDefaultVideoPortName();
             device::VideoOutputPort &vPort = device::Host::getInstance().getVideoOutputPort(strVideoPort.c_str());
             currentResolution = vPort.getResolution().getName();
@@ -165,6 +222,7 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
 
         if (_resolutions.find(currentResolution) != _resolutions.end())
@@ -184,7 +242,6 @@ public:
                 res = _resolutions.find(baseRes)->second;
             }
         }
-
         return (Core::ERROR_NONE);
     }
 
@@ -193,6 +250,9 @@ public:
         isEnbaled = false;
         try
         {
+            if (!InitializeDeviceManager()) {
+                return Core::ERROR_GENERAL;
+            }
             if (device::Host::getInstance().isHDMIOutPortPresent())
             {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort("HDMI0");
@@ -216,10 +276,9 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
         TRACE(Trace::Information, (_T("Audio Equivalence = %d"), isEnbaled? "Enabled":"Disabled"));
-
-
         return (Core::ERROR_NONE);
     }
 
@@ -307,6 +366,9 @@ public:
         string audioPort = "HDMI0"; //default to HDMI
         try
         {
+            if (!InitializeDeviceManager()) {
+                return Core::ERROR_GENERAL;
+            }
             /*  Check if the device has an HDMI_ARC out. If ARC is connected, then SPEAKERS and SPDIF are disabled.
                 So, check the atmos capability of the HDMI_ARC first*/
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
@@ -334,6 +396,7 @@ public:
         catch(const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
 
         if(atmosCapability == dsAUDIO_ATMOS_ATMOSMETADATA) supported = true;
@@ -342,19 +405,21 @@ public:
 
     uint32_t SoundMode(Exchange::Dolby::IOutput::SoundModes& mode /* @out */) const override
     {
-        /* For implementation details, please refer to Flow diagram attached in RDKTV-10066*/
-
-        string audioPort;
-        if (device::Host::getInstance().isHDMIOutPortPresent())
-            audioPort = "HDMI0"; //this device has an HDMI out port. This is an STB device
-        else
-            audioPort = "SPEAKER0"; // This device is likely to be TV. Default audio outport are speakers.
-
-        device::AudioStereoMode soundmode = device::AudioStereoMode::kStereo;
         mode = UNKNOWN;
-
         try
         {
+            if (!InitializeDeviceManager()) {
+                return Core::ERROR_GENERAL;
+            }
+            /* For implementation details, please refer to Flow diagram attached in RDKTV-10066*/
+            string audioPort;
+            if (device::Host::getInstance().isHDMIOutPortPresent())
+                audioPort = "HDMI0"; //this device has an HDMI out port. This is an STB device
+            else
+                audioPort = "SPEAKER0"; // This device is likely to be TV. Default audio outport are speakers.
+
+            device::AudioStereoMode soundmode = device::AudioStereoMode::kStereo;
+
             /* Check if the device has an HDMI_ARC out. If ARC is connected, then speakers and SPDIF are disabled
                So, return the SoundMode of HDMI_ARC*/
             device::List<device::AudioOutputPort> aPorts = device::Host::getInstance().getAudioOutputPorts();
@@ -399,8 +464,8 @@ public:
         catch (const device::Exception& err)
         {
             TRACE(Trace::Error, (_T("Exception during DeviceSetting library call. code = %d message = %s"), err.getCode(), err.what()));
+            return Core::ERROR_GENERAL;
         }
-
         return (Core::ERROR_NONE);
     }
 
@@ -408,6 +473,9 @@ public:
     {
         try
         {
+            if (!InitializeDeviceManager()) {
+                return Core::ERROR_GENERAL;
+            }
             if (device::Host::getInstance().isHDMIOutPortPresent()) {
                 device::AudioOutputPort aPort = device::Host::getInstance().getAudioOutputPort("HDMI0");
                 if (aPort.isConnected()) {
@@ -436,7 +504,6 @@ public:
 
 private:
 
-
     void UpdateAudioCodecInfo()
     {
         AudioCaps audioCaps = {
@@ -455,7 +522,6 @@ private:
         if (GstUtils::GstRegistryCheckElementsForMediaTypes(audioCaps, _audioCodecs) != true) {
             TRACE(Trace::Warning, (_T("There is no Audio Codec support available")));
         }
-
     }
     void UpdateVideoCodecInfo()
     {
