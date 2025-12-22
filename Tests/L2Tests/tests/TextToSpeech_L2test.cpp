@@ -127,11 +127,11 @@ TextToSpeechTest::TextToSpeechTest()
     string response;
     uint32_t status = Core::ERROR_GENERAL;
     m_event_signalled = 0;
-    printf("kykumar activate tts\n");
-    status = ActivateService("org.rdk.TextToSpeech.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
     printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    printf("kykumar activate tts\n");
+    status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
@@ -197,11 +197,16 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
 {
     JsonObject configurationParameter;
     JsonObject configurationResponse;
+    JsonObject fallbackText;
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
     configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
     configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    fallbackText["scenario"] = "NetworkError";
+    fallbackText["value"] = "Please check your internet connection";
+    configurationParameter["fallbacktext"] = fallbackText;
+    configurationParameter["primvolduckpercent"] = "100";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -394,6 +399,67 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
 }
 
+TEST_F(TextToSpeechTest, pauseResumeCheck)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing pause method in tts";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(1);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(1);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+}
+
+TEST_F(TextToSpeechTest, isSpeakingCheckWhileSpeaking)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing isspeaking method in tts";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(1);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "isspeaking", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+}
+
 TEST_F(TextToSpeechTest, speechInterruptEventCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -568,6 +634,41 @@ TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
 
     // Wait for the interrupt thread to finish
     interruptThread.join();
+}
+
+TEST_F(TextToSpeechTest, listVoices)
+{
+    JsonObject parameter;
+    JsonObject response;
+    uint32_t status = Core::ERROR_GENERAL;
+
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "listvoices", parameter, response);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_TRUE(response.HasLabel("voices"));
+}
+
+TEST_F(TextToSpeechTest, setACLMultipleApps)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+    JsonObject parameterACL;
+    JsonObject responseACL;
+    JsonObject accessListItem;
+    JsonArray apps;
+    apps.Add("testApp");
+    apps.Add("L2App");
+    apps.Add("dummyApp");
+    accessListItem["method"] = "speak";
+    accessListItem["apps"] = apps;
+    parameterACL["accesslist"] = { accessListItem };
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setACL", parameterACL, responseACL);
+    EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
 TEST_F(TextToSpeechTest, cancelDuringSpeak)
