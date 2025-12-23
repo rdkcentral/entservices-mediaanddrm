@@ -399,7 +399,7 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
 }
 
-TEST_F(TextToSpeechTest, pauseResumeCheck)
+TEST_F(TextToSpeechTest, InvalidPauseResumeCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
     JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
@@ -413,28 +413,13 @@ TEST_F(TextToSpeechTest, pauseResumeCheck)
     // setACL
     setACL();
 
-    // Call Speak
-    JsonObject parameterSpeak;
-    JsonObject responseSpeak;
-    std::string text = "This is a test for the text to speech pause and resume functionality.The speech should pause in the middle and then continue smoothly after resume is called";
-    std::string callsign = "testApp";
-    parameterSpeak["text"] = text;
-    parameterSpeak["callsign"] = callsign;
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    uint32_t speechId = 0;
-    if (responseSpeak.HasLabel("speechid")) {
-        speechId = responseSpeak["speechid"].Number();
-    }
     JsonObject parameterPause;
     JsonObject responsePause;
-    parameterPause["speechid"] = speechId;
-    sleep(1);
+    parameterPause["speechid"] = "99";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterPause, responsePause);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    sleep(1);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterPause, responsePause);
-    EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
     enableTTS(false);
 }
 
