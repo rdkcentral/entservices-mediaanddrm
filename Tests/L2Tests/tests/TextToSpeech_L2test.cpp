@@ -416,7 +416,7 @@ TEST_F(TextToSpeechTest, pauseResumeCheck)
     // Call Speak
     JsonObject parameterSpeak;
     JsonObject responseSpeak;
-    std::string text = "Hello Testing pause method in tts";
+    std::string text = "This is a test for the text to speech pause and resume functionality.The speech should pause in the middle and then continue smoothly after resume is called";
     std::string callsign = "testApp";
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
@@ -429,8 +429,10 @@ TEST_F(TextToSpeechTest, pauseResumeCheck)
     JsonObject parameterPause;
     JsonObject responsePause;
     parameterPause["speechid"] = speechId;
+    sleep(1);
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterPause, responsePause);
     EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(1);
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterPause, responsePause);
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
