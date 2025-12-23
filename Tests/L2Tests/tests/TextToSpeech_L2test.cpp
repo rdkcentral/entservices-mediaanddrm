@@ -422,11 +422,16 @@ TEST_F(TextToSpeechTest, pauseResumeCheck)
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
-    sleep(1);
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterSpeak, responseSpeak);
+    uint32_t speechId = 0;
+    if (responseSpeak.HasLabel("speechid")) {
+        speechId = responseSpeak["speechid"].Number();
+    }
+    JsonObject parameterPause;
+    JsonObject responsePause;
+    parameterPause["speechid"] = speechId;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterPause, responsePause);
     EXPECT_EQ(Core::ERROR_NONE, status);
-    sleep(1);
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterSpeak, responseSpeak);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterPause, responsePause);
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
 }
