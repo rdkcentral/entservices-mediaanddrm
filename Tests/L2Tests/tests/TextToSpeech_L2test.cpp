@@ -437,7 +437,10 @@ TEST_F(TextToSpeechTest, isSpeakingCheckWhileNotSpeaking)
     // setACL
     setACL();
 
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "isspeaking", parameterSpeak, responseSpeak);
+    JsonObject parameterIsSpeaking;
+    JsonObject responseIsSpeaking;
+    parameterIsSpeaking["speechid"] = "99";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "isspeaking", parameterIsSpeaking, responseIsSpeaking);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
     enableTTS(false);
 }
