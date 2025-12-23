@@ -533,6 +533,7 @@ jobs:
         run: >
           sudo mkdir -p -m 777
           /opt/persistent
+          /opt/www
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
@@ -562,6 +563,7 @@ jobs:
           if [ ! -f mknod /dev/sdb2 c 240 0 ]; then mknod /dev/sdb2 c 240 0; fi
           &&
           sudo touch
+          /opt/www/TTS_fallback.mp3
           /opt/standbyReason.txt
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
@@ -592,6 +594,7 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /opt/www/TTS_fallback.mp3
           /opt/standbyReason.txt
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
