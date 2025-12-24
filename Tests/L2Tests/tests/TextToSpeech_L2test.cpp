@@ -131,6 +131,7 @@ TextToSpeechTest::TextToSpeechTest()
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
+
 TextToSpeechTest::~TextToSpeechTest()
 {
     uint32_t status = Core::ERROR_GENERAL;
