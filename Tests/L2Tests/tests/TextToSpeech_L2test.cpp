@@ -97,6 +97,9 @@ TextToSpeechTest::TextToSpeechTest()
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+        .WillByDefault(::testing::Return(WDMP_FAILURE));
+        
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
@@ -222,6 +225,26 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     EXPECT_EQ(configurationParameter["voice"], configurationGetResponse["voice"]);
     EXPECT_EQ(configurationParameter["ttsendpointsecured"], configurationGetResponse["ttsendpointsecured"]);
     EXPECT_EQ(configurationParameter["ttsendpoint"], configurationGetResponse["ttsendpoint"]);
+}
+
+TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
+{
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+    JsonObject fallbackText;
+
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillOnce(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                     strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
+                     return WDMP_SUCCESS;
+             }));
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "carol";
+
+    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
 TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)

@@ -79,10 +79,7 @@ namespace Plugin {
         config.FromString(service->ConfigLine());
         
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
-#ifndef UNIT_TESTING
-        // To-do: DELIA-68409
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
-#endif
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));
