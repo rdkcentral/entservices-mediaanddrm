@@ -60,6 +60,7 @@ public:
 
     std::mutex mtx;
     std::condition_variable cv;
+    std::condition_variable cv1;
     bool ready = false;
     uint32_t speechID;
 };
@@ -221,6 +222,129 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     EXPECT_EQ(configurationParameter["voice"], configurationGetResponse["voice"]);
     EXPECT_EQ(configurationParameter["ttsendpointsecured"], configurationGetResponse["ttsendpointsecured"]);
     EXPECT_EQ(configurationParameter["ttsendpoint"], configurationGetResponse["ttsendpoint"]);
+}
+
+TEST_F(TextToSpeechTest, pauseResumeDuringSpeak)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    uint32_t signalled = 0;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to onspeechStart
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Speak call
+    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
+    std::string callsign = "testApp";
+
+    // First invocation of speak in the main thread
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    parameterSpeak["text"] = text1;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        // Wait for the speech invocation to complete (the second speak call)
+        signalled = WaitForRequestStatus(JSON_TIMEOUT);
+        EXPECT_TRUE(signalled);
+        EXPECT_EQ(Core::ERROR_NONE, status);
+        jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
+        m_event_signalled = 0;
+        speechID = responseSpeak["speechid"].Number();
+        ready = true;
+        status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechpause"),
+            [this](const JsonObject event) {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                {
+                    std::string eventString;
+                    event.ToString(eventString);
+                    TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                    m_event_signalled = 1;
+                }
+                m_condition_variable.notify_one();
+            });
+    }
+    cv.notify_one();
+
+    // Create and start the interrupt thread using a lambda function
+    std::thread interruptThread([&]() {
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(lock, [&] { return ready; }); // Wait for the signal
+        }
+
+        JsonObject parameterPause;
+        JsonObject responsePause;
+        parameterPause["speechid"] = JsonValue((uint32_t)speechID);
+        ready = false;
+        printf("kyk invoking pause\n");
+        status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterPause, responsePause);
+        EXPECT_EQ(Core::ERROR_NONE, status);
+    });
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        // Wait for the speech invocation to paused (the second speak call)
+        signalled = WaitForRequestStatus(JSON_TIMEOUT);
+        EXPECT_TRUE(signalled);
+        EXPECT_EQ(Core::ERROR_NONE, status);
+        jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechpause"));
+        m_event_signalled = 0;
+        speechID = responseSpeak["speechid"].Number();
+        ready = true;
+        status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechresume"),
+            [this](const JsonObject event) {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                {
+                    std::string eventString;
+                    event.ToString(eventString);
+                    TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                    m_event_signalled = 1;
+                }
+                m_condition_variable.notify_one();
+            });
+    }
+    cv1.notify_one();
+    std::thread interruptThread1([&]() {
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv1.wait(lock, [&] { return ready; }); // Wait for the signal
+        }
+
+        JsonObject parameterResume;
+        JsonObject responseResume;
+        parameterResume["speechid"] = JsonValue((uint32_t)speechID);
+        printf("kyk invoking resume\n");
+        int status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterResume, responseResume);
+        EXPECT_EQ(Core::ERROR_NONE, status);
+    });
+    signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechresume"));
+    enableTTS(false);
+    // Wait for the interrupt thread to finish
+    interruptThread.join();
+    interruptThread1.join();
 }
 
 TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
