@@ -45,7 +45,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell* service) {
 
 - It must return a non-empty string on failure with a clear error message.
 
-**Example:**
+### Example
 
 ```cpp
 const string HdcpProfile::Initialize(PluginHost::IShell* service) {
@@ -61,7 +61,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell* service) {
 
 - Threads or async tasks should be started here if needed, with proper tracking.
 
-**Example:**
+### Example
 
 ```cpp
 Core::hresult NativeJSImplementation::Initialize(string waylandDisplay)
@@ -114,7 +114,7 @@ const string HdcpProfile::Initialize(PluginHost::IShell *service)
 - Deinitialize() must clean up all resources acquired during Initialize(). It must release resources in reverse order of initialization.
 - Every pointer or instance must be checked for nullptr before cleanup.
 
-**Example:**
+### Example:
 
 ```cpp
 void HdcpProfile::Deinitialize(PluginHost::IShell* service) {
@@ -223,6 +223,7 @@ void HdcpProfile::Deinitialize(PluginHost::IShell* service) {
 ```
 
 - If AddRef() was called on the IShell instance in Initialize(), then it should call Release() on the IShell instance to decrement its reference count.
+- A plugin should register its listener object twice:
 
 **Example:**
 

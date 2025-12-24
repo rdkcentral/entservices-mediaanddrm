@@ -3,8 +3,8 @@ applyTo: "**/**Implementation.cpp,**/**Implementation.h,**/**.cpp,**/**.h"
 ---
 
 # Instruction Summary
-  1. [Inter-Plugin Communication](https://github.com/rdkcentral/entservices-mediaanddrm/blob/develop/.github/instructions/Pluginimplementation.instructions.md#inter-plugin-communication)
-  2. [On-Demand Plugin Interface Acquisition](https://github.com/rdkcentral/entservices-mediaanddrm/blob/develop/.github/instructions/Pluginimplementation.instructions.md#on-demand-plugin-interface-acquisition)
+  1. [Inter-Plugin Communication](#inter-plugin-communication)
+  2. [On-Demand Plugin Interface Acquisition](#on-demand-plugin-interface-acquisition)
 
 ### Inter-Plugin Communication
 
@@ -26,7 +26,7 @@ QueryInterface:
 _userSettingsPlugin = _service->QueryInterface<WPEFramework::Exchange::IUserSettings>();
 ```
 
-SHOULD not use JSON-RPC or LinkType for inter-plugin communication, as they introduce unnecessary overhead.
+should not use JSON-RPC or LinkType for inter-plugin communication, as they introduce unnecessary overhead.
 
 ### Incorrect Example
 
@@ -85,7 +85,7 @@ void Initialize(PluginHost::IShell* service) override {
 }
 ```
 
-**2. Handle Activation (The Re-registration Step)**
+#### 2. Handle Activation (The Re-registration Step)
 
 Always use if (plugin->Callsign() == "YourTargetCallsign") as the initial gate in your StateChange method. This guarantees that all subsequent logs and re-registration/cleanup logic are executed only for the plugin you are actively monitoring.
 
