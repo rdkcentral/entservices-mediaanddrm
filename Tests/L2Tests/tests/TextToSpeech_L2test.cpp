@@ -642,6 +642,8 @@ TEST_F(TextToSpeechTest, listVoices)
     parameter["language"] = "en-Fr";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "listvoices", parameter, response);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
+    // Disable TTS
+    enableTTS(false);
 }
 
 TEST_F(TextToSpeechTest, setACLMultipleApps)
