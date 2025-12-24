@@ -635,9 +635,13 @@ TEST_F(TextToSpeechTest, listVoices)
 
     // Enable TTS
     enableTTS(true);
+    parameter["language"] = "en-US";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "listvoices", parameter, response);
     EXPECT_EQ(Core::ERROR_NONE, status);
     EXPECT_TRUE(response.HasLabel("voices"));
+    parameter["language"] = "en-Fr";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "listvoices", parameter, response);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
 }
 
 TEST_F(TextToSpeechTest, setACLMultipleApps)
