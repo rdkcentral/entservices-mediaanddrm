@@ -233,8 +233,8 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
     JsonObject configurationResponse;
     JsonObject fallbackText;
 
-    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-         .WillOnce(::testing::Invoke(
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
                      strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
                      return WDMP_SUCCESS;
