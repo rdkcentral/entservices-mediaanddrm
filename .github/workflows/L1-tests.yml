@@ -131,14 +131,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: entservices-mediaanddrm
-
+          
       - name: Checkout entservices-mediaanddrm-testframework
         if: ${{ inputs.caller_source == 'testframework' }}
         uses: actions/checkout@v3
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: develop
+          ref: feature/RDKEMW-10786
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
@@ -203,7 +203,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: ${{env.INTERFACES_REF}}
+          ref: RDKEMW-10786
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           

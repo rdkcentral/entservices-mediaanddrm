@@ -26,6 +26,7 @@
 #include "WrapsMock.h"
 #include "IarmBusMock.h"
 #include "WorkerPoolImplementation.h"
+#include "RfcApiMock.h"
 
 #include "ScreenCapture.h"
 #include "ScreenCaptureImplementation.h"
@@ -48,6 +49,7 @@ protected:
     string response;
     
     WrapsImplMock  *p_wrapsImplMock   = nullptr ;
+   
     Core::ProxyType<Plugin::ScreenCaptureImplementation> ScreenCaptureImpl;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
@@ -62,7 +64,7 @@ protected:
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
             2, Core::Thread::DefaultStackSize(), 16))
     {
-	p_wrapsImplMock  = new testing::NiceMock <WrapsImplMock>;
+	    p_wrapsImplMock  = new testing::NiceMock <WrapsImplMock>;	
     	Wraps::setImpl(p_wrapsImplMock);
         
         ON_CALL(service, COMLink())
@@ -114,6 +116,7 @@ protected:
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
+         
 
         PluginHost::IFactories::Assign(nullptr);
     }
@@ -122,14 +125,21 @@ protected:
 class ScreenCaptureDRMTest : public ScreenCaptureTest {
 protected:
     NiceMock<DRMScreenCaptureApiImplMock> drmScreenCaptureApiImplMock;
-
+     RfcApiImplMock    *p_rfcApiImplMock  = nullptr;
     ScreenCaptureDRMTest()
         : ScreenCaptureTest()
     {
         DRMScreenCaptureApi::getInstance().impl = &drmScreenCaptureApiImplMock;
+		 p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
+		 RfcApi::setImpl(p_rfcApiImplMock);
     }
     virtual ~ScreenCaptureDRMTest() override
     {
+		RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr) {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
         DRMScreenCaptureApi::getInstance().impl = nullptr;
     }
 };
@@ -138,6 +148,7 @@ protected:
 TEST_F(ScreenCaptureTest, RegisteredMethods)
 {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("uploadScreenCapture")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("sendScreenshot")));
 }
 
 TEST_F(ScreenCaptureDRMTest, Upload)
@@ -225,4 +236,183 @@ TEST_F(ScreenCaptureDRMTest, Upload)
     free(buffer);
     close(sockfd);
     thread.join();
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot)
+{   
+    DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
+    uint8_t* buffer = (uint8_t*) malloc(5120 * 720);
+    memset(buffer, 0xff, 5120 * 720);
+
+    Core::Event uploadComplete(false, true);
+
+    EXPECT_CALL(drmScreenCaptureApiImplMock, Init())
+        .Times(1)
+        .WillOnce(
+            ::testing::Return(&drmHandle));
+
+    ON_CALL(drmScreenCaptureApiImplMock, GetScreenInfo(::testing::_))
+        .WillByDefault(
+            ::testing::Return(true));
+
+    ON_CALL(drmScreenCaptureApiImplMock, ScreenCapture(::testing::_, ::testing::_, ::testing::_))
+        .WillByDefault(
+            ::testing::Invoke(
+            [&](DRMScreenCapture* handle, uint8_t* output, uint32_t size) {
+                memcpy(output, buffer, size);
+                return true;
+            }));
+
+    EXPECT_CALL(drmScreenCaptureApiImplMock, Destroy(::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Return(true));
+
+    
+    EXPECT_CALL(service, Submit(::testing::_, ::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Invoke(
+            [&](const uint32_t, const Core::ProxyType<Core::JSON::IElement>& json) {
+                string text;
+                EXPECT_TRUE(json->ToString(text));
+
+                EXPECT_EQ(text, string(_T(
+                	"{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.ScreenCapture.uploadComplete\",\"params\":{\"status\":true,\"message\":\"Success\",\"call_guid\":\"test-guid-123\"}}"
+                )));
+
+                uploadComplete.SetEvent();
+
+                return Core::ERROR_NONE;
+            }));
+
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_TRUE(sockfd != -1);
+    sockaddr_in sockaddr;
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = INADDR_ANY;
+    sockaddr.sin_port = htons(11112);
+    ASSERT_FALSE(bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0);
+    ASSERT_FALSE(listen(sockfd, 10) < 0);
+
+    std::thread thread = std::thread([&]() {
+        auto addrlen = sizeof(sockaddr);
+        const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
+        ASSERT_FALSE(connection < 0);
+        char buffer[2048] = { 0 };
+        ssize_t bytesRead = read(connection, buffer, 2048);
+        ASSERT_TRUE(bytesRead > 0);
+
+        std::string reqHeader(buffer, bytesRead);
+        EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
+
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
+        ssize_t bytesSent = send(connection, response.c_str(), response.size(), 0);
+
+        close(connection);
+        ASSERT_TRUE(bytesSent > 0);
+    });
+
+    EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
+
+    // Mock RFC responses for enable and URL
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "true");
+                return WDMP_SUCCESS;
+            }));
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+        .WillByDefault(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "http://127.0.0.1:11112");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-123\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, uploadComplete.Lock());
+
+    EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
+
+    free(buffer);
+    close(sockfd);
+    thread.join();
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyCallGUID)
+{
+    // Test with empty callGUID - should fail immediately
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{}"), response));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCEnableKeyFailure)
+{
+    // Mock RFC Enable key retrieval failure
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillOnce(::testing::Return(WDMP_FAILURE));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-fail\"}"), response));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabled)
+{
+    // Mock RFC with ScreenCapture disabled (Enable = false)
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillOnce(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "false");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled\"}"), response));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCDisabledCaseInsensitive)
+{
+    // Test case-insensitive handling of "FALSE"
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillOnce(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "FALSE");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-disabled-caps\"}"), response));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_RFCURLKeyFailure)
+{
+    // Mock successful Enable but failed URL retrieval
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillOnce(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "true");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+        .WillOnce(::testing::Return(WDMP_FAILURE));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-no-url\"}"), response));
+}
+
+TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyURL)
+{
+    // Mock successful Enable but empty URL value
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.Enable"), ::testing::_))
+        .WillOnce(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "true");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.ScreenCapture.URL"), ::testing::_))
+        .WillOnce(::testing::Invoke(
+            [](const char*, const char*, RFC_ParamData_t* param) {
+                strcpy(param->value, "");
+                return WDMP_SUCCESS;
+            }));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("sendScreenshot"), _T("{\"callGUID\":\"test-guid-empty-url\"}"), response));
 }
