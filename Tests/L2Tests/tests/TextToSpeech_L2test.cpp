@@ -232,18 +232,33 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
     JsonObject configurationParameter;
     JsonObject configurationResponse;
     JsonObject fallbackText;
+    uint32_t status = Core::ERROR_GENERAL;
 
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    printf("kykumar mock rfc call\n");
                      strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
                      return WDMP_SUCCESS;
              }));
 
+    /* deactivate and activate to consume RFC URL */
+    status = DeactivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = DeactivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
+    printf("kykumar activate nw");
+    status = ActivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    printf("kykumar activate tts\n");
+    status = ActivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
 
-    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "carol";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
