@@ -110,14 +110,14 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: feature/workflow-test
+          ref: feature/workflow-L1-L2test
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: feature/workflow-test
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout googletest
