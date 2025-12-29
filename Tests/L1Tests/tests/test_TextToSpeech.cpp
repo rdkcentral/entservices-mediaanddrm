@@ -28,6 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -61,7 +62,7 @@ protected:
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
 
     p_rfcApiImplMock = new testing::NiceMock<RfcApiImplMock>;
-        RfcApi::setImpl(p_rfcApiImplMock);
+    RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
