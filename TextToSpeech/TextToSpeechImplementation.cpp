@@ -213,6 +213,7 @@ namespace Plugin {
                (callsignIndex->second)->Release();
                _notificationCallsignClients.erase(callsignIndex);
                TRACE_L1("Unregistered a sink on the browser %p", sink);
+	       break;
            }
         }
 
@@ -224,7 +225,7 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign, Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
-        TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign);
+        TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign.c_str());
 
         _notificationCallsignClients[callsign] = sink;
 

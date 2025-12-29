@@ -312,6 +312,7 @@ bool TTSConfiguration::updateWith(TTSConfiguration &nConfig) {
 }
 
 bool TTSConfiguration::isValid() {
+    std::lock_guard<std::mutex> lock(m_mutex);	
     if((m_ttsEndPoint.empty() && m_ttsEndPointSecured.empty() && m_ttsRFCEndpoint.empty())) {
         TTSLOG_ERROR("TTSEndPointEmpty=%d, TTSSecuredEndPointEmpty=%d , TTSRFCEndpoint=%d",
                 m_ttsEndPoint.empty(), m_ttsEndPointSecured.empty(), m_ttsRFCEndpoint.empty());
@@ -499,6 +500,7 @@ bool TTSSpeaker::isSpeaking(uint32_t id) {
 
 bool TTSSpeaker::cancelSpeech(uint32_t id) {
     TTSLOG_VERBOSE("Cancelling current speech");
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     bool status = false;
     if(m_isSpeaking && m_currentSpeech && ((m_currentSpeech->id == id) || (id == 0))) {
         m_isPaused = false;
@@ -518,6 +520,7 @@ bool TTSSpeaker::reset() {
 }
 
 bool TTSSpeaker::pause(uint32_t id) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);	
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
@@ -533,6 +536,7 @@ bool TTSSpeaker::pause(uint32_t id) {
 }
 
 bool TTSSpeaker::resume(uint32_t id) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);	
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 

@@ -411,6 +411,9 @@ namespace Plugin {
                 //
                 // Now find the string "<KID " in this text
                 while ((size > 0) && ((begin = FindInXML(slot, size, "<KID ", 5)) < size)) {
+		    if (begin + 10 >= size) {
+                        break;  // Prevent underflow in size - begin - 10
+                    }	
                     uint16_t end = FindInXML(&(slot[begin + 10]), size - begin - 10, "</KID>", 6);
 
                     uint16_t keyValue = FindInXML(&(slot[begin + 10]), end, "VALUE", 5);  

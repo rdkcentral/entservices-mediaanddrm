@@ -134,6 +134,11 @@ bool DRMScreenCapture_GetScreenInfo(DRMScreenCapture* handle) {
 			ret = false;
 			break;
 		}
+		if (!fb) {
+			cout << "[SCREENCAP] fb is NULL after retries" << endl;
+			ret = false;
+			break;
+		}
 
         if (fb->width * 4 == fb->pitch && 0 == fb->bpp)
             fb->bpp = 32;
