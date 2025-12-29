@@ -312,6 +312,7 @@ bool TTSConfiguration::updateWith(TTSConfiguration &nConfig) {
 }
 
 bool TTSConfiguration::isValid() {
+    std::lock_guard<std::mutex> lock(m_mutex);	
     if((m_ttsEndPoint.empty() && m_ttsEndPointSecured.empty() && m_ttsRFCEndpoint.empty())) {
         TTSLOG_ERROR("TTSEndPointEmpty=%d, TTSSecuredEndPointEmpty=%d , TTSRFCEndpoint=%d",
                 m_ttsEndPoint.empty(), m_ttsEndPointSecured.empty(), m_ttsRFCEndpoint.empty());
@@ -330,7 +331,7 @@ bool TTSConfiguration::isFallbackEnabled() {
 
 void TTSConfiguration::saveFallbackPath(std::string path) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_data.path = path;
+    m_data.path = std::move(path);
 }
 
 const std::string TTSConfiguration::getFallbackScenario() {
@@ -441,7 +442,7 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
     if(client->configuration()->isPreemptive())
         reset();
 
-    SpeechData data(client, id, callsign, text, secure,primVolDuck);
+    SpeechData data(client, id, std::move(callsign), std::move(text), secure,primVolDuck);
     queueData(data);
 
     return 0;
@@ -499,6 +500,7 @@ bool TTSSpeaker::isSpeaking(uint32_t id) {
 
 bool TTSSpeaker::cancelSpeech(uint32_t id) {
     TTSLOG_VERBOSE("Cancelling current speech");
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     bool status = false;
     if(m_isSpeaking && m_currentSpeech && ((m_currentSpeech->id == id) || (id == 0))) {
         m_isPaused = false;
@@ -518,6 +520,7 @@ bool TTSSpeaker::reset() {
 }
 
 bool TTSSpeaker::pause(uint32_t id) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);	
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
@@ -533,6 +536,7 @@ bool TTSSpeaker::pause(uint32_t id) {
 }
 
 bool TTSSpeaker::resume(uint32_t id) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);	
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
@@ -912,9 +916,8 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
         if(authrequired) 
             token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
-        
-        play(constructURL(config, data),data,authrequired,token);
 
+	    play(constructURL(config, data),data,authrequired,std::move(token));
     } else {
         TTSLOG_WARNING("m_pipeline=%p, m_pipelineError=%d", m_pipeline, m_pipelineError);
     }
