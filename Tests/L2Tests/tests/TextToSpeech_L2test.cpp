@@ -233,7 +233,7 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
     JsonObject configurationResponse;
     JsonObject fallbackText;
     uint32_t status = Core::ERROR_GENERAL;
-#if 0
+
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
@@ -242,15 +242,6 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
                      return WDMP_SUCCESS;
              }));
 
-#endif
-
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::_, ::testing::_))
-         .WillByDefault(::testing::Invoke(
-             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    printf("kykumar mock rfc call %s\n", pcParameterName);
-                     strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
-                     return WDMP_SUCCESS;
-             }));
     /* deactivate and activate to consume RFC URL */
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
