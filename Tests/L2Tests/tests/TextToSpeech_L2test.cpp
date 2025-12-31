@@ -247,8 +247,6 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     EXPECT_EQ(Core::ERROR_NONE, status);
     status = DeactivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "carol";
     printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -280,9 +278,7 @@ TEST_F(TextToSpeechTest, speakWithRFCURL)
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
     status = DeactivateService("org.rdk.Network.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "carol";
+    EXPECT_EQ(Core::ERROR_NONE, status);;
     printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
