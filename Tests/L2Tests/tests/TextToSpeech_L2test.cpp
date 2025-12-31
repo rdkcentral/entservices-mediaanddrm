@@ -181,7 +181,7 @@ TEST_F(TextToSpeechTest, checkTTSONOFF)
     bool ttsValue[] = { true, false };
     for (int i = 0; i < 2; i++) {
         parameterDisable["enabletts"] = ttsValue[i];
-        uint32_t status = Core::ERROR_GENERAL;
+        status = Core::ERROR_GENERAL;
         status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "enabletts", parameterDisable, responseDisable);
         uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
         EXPECT_TRUE(signalled);
@@ -265,6 +265,7 @@ TEST_F(TextToSpeechTest, speakWithRFCURL)
     JsonObject parameterSpeak;
     JsonObject responseSpeak;
     uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
 
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
