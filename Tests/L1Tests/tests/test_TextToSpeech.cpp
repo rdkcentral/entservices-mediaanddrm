@@ -61,7 +61,7 @@ protected:
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
 
-    p_rfcApiImplMock = new testing::NiceMock<RfcApiImplMock>;
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
     RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
@@ -148,8 +148,18 @@ protected:
     ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
     
+#if 0
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
         .WillByDefault(::testing::Return(WDMP_FAILURE));
+#endif
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    printf("kykumar mock rfc call\n");
+                     strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
+                     return WDMP_SUCCESS;
+             }));
 
     ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
