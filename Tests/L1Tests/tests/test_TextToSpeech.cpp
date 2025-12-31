@@ -64,6 +64,13 @@ protected:
     p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
     RfcApi::setImpl(p_rfcApiImplMock);
 
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                     printf("kyk empty rfc\n");
+                     return WDMP_FAILURE;
+             }));
+
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
                   [this]() {
@@ -150,23 +157,12 @@ protected:
     
 #if 0
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-        .WillByDefault(::testing::Return(WDMP_FAILURE));
-
-
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    printf("kykumar mock rfc call\n");
                      strcpy(pstParamData->value, "https://example-tts-dummy.net/tts/v1/cdn/location?");
                      return WDMP_SUCCESS;
              }));
 #endif
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-         .WillByDefault(::testing::Invoke(
-             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    printf("kykumar mock rfc call\n");
-                     return WDMP_FAILURE;
-             }));
 
     ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,

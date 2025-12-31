@@ -227,7 +227,7 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     EXPECT_EQ(configurationParameter["ttsendpoint"], configurationGetResponse["ttsendpoint"]);
 }
 
-TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
+TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
 {
     JsonObject configurationParameter;
     JsonObject configurationResponse;
@@ -238,7 +238,7 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
                     printf("kykumar mock rfc call\n");
-                     strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");
+                     strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
                      return WDMP_SUCCESS;
              }));
 
@@ -260,6 +260,65 @@ TEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)
     configurationParameter["voice"] = "carol";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
+TEST_F(TextToSpeechTest, speakWithRFCURL)
+{
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    uint32_t status = Core::ERROR_GENERAL;
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    printf("kykumar mock rfc call\n");
+                     strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
+                     return WDMP_SUCCESS;
+             }));
+
+    /* deactivate and activate to consume RFC URL */
+    status = DeactivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = DeactivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "carol";
+    printf("kykumar activate nw");
+    status = ActivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    printf("kykumar activate tts\n");
+    status = ActivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+
+    setTTSConfiguration();
+    // Disable TTS
+    enableTTS(true);
+    // Subscribe to playbackerror
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onplaybackerror"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // Call Speak
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+
+    // Unsubscribe from the notification
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onplaybackerror"));
+    enableTTS(false);
 }
 
 TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
