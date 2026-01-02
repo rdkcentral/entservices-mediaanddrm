@@ -96,9 +96,16 @@ TextToSpeechTest::TextToSpeechTest()
 
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
-
+#if 0
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
         .WillByDefault(::testing::Return(WDMP_FAILURE));
+#endif
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                     printf("kyk empty rfc\n");
+                     return WDMP_FAILURE;
+             }));
         
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
@@ -238,8 +245,8 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
                     printf("kykumar mock rfc call\n");
-                     strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
-                     return WDMP_SUCCESS;
+                    strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
+                    return WDMP_SUCCESS;
              }));
 
     /* deactivate and activate to consume RFC URL */
@@ -260,7 +267,7 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
-TEST_F(TextToSpeechTest, speakWithRFCURL)
+TEST_F(TextToSpeechTest, speakWithoutSATToken)
 {
     JsonObject parameterSpeak;
     JsonObject responseSpeak;
