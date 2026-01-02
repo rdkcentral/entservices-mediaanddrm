@@ -28,6 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -42,6 +43,7 @@ protected:
     string response;
 
     SystemAudioPlatformAPIMock *p_systemAudioPlatformMock = nullptr;
+    RfcApiImplMock *p_rfcApiImplMock  = nullptr;
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
@@ -58,6 +60,15 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
+    RfcApi::setImpl(p_rfcApiImplMock);
+
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                     return WDMP_FAILURE;
+             }));
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -107,6 +118,11 @@ protected:
             p_systemAudioPlatformMock = nullptr;
         }
 
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr) {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
         PluginHost::IFactories::Assign(nullptr);
     }
 };

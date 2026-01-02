@@ -57,9 +57,7 @@ void RFCURLObserver::triggerRFC(TTSConfiguration *config)
 void RFCURLObserver::fetchURLFromConfig() {
     bool  m_rfcURLSet = false;
     RFC_ParamData_t param;
-    #ifndef UNIT_TESTING
     m_rfcURLSet = Utils::getRFCConfig("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL", param);
-    #endif
     if (m_rfcURLSet) {
 	TTSLOG_INFO("Received RFC URL %s\n",param.value);
         m_defaultConfig->setRFCEndPoint(param.value);
