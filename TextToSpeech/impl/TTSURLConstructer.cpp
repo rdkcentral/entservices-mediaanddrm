@@ -48,10 +48,10 @@ TTSURLConstructer::~TTSURLConstructer() {
 std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal) {
     if(!(config.apiKey().empty()) && !isLocal && !(config.isRFCEnabled())) {
           TTSLOG_INFO("Device using remote sky endpoint");
-          return httppostURL(config, text, isFallback);
+          return httppostURL(config, std::move(text), isFallback);
      } else {
           TTSLOG_INFO("Device using %s endpoint", isLocal? "Local":"Remote");
-          return httpgetURL(config, text, isFallback, isLocal);
+          return httpgetURL(config, std::move(text), isFallback, isLocal);
      }
 }
 
@@ -85,7 +85,7 @@ std::string TTSURLConstructer::httpgetURL(TTSConfiguration &config, std::string 
     
     // Sanitize String
     std::string sanitizedString;
-    sanitizeString((isfallback ? config.getFallbackValue() : text), sanitizedString);
+    sanitizeString((isfallback ? config.getFallbackValue() : std::move(text)), sanitizedString);
 
     ttsRequest.append("&text=");
     ttsRequest.append(sanitizedString);

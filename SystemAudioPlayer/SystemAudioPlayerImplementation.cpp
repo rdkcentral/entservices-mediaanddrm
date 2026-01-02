@@ -159,7 +159,7 @@ namespace Plugin {
                 getNumberConfigParameter("rate",rate);
                 getNumberConfigParameter("channels",channels);
                 SAPLOG_INFO("SAP: Do PCM config ");
-                ret= player->configPCMCaps(format,rate,channels,layout);
+		ret= player->configPCMCaps(std::move(format),rate,channels,std::move(layout));
             }
             if (player->getSourceType() == SourceType::WEBSOCKET && parameters.HasLabel("websocketsecparam"))
             {
@@ -183,7 +183,7 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_URL_VALID_RETURN_ON_FAIL(url.c_str());
         extractFileProtocol(url); //we do not store file:// for file playback
         _adminLock.Lock();
-        if(GetSessionFromUrl(url,playerid))
+	if(GetSessionFromUrl(std::move(url),playerid))
         {
             response["sessionId"] = (int) playerid;
         }
@@ -227,7 +227,7 @@ namespace Plugin {
             _adminLock.Lock();
             if(SameModeNotPlaying(player,id)) {
                 _adminLock.Unlock();
-                player->Play(url);
+		player->Play(std::move(url));
                 returnResponse(true);
             }
             _adminLock.Unlock();
@@ -477,7 +477,7 @@ namespace Plugin {
     {
         string data;
         params.ToString(data);
-        Core::IWorkerPool::Instance().Submit(Job::Create(this, event, data));
+	Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(data)));
     }
 
     void SystemAudioPlayerImplementation::Dispatch(Event event, string data)

@@ -124,8 +124,8 @@ namespace Plugin {
         }
 
 #ifndef UNIT_TESTING
-        InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
-        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
+	InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(std::move(expectedLanguageSet)));
+        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(std::move(expectedVoicesSet)));
 #else
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSetCollection));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSetCollection));
@@ -213,6 +213,7 @@ namespace Plugin {
                (callsignIndex->second)->Release();
                _notificationCallsignClients.erase(callsignIndex);
                TRACE_L1("Unregistered a sink on the browser %p", sink);
+	       break;
            }
         }
 
@@ -224,7 +225,7 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign, Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
-        TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign);
+        TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign.c_str());
 
         _notificationCallsignClients[callsign] = sink;
 
@@ -510,7 +511,7 @@ namespace Plugin {
 
     void TextToSpeechImplementation::dispatchEvent(Event event, string callsign, const JsonValue &params)
     {
-        Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
+	Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
     }
 
     void TextToSpeechImplementation::Dispatch(Event event, string callsign, const JsonValue params)
@@ -566,7 +567,7 @@ namespace Plugin {
     void TextToSpeechImplementation::onVoiceChanged(std::string voice)
     {
         TTSLOG_INFO("Notify onvoicechanged, voice: %s", voice.c_str());
-        dispatchEvent(VOICE_CHANGED, " ", JsonValue((std::string)voice));
+        dispatchEvent(VOICE_CHANGED, " ", JsonValue((std::string)std::move(voice)));
     }
 
     void TextToSpeechImplementation::onWillSpeak(TTS::SpeechData &data)
@@ -584,13 +585,13 @@ namespace Plugin {
     void TextToSpeechImplementation::onSpeechPause(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onspeechpause, speechId: %d", speechId);
-        dispatchEvent(SPEECH_PAUSE, callsign, JsonValue((int)speechId));
+        dispatchEvent(SPEECH_PAUSE, std::move(callsign), JsonValue((int)speechId));
     }
 
     void TextToSpeechImplementation::onSpeechResume(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onspeechresume, speechId: %d", speechId);
-        dispatchEvent(SPEECH_RESUME, callsign, JsonValue((int)speechId));
+        dispatchEvent(SPEECH_RESUME, std::move(callsign), JsonValue((int)speechId));
     }
 
     void TextToSpeechImplementation::onSpeechCancelled(std::vector<uint32_t> speechIds, string callsign)
@@ -604,25 +605,25 @@ namespace Plugin {
         }
         JsonObject params;
         params["speechid"]  = ss.str();
-        dispatchEvent(SPEECH_CANCEL, callsign, params);
+        dispatchEvent(SPEECH_CANCEL, std::move(callsign), params);
     }
 
     void TextToSpeechImplementation::onSpeechInterrupted(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onspeechinterrupted, speechId: %d", speechId);
-        dispatchEvent(SPEECH_INTERRUPT, callsign, JsonValue((int)speechId));
+        dispatchEvent(SPEECH_INTERRUPT, std::move(callsign), JsonValue((int)speechId));
     }
 
     void TextToSpeechImplementation::onNetworkError(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onnetworkerror, speechId: %d", speechId);
-        dispatchEvent(NETWORK_ERROR, callsign, JsonValue((int)speechId));
+        dispatchEvent(NETWORK_ERROR, std::move(callsign), JsonValue((int)speechId));
     }
 
     void TextToSpeechImplementation::onPlaybackError(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onplaybackerror, speechId: %d", speechId);
-        dispatchEvent(PLAYBACK_ERROR, callsign, JsonValue((int)speechId));
+        dispatchEvent(PLAYBACK_ERROR, std::move(callsign), JsonValue((int)speechId));
     }
 
     void TextToSpeechImplementation::onSpeechComplete(TTS::SpeechData &data)
