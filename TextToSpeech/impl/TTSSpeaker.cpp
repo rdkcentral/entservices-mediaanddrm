@@ -914,8 +914,9 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
     if((m_pipeline && !m_flushed)) {
         string token;
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
-        if(authrequired) 
+        if(authrequired){ 
             token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
+		}
 
 	    play(constructURL(config, data),data,authrequired,std::move(token));
     } else {
