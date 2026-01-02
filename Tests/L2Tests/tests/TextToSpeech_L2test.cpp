@@ -138,10 +138,8 @@ TextToSpeechTest::TextToSpeechTest()
     string response;
     uint32_t status = Core::ERROR_GENERAL;
     m_event_signalled = 0;
-    printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    printf("kykumar activate tts\n");
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
@@ -244,7 +242,6 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    printf("kykumar mock rfc call\n");
                     strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
                     return WDMP_SUCCESS;
              }));
@@ -254,10 +251,8 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     EXPECT_EQ(Core::ERROR_NONE, status);
     status = DeactivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    printf("kykumar activate nw");
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    printf("kykumar activate tts\n");
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 
@@ -267,30 +262,27 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
-TEST_F(TextToSpeechTest, speakWithoutSATToken)
+TEST_F(TextToSpeechTest, speakWithRFCURL)
 {
     JsonObject parameterSpeak;
     JsonObject responseSpeak;
     uint32_t status = Core::ERROR_GENERAL;
     JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
 
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-         .WillByDefault(::testing::Invoke(
-             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    printf("kykumar mock rfc call\n");
-                     strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
-                     return WDMP_SUCCESS;
-             }));
-
     /* deactivate and activate to consume RFC URL */
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
     status = DeactivateService("org.rdk.Network.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);;
-    printf("kykumar activate nw");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    /* mock RFC URL as normal URL */
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
+                    return WDMP_SUCCESS;
+             }));
     status = ActivateService("org.rdk.Network.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
-    printf("kykumar activate tts\n");
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 
@@ -298,7 +290,7 @@ TEST_F(TextToSpeechTest, speakWithoutSATToken)
     // Disable TTS
     enableTTS(true);
     // Subscribe to playbackerror
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onplaybackerror"),
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
         [this](const JsonObject event) {
             std::unique_lock<std::mutex> lock(m_mutex);
             {
@@ -321,7 +313,7 @@ TEST_F(TextToSpeechTest, speakWithoutSATToken)
     EXPECT_EQ(Core::ERROR_NONE, status);
 
     // Unsubscribe from the notification
-    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onplaybackerror"));
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
     enableTTS(false);
 }
 
