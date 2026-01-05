@@ -49,7 +49,6 @@ protected:
     string response;
     
     WrapsImplMock  *p_wrapsImplMock   = nullptr ;
-   
     Core::ProxyType<Plugin::ScreenCaptureImplementation> ScreenCaptureImpl;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
