@@ -137,7 +137,6 @@ namespace Plugin {
                     }
                 }
                 else {
-                    struct stat deStat;
    	            // Use file descriptor operations to avoid TOCTOU race condition
                     int fd = open(CONNECTOR_PATH, O_RDONLY);
                     if (fd >= 0) {
