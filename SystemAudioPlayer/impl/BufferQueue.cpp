@@ -95,7 +95,7 @@ void BufferQueue::clear()
         item = m_buffer.front();
         m_buffer.pop();
         item->deleteBuffer();
-	    delete item;
+        delete item;
         sem_getvalue(&m_sem_full,&value);
         if(value != 0) 
 		{
@@ -103,7 +103,7 @@ void BufferQueue::clear()
             sem_wait(&m_sem_full);
             pthread_mutex_lock(&m_mutex);
         }
-	    sem_post(&m_sem_empty);
+        sem_post(&m_sem_empty);
     }
     pthread_mutex_unlock(&m_mutex);
 }
