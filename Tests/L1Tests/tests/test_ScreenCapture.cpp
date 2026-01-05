@@ -115,7 +115,6 @@ protected:
             delete p_wrapsImplMock;
             p_wrapsImplMock = nullptr;
         }
-         
 
         PluginHost::IFactories::Assign(nullptr);
     }
