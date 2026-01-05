@@ -281,13 +281,27 @@ TEST_F(ScreenCaptureTest, Upload_Success)
     JsonObject result;
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_TRUE(sockfd != -1);
+    if (sockfd == -1) {
+        TEST_LOG("Failed to create socket");
+        EXPECT_TRUE(false) << "Socket creation failed";
+        return;
+    }
     sockaddr_in sockaddr;
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = INADDR_ANY;
     sockaddr.sin_port = htons(11111);
-    ASSERT_FALSE(bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0);
-    ASSERT_FALSE(listen(sockfd, 10) < 0);
+    if (bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+        TEST_LOG("Failed to bind socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket bind failed";
+        return;
+    }
+    if (listen(sockfd, 10) < 0) {
+        TEST_LOG("Failed to listen on socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket listen failed";
+        return;
+    }
     fd_set set;
     struct timeval timeout;
 
@@ -335,9 +349,16 @@ TEST_F(ScreenCaptureTest, Upload_Success)
          else {
              auto addrlen = sizeof(sockaddr);
              const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
-             ASSERT_FALSE(connection < 0);
+             if (connection < 0) {
+                 TEST_LOG("Failed to accept connection");
+                 return;
+             }
              char buffer[2048] = { 0 };
-             ASSERT_TRUE(read(connection, buffer, 2048) > 0);
+             if (read(connection, buffer, 2048) <= 0) {
+                 TEST_LOG("Failed to read from connection");
+                 close(connection);
+                 return;
+             }
 
              std::string reqHeader(buffer);
              EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
@@ -355,8 +376,14 @@ TEST_F(ScreenCaptureTest, Upload_Success)
     TEST_LOG("After InvokeServiceMethod ***\n");
     signalled = notify.WaitForRequestStatus(JSON_TIMEOUT, ScreenCapture_UploadComplete);
     EXPECT_TRUE(signalled & ScreenCapture_UploadComplete);
-    free(buffer);
-    thread.join();
+    
+    // Cleanup
+    if (buffer) {
+        free(buffer);
+    }
+    if (thread.joinable()) {
+        thread.join();
+    }
     close(sockfd);
     TEST_LOG("End of test case ***\n");
 }
@@ -369,13 +396,27 @@ TEST_F(ScreenCaptureTest, Upload_Failed)
     JsonObject result;
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_TRUE(sockfd != -1);
+    if (sockfd == -1) {
+        TEST_LOG("Failed to create socket");
+        EXPECT_TRUE(false) << "Socket creation failed";
+        return;
+    }
     sockaddr_in sockaddr;
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = INADDR_ANY;
     sockaddr.sin_port = htons(11111);
-    ASSERT_FALSE(bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0);
-    ASSERT_FALSE(listen(sockfd, 10) < 0);
+    if (bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+        TEST_LOG("Failed to bind socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket bind failed";
+        return;
+    }
+    if (listen(sockfd, 10) < 0) {
+        TEST_LOG("Failed to listen on socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket listen failed";
+        return;
+    }
     fd_set set;
     struct timeval timeout;
 
@@ -397,9 +438,16 @@ TEST_F(ScreenCaptureTest, Upload_Failed)
          else {
              auto addrlen = sizeof(sockaddr);
              const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
-             ASSERT_FALSE(connection < 0);
+             if (connection < 0) {
+                 TEST_LOG("Failed to accept connection");
+                 return;
+             }
              char buffer[2048] = { 0 };
-             ASSERT_TRUE(read(connection, buffer, 2048) > 0);
+             if (read(connection, buffer, 2048) <= 0) {
+                 TEST_LOG("Failed to read from connection");
+                 close(connection);
+                 return;
+             }
 
              std::string reqHeader(buffer);
              EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
@@ -415,7 +463,11 @@ TEST_F(ScreenCaptureTest, Upload_Failed)
     EXPECT_EQ(Core::ERROR_NONE, status);
     TEST_LOG("After InvokeServiceMethod ***\n");
     signalled = notify.WaitForRequestStatus(JSON_TIMEOUT, ScreenCapture_UploadComplete);
-    thread.join();
+    
+    // Cleanup
+    if (thread.joinable()) {
+        thread.join();
+    }
     close(sockfd);
     TEST_LOG("End of test case ***\n");
 }
@@ -428,18 +480,38 @@ TEST_F(ScreenCaptureTest, SendScreenshot_Success)
     JsonObject result;
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_TRUE(sockfd != -1);
+    if (sockfd == -1) {
+        TEST_LOG("Failed to create socket");
+        EXPECT_TRUE(false) << "Socket creation failed";
+        return;
+    }
     sockaddr_in sockaddr;
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = INADDR_ANY;
     sockaddr.sin_port = htons(11113);
-    ASSERT_FALSE(bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0);
-    ASSERT_FALSE(listen(sockfd, 10) < 0);
+    if (bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+        TEST_LOG("Failed to bind socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket bind failed";
+        return;
+    }
+    if (listen(sockfd, 10) < 0) {
+        TEST_LOG("Failed to listen on socket");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Socket listen failed";
+        return;
+    }
     fd_set set;
     struct timeval timeout;
 
     DRMScreenCapture drmHandle = {0, 1280, 720, 5120, 32};
     uint8_t *buffer = (uint8_t *)malloc(5120 * 720);
+    if (!buffer) {
+        TEST_LOG("Failed to allocate buffer memory");
+        close(sockfd);
+        EXPECT_TRUE(false) << "Memory allocation failed";
+        return;
+    }
     memset(buffer, 0xff, 5120 * 720);
 
     EXPECT_CALL(*p_drmScreenCaptureApiImplMock, Init())
@@ -497,9 +569,16 @@ TEST_F(ScreenCaptureTest, SendScreenshot_Success)
          else {
              auto addrlen = sizeof(sockaddr);
              const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
-             ASSERT_FALSE(connection < 0);
+             if (connection < 0) {
+                 TEST_LOG("Failed to accept connection");
+                 return;
+             }
              char buffer[2048] = { 0 };
-             ASSERT_TRUE(read(connection, buffer, 2048) > 0);
+             if (read(connection, buffer, 2048) <= 0) {
+                 TEST_LOG("Failed to read from connection");
+                 close(connection);
+                 return;
+             }
 
              std::string reqHeader(buffer);
              EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
@@ -518,8 +597,13 @@ TEST_F(ScreenCaptureTest, SendScreenshot_Success)
     signalled = notify.WaitForRequestStatus(JSON_TIMEOUT, ScreenCapture_UploadComplete);
     EXPECT_TRUE(signalled & ScreenCapture_UploadComplete);
     
-    free(buffer);
-    thread.join();
+    // Cleanup
+    if (buffer) {
+        free(buffer);
+    }
+    if (thread.joinable()) {
+        thread.join();
+    }
     close(sockfd);
 }
 
