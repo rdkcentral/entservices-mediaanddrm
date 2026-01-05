@@ -184,7 +184,7 @@ namespace Plugin {
         extractFileProtocol(url); //we do not store file:// for file playback
         _adminLock.Lock();
         if(GetSessionFromUrl(std::move(url),playerid))
-        {Apply suggestion from @Copilot
+        {
             response["sessionId"] = (int) playerid;
         }
         else
