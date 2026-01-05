@@ -418,8 +418,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_TEXTTOSPEECH_MODE="Off"
-          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="https://ccr.voice-guidance-tts.xcr.comcast.net/tts?"
-          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://ccr.voice-guidance-tts.xcr.comcast.net/tts?"
+          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="https://test_url.net/tts?"
+          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://test_url.net/tts?"
           -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://localhost:50050/nuanceEve/tts?"
           -DPLUGIN_TEXTTOSPEECH_LOCALVOICE_FOR_EN="carol"
           -DPLUGIN_SCREENCAPTURE=OFF
@@ -504,8 +504,8 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_TEXTTOSPEECH_MODE="Off"
-          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="https://ccr.voice-guidance-tts.xcr.comcast.net/tts?"
-          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://ccr.voice-guidance-tts.xcr.comcast.net/tts?"
+          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="https://test_url.net/tts?"
+          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://test_url.net/tts?"
           -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://localhost:50050/nuanceEve/tts?"
           -DPLUGIN_TEXTTOSPEECH_LOCALVOICE_FOR_EN="carol"
           -DPLUGIN_SCREENCAPTURE=OFF
