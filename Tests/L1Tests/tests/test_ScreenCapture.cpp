@@ -124,6 +124,7 @@ class ScreenCaptureDRMTest : public ScreenCaptureTest {
 protected:
     NiceMock<DRMScreenCaptureApiImplMock> drmScreenCaptureApiImplMock;
     RfcApiImplMock    *p_rfcApiImplMock  = nullptr;
+
     ScreenCaptureDRMTest()
         : ScreenCaptureTest()
     {
