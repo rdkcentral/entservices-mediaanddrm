@@ -560,7 +560,8 @@ jobs:
           if [ ! -f mknod /dev/sda2 c 240 0 ]; then mknod /dev/sda2 c 240 0; fi &&
           if [ ! -f mknod /dev/sdb c 240 0 ]; then mknod /dev/sdb c 240 0; fi &&
           if [ ! -f mknod /dev/sdb1 c 240 0 ]; then mknod /dev/sdb1 c 240 0; fi &&
-          if [ ! -f mknod /dev/sdb2 c 240 0 ]; then mknod /dev/sdb2 c 240 0; fi
+          if [ ! -f mknod /dev/sdb2 c 240 0 ]; then mknod /dev/sdb2 c 240 0; fi &&
+          if [ ! -f /tmp/test.mp3 ]; then cp $GITHUB_WORKSPACE/entservices-mediaanddrm/Tests/L2Tests/tests/test.mp3 /tmp/test.mp3; fi
           &&
           sudo touch
           /opt/www/TTS_fallback.mp3
@@ -594,6 +595,7 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /tmp/test.mp3
           /opt/www/TTS_fallback.mp3
           /opt/standbyReason.txt
           /opt/tmtryoptout

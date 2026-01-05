@@ -35,6 +35,7 @@
     fflush(stderr);
 #define SAMPLEPLUGIN_CALLSIGN _T("org.rdk.TextToSpeech.1")
 #define SAMPLEPLUGINL2TEST_CALLSIGN _T("L2tests.1")
+#define TEST_ENDPOINT "file:///tmp/test.mp3"
 
 using ::testing::NiceMock;
 using namespace WPEFramework;
@@ -96,14 +97,10 @@ TextToSpeechTest::TextToSpeechTest()
 
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
-#if 0
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-        .WillByDefault(::testing::Return(WDMP_FAILURE));
-#endif
+
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                     printf("kyk empty rfc\n");
                      return WDMP_FAILURE;
              }));
         
@@ -210,8 +207,8 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
-    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpointsecured"] = TEST_ENDPOINT;
+    configurationParameter["ttsendpoint"] = TEST_ENDPOINT;
     fallbackText["scenario"] = "NetworkError";
     fallbackText["value"] = "Please check your internet connection";
     configurationParameter["fallbacktext"] = fallbackText;
@@ -242,7 +239,7 @@ TEST_F(TextToSpeechTest, setTTSConfigurationWithRFC)
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
+                    strcpy(pstParamData->value, TEST_ENDPOINT);
                     return WDMP_SUCCESS;
              }));
 
@@ -278,7 +275,7 @@ TEST_F(TextToSpeechTest, speakWithRFCURL)
     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
          .WillByDefault(::testing::Invoke(
              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    strcpy(pstParamData->value, "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?");
+                    strcpy(pstParamData->value, TEST_ENDPOINT);
                     return WDMP_SUCCESS;
              }));
     status = ActivateService("org.rdk.Network.1");
@@ -323,8 +320,8 @@ TEST_F(TextToSpeechTest, setTTSConfigurationInvalidVoice)
     JsonObject configurationResponse;
 
     configurationParameter["language"] = "en-US";
-    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
-    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpointsecured"] = TEST_ENDPOINT;
+    configurationParameter["ttsendpoint"] = TEST_ENDPOINT;
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
@@ -932,8 +929,8 @@ void TextToSpeechTest::setTTSConfiguration()
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
-    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["ttsendpointsecured"] = TEST_ENDPOINT;
+    configurationParameter["ttsendpoint"] = TEST_ENDPOINT;
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
