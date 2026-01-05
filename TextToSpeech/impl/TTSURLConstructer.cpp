@@ -85,7 +85,7 @@ std::string TTSURLConstructer::httpgetURL(TTSConfiguration &config, std::string 
     
     // Sanitize String
     std::string sanitizedString;
-    sanitizeString((isfallback ? config.getFallbackValue() : std::move(text)), sanitizedString);
+    sanitizeString((isfallback ? config.getFallbackValue() : text), sanitizedString);
 
     ttsRequest.append("&text=");
     ttsRequest.append(sanitizedString);
