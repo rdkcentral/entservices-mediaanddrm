@@ -159,7 +159,7 @@ namespace Plugin {
                 getNumberConfigParameter("rate",rate);
                 getNumberConfigParameter("channels",channels);
                 SAPLOG_INFO("SAP: Do PCM config ");
-		ret= player->configPCMCaps(std::move(format),rate,channels,std::move(layout));
+                ret= player->configPCMCaps(std::move(format),rate,channels,std::move(layout));
             }
             if (player->getSourceType() == SourceType::WEBSOCKET && parameters.HasLabel("websocketsecparam"))
             {
@@ -183,8 +183,8 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_URL_VALID_RETURN_ON_FAIL(url.c_str());
         extractFileProtocol(url); //we do not store file:// for file playback
         _adminLock.Lock();
-	if(GetSessionFromUrl(std::move(url),playerid))
-        {
+        if(GetSessionFromUrl(std::move(url),playerid))
+        {Apply suggestion from @Copilot
             response["sessionId"] = (int) playerid;
         }
         else
@@ -227,7 +227,7 @@ namespace Plugin {
             _adminLock.Lock();
             if(SameModeNotPlaying(player,id)) {
                 _adminLock.Unlock();
-		player->Play(std::move(url));
+                player->Play(std::move(url));
                 returnResponse(true);
             }
             _adminLock.Unlock();
