@@ -310,12 +310,14 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
         auto addrlen = sizeof(sockaddr);
         const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
         if (connection < 0) {
+			close(sockfd);
             return;
         }
         char buffer[2048] = { 0 };
         ssize_t bytesRead = read(connection, buffer, 2048);
         if (bytesRead <= 0) {
             close(connection);
+			close(sockfd);
             return;
         }
 
@@ -327,6 +329,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
 
         close(connection);
         if (bytesSent <= 0) {
+			close(sockfd);
             return;
         }
     });
