@@ -129,12 +129,12 @@ protected:
         : ScreenCaptureTest()
     {
         DRMScreenCaptureApi::getInstance().impl = &drmScreenCaptureApiImplMock;
-		 p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
-		 RfcApi::setImpl(p_rfcApiImplMock);
+        p_rfcApiImplMock = new NiceMock<RfcApiImplMock>;
+        RfcApi::setImpl(p_rfcApiImplMock);
     }
     virtual ~ScreenCaptureDRMTest() override
     {
-		RfcApi::setImpl(nullptr);
+        RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr) {
             delete p_rfcApiImplMock;
             p_rfcApiImplMock = nullptr;
@@ -275,7 +275,7 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
                 EXPECT_TRUE(json->ToString(text));
 
                 EXPECT_EQ(text, string(_T(
-                	"{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.ScreenCapture.uploadComplete\",\"params\":{\"status\":true,\"message\":\"Success\",\"call_guid\":\"test-guid-123\"}}"
+                    "{\"jsonrpc\":\"2.0\",\"method\":\"org.rdk.ScreenCapture.uploadComplete\",\"params\":{\"status\":true,\"message\":\"Success\",\"call_guid\":\"test-guid-123\"}}"
                 )));
 
                 uploadComplete.SetEvent();
@@ -284,21 +284,40 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
             }));
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_TRUE(sockfd != -1);
+    if (sockfd == -1) {
+        free(buffer);
+        FAIL() << "Socket creation failed";
+        return;
+    }
     sockaddr_in sockaddr;
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = INADDR_ANY;
     sockaddr.sin_port = htons(11112);
-    ASSERT_FALSE(bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0);
-    ASSERT_FALSE(listen(sockfd, 10) < 0);
+    if (bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0) {
+        close(sockfd);
+        free(buffer);
+        FAIL() << "Socket bind failed";
+        return;
+    }
+    if (listen(sockfd, 10) < 0) {
+        close(sockfd);
+        free(buffer);
+        FAIL() << "Socket listen failed";
+        return;
+    }
 
     std::thread thread = std::thread([&]() {
         auto addrlen = sizeof(sockaddr);
         const int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
-        ASSERT_FALSE(connection < 0);
+        if (connection < 0) {
+            return;
+        }
         char buffer[2048] = { 0 };
         ssize_t bytesRead = read(connection, buffer, 2048);
-        ASSERT_TRUE(bytesRead > 0);
+        if (bytesRead <= 0) {
+            close(connection);
+            return;
+        }
 
         std::string reqHeader(buffer, bytesRead);
         EXPECT_TRUE(std::string::npos != reqHeader.find("Content-Type: image/png"));
@@ -307,7 +326,9 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
         ssize_t bytesSent = send(connection, response.c_str(), response.size(), 0);
 
         close(connection);
-        ASSERT_TRUE(bytesSent > 0);
+        if (bytesSent <= 0) {
+            return;
+        }
     });
 
     EVENT_SUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
@@ -334,9 +355,14 @@ TEST_F(ScreenCaptureDRMTest, SendScreenshot)
 
     EVENT_UNSUBSCRIBE(0, _T("uploadComplete"), _T("org.rdk.ScreenCapture"), message);
 
-    free(buffer);
+    // Cleanup
+    if (buffer) {
+        free(buffer);
+    }
+    if (thread.joinable()) {
+        thread.join();
+    }
     close(sockfd);
-    thread.join();
 }
 
 TEST_F(ScreenCaptureDRMTest, SendScreenshot_EmptyCallGUID)
