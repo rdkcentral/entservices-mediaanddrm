@@ -98,7 +98,7 @@ void BufferQueue::clear()
         delete item;
         sem_getvalue(&m_sem_full,&value);
         if(value != 0) 
-		{
+        {
             pthread_mutex_unlock(&m_mutex);
             sem_wait(&m_sem_full);
             pthread_mutex_lock(&m_mutex);
