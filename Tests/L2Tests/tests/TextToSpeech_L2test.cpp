@@ -52,6 +52,7 @@ public:
     void setTTSConfiguration();
     void enableTTS(bool);
     void setACL();
+    void postEOS();
     uint32_t WaitForRequestStatus(uint32_t);
     GstBus *bus=NULL;
     GstElement *currentPipeline=NULL;

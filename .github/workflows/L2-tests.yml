@@ -630,7 +630,7 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/install/usr/bin:${PATH}"
           $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/pact/install-verifier-cli.sh
 
-      - name: Start dummy HTTP server for L2 tests
+      - name: Start dummy HTTP server for TTS L2 tests
         run: |
           python3 << 'EOF'
           from http.server import BaseHTTPRequestHandler, HTTPServer
