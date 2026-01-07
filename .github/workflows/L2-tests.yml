@@ -632,7 +632,7 @@ jobs:
 
       - name: Start dummy HTTP server for TTS L2 tests
         run: |
-          python3 << 'EOF'
+          python3 << 'EOF' &
           from http.server import BaseHTTPRequestHandler, HTTPServer
 
           class Handler(BaseHTTPRequestHandler):
@@ -648,6 +648,8 @@ jobs:
 
           HTTPServer(("127.0.0.1", 8080), Handler).serve_forever()
           EOF
+
+          echo "Dummy HTTP server started"
 
       - name: Run unit tests without valgrind
         run: >
