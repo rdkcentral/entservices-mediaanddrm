@@ -105,7 +105,7 @@ TextToSpeechTest::TextToSpeechTest()
              }));
         
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+        .WillByDefault(::testing::Invoke([this](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
 
@@ -118,8 +118,8 @@ TextToSpeechTest::TextToSpeechTest()
             if (type == MP3) {
                 gst_bin_add_many(GST_BIN(*pipeline), *source, *audioSink, NULL);
                 result = gst_element_link_many(*source, *audioSink, NULL);
-                bus = gst_element_get_bus(*pipeline);
-                currentPipeline = *pipeline;
+                this->bus = gst_element_get_bus(*pipeline);
+                this->currentPipeline = *pipeline;
 
             } else if (type == PCM) {
 
