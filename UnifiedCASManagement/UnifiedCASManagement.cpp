@@ -21,7 +21,9 @@
 #include <regex>
 #include "Module.h"
 #include "UnifiedCASManagement.h"
+#ifdef LMPLAYER_FOUND
 #include "LibMediaPlayerImpl.h"
+#endif
 
 #include "UtilsCStr.h"
 #include "UtilsJsonRpc.h"
