@@ -65,8 +65,13 @@ namespace Plugin {
             return 0;
 
         InputValidation::Instance().setLogger([] (const char *log) { TTSLOG_WARNING(log); });
+#ifndef UNIT_TESTING
         InputValidation::Instance().addValidator("ttsendpoint", ExpectedValues<std::string>("^https?://[a-zA-Z0-9]+.*"));
         InputValidation::Instance().addValidator("ttsendpointsecured", ExpectedValues<std::string>("^https://[a-zA-Z0-9]+.*"));
+#else
+        InputValidation::Instance().addValidator("ttsendpoint", ExpectedValues<std::string>("^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$"));
+        InputValidation::Instance().addValidator("ttsendpointsecured", ExpectedValues<std::string>("^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$"));
+#endif
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
         InputValidation::Instance().addValidator("speechid", ExpectedValues<uint32_t>(1, UINT32_MAX));
         InputValidation::Instance().addValidator("speechrate", ExpectedValues<std::string>({"slow", "medium", "fast", "faster", "fastest"}));

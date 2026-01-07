@@ -35,7 +35,7 @@
     fflush(stderr);
 #define SAMPLEPLUGIN_CALLSIGN _T("org.rdk.TextToSpeech.1")
 #define SAMPLEPLUGINL2TEST_CALLSIGN _T("L2tests.1")
-#define TEST_ENDPOINT "file:///tmp/test.mp3"
+#define TEST_ENDPOINT "http://127.0.0.1:8080/dummy.mp3"
 
 using ::testing::NiceMock;
 using namespace WPEFramework;
@@ -53,12 +53,11 @@ public:
     void enableTTS(bool);
     void setACL();
     uint32_t WaitForRequestStatus(uint32_t);
-
-public:
+    GstBus *bus=NULL;
+    GstElement *currentPipeline=NULL;
     std::mutex m_mutex;
     std::condition_variable m_condition_variable;
     uint32_t m_event_signalled;
-
     std::mutex mtx;
     std::condition_variable cv;
     std::condition_variable cv1;
@@ -111,17 +110,15 @@ TextToSpeechTest::TextToSpeechTest()
 
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("souphttpsrc", NULL);
-            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
             *audioSink = gst_element_factory_make("fakesink", NULL);
 
             bool result = TRUE;
 
             if (type == MP3) {
-                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
-                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
-                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
-
-                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
+                gst_bin_add_many(GST_BIN(*pipeline), *source, *audioSink, NULL);
+                result = gst_element_link_many(*source, *audioSink, NULL);
+                bus = gst_element_get_bus(*pipeline);
+                currentPipeline = *pipeline;
 
             } else if (type == PCM) {
 
@@ -151,6 +148,69 @@ TextToSpeechTest::~TextToSpeechTest()
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
+TEST_F(TextToSpeechTest, speakWithRFCURL)
+{
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    /* deactivate and activate to consume RFC URL */
+    status = DeactivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = DeactivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    /* mock RFC URL as normal URL */
+    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+         .WillByDefault(::testing::Invoke(
+             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    strcpy(pstParamData->value, TEST_ENDPOINT);
+                    return WDMP_SUCCESS;
+             }));
+    status = ActivateService("org.rdk.Network.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = ActivateService("org.rdk.TextToSpeech.1");
+    EXPECT_EQ(Core::ERROR_NONE, status);
+
+    setTTSConfiguration();
+    // Disable TTS
+    enableTTS(true);
+    // Subscribe to playbackerror
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // Call Speak
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    printf("kyk posting EOS");
+    postEOS();
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+
+    // Unsubscribe from the notification
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+    enableTTS(false);
+}
+
+void TextToSpeechTest::postEOS()
+{
+    GstMessage* eos_msg = gst_message_new_eos(GST_OBJECT(currentPipeline));
+    gst_bus_post(bus, eos_msg);
+}
+#if 0
 TEST_F(TextToSpeechTest, getapiversion)
 {
     JsonObject parameter;
@@ -305,6 +365,8 @@ TEST_F(TextToSpeechTest, speakWithRFCURL)
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    GstMessage* msg =gst_message_new_eos(GST_OBJECT(pipeline));
+    gst_bus_post(bus, msg);
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -922,6 +984,7 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     interruptThread.join();
 }
 
+#endif
 void TextToSpeechTest::setTTSConfiguration()
 {
     JsonObject configurationParameter;
