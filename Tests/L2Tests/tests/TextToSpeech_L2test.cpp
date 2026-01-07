@@ -149,69 +149,6 @@ TextToSpeechTest::~TextToSpeechTest()
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
-TEST_F(TextToSpeechTest, speakWithRFCURL)
-{
-    JsonObject parameterSpeak;
-    JsonObject responseSpeak;
-    uint32_t status = Core::ERROR_GENERAL;
-    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
-
-    /* deactivate and activate to consume RFC URL */
-    status = DeactivateService("org.rdk.TextToSpeech.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    status = DeactivateService("org.rdk.Network.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    /* mock RFC URL as normal URL */
-    ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-         .WillByDefault(::testing::Invoke(
-             [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                    strcpy(pstParamData->value, TEST_ENDPOINT);
-                    return WDMP_SUCCESS;
-             }));
-    status = ActivateService("org.rdk.Network.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    status = ActivateService("org.rdk.TextToSpeech.1");
-    EXPECT_EQ(Core::ERROR_NONE, status);
-
-    setTTSConfiguration();
-    // Disable TTS
-    enableTTS(true);
-    // Subscribe to playbackerror
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
-        [this](const JsonObject event) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            {
-                std::string eventString;
-                event.ToString(eventString);
-                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                m_event_signalled = 1;
-            }
-            m_condition_variable.notify_one();
-        });
-
-    // Call Speak
-    std::string text = "Hello Testing";
-    std::string callsign = "testApp";
-    parameterSpeak["text"] = text;
-    parameterSpeak["callsign"] = callsign;
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    printf("kyk posting EOS");
-    postEOS();
-    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
-    EXPECT_TRUE(signalled);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-
-    // Unsubscribe from the notification
-    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
-    enableTTS(false);
-}
-
-void TextToSpeechTest::postEOS()
-{
-    GstMessage* eos_msg = gst_message_new_eos(GST_OBJECT(currentPipeline));
-    gst_bus_post(bus, eos_msg);
-}
-#if 0
 TEST_F(TextToSpeechTest, getapiversion)
 {
     JsonObject parameter;
@@ -366,8 +303,7 @@ TEST_F(TextToSpeechTest, speakWithRFCURL)
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    GstMessage* msg =gst_message_new_eos(GST_OBJECT(pipeline));
-    gst_bus_post(bus, msg);
+    postEOS();
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -546,6 +482,7 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    postEOS();
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -985,7 +922,6 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     interruptThread.join();
 }
 
-#endif
 void TextToSpeechTest::setTTSConfiguration()
 {
     JsonObject configurationParameter;
@@ -1034,4 +970,11 @@ uint32_t TextToSpeechTest::WaitForRequestStatus(uint32_t timeout_ms)
         }
     }
     return m_event_signalled;
+}
+
+void TextToSpeechTest::postEOS()
+{
+    GstMessage* eos_msg = gst_message_new_eos(GST_OBJECT(currentPipeline));
+    printf("kyk posting EOS\n");
+    gst_bus_post(bus, eos_msg);
 }

@@ -675,10 +675,6 @@ jobs:
           cp -rf $(pwd)/rdkL2TestResults.json $GITHUB_WORKSPACE/rdkL2TestResultsWithValgrind.json &&
           rm -rf $(pwd)/rdkL2TestResults.json
 
-      - name: Stop dummy HTTP server
-        run: |
-          pkill -f "http.server"
-
       - name: Generate coverage
         if: ${{ matrix.coverage == 'with-coverage' && !env.ACT }}
         run: >
