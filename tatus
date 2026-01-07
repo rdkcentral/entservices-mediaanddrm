@@ -1,0 +1,80 @@
+[1mdiff --git a/.github/workflows/L1-tests.yml b/.github/workflows/L1-tests.yml[m
+[1mindex 7c5023a..f9dff7d 100755[m
+[1m--- a/.github/workflows/L1-tests.yml[m
+[1m+++ b/.github/workflows/L1-tests.yml[m
+[36m@@ -453,12 +453,12 @@[m [mjobs:[m
+           -DRDK_SERVICES_L1_TEST=ON[m
+           -DUSE_THUNDER_R4=ON[m
+           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF[m
+[31m-          -DPLUGIN_SCREENCAPTURE=ON[m
+[32m+[m[32m          -DPLUGIN_SCREENCAPTURE=OFF[m
+           -DPLUGIN_TEXTTOSPEECH=ON[m
+           -DPLUGIN_SYSTEMAUDIOPLAYER=ON[m
+[31m-          -DPLUGIN_PLAYERINFO=ON[m
+[31m-          -DPLUGIN_LINEARPLAYBACKCONTROL=ON[m
+[31m-          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON[m
+[32m+[m[32m          -DPLUGIN_PLAYERINFO=OFF[m
+[32m+[m[32m          -DPLUGIN_LINEARPLAYBACKCONTROL=OFF[m
+[32m+[m[32m          -DPLUGIN_UNIFIEDCASMANAGEMENT=OFF[m
+           &&[m
+           cmake --build build/entservices-mediaanddrm -j8[m
+           &&[m
+[36m@@ -532,15 +532,15 @@[m [mjobs:[m
+           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON[m
+           -DCMAKE_BUILD_TYPE=Debug[m
+           -DDS_FOUND=ON[m
+[31m-          -DPLUGIN_SCREENCAPTURE=ON[m
+[32m+[m[32m          -DPLUGIN_SCREENCAPTURE=OFF[m
+           -DPLUGIN_TEXTTOSPEECH=ON[m
+           -DPLUGIN_SYSTEMAUDIOPLAYER=ON[m
+[31m-          -DPLUGIN_PLAYERINFO=ON[m
+[31m-          -DPLUGIN_LINEARPLAYBACKCONTROL=ON[m
+[32m+[m[32m          -DPLUGIN_PLAYERINFO=OFF[m
+[32m+[m[32m          -DPLUGIN_LINEARPLAYBACKCONTROL=OFF[m
+           -DRDK_SERVICES_L1_TEST=ON[m
+           -DUSE_THUNDER_R4=ON[m
+           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF[m
+[31m-          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON[m
+[32m+[m[32m          -DPLUGIN_UNIFIEDCASMANAGEMENT=OFF[m
+           &&[m
+           cmake --build build/entservices-testframework -j8[m
+           &&[m
+[1mdiff --git a/Tests/L2Tests/tests/TextToSpeech_L2test.cpp b/Tests/L2Tests/tests/TextToSpeech_L2test.cpp[m
+[1mindex 8a34e5b..6c61e2e 100755[m
+[1m--- a/Tests/L2Tests/tests/TextToSpeech_L2test.cpp[m
+[1m+++ b/Tests/L2Tests/tests/TextToSpeech_L2test.cpp[m
+[36m@@ -232,18 +232,33 @@[m [mTEST_F(TextToSpeechTest, setgetTTSConfigurationWithRFC)[m
+     JsonObject configurationParameter;[m
+     JsonObject configurationResponse;[m
+     JsonObject fallbackText;[m
+[32m+[m[32m    uint32_t status = Core::ERROR_GENERAL;[m
+ [m
+     ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))[m
+          .WillByDefault(::testing::Invoke([m
+              [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {[m
+[32m+[m[32m                    printf("kykumar mock rfc call\n");[m
+                      strcpy(pstParamData->value, "https://dummy_endpoint.net/tts?");[m
+                      return WDMP_SUCCESS;[m
+              }));[m
+ [m
+[32m+[m[32m    /* deactivate and activate to consume RFC URL */[m
+[32m+[m[32m    status = DeactivateService("org.rdk.TextToSpeech.1");[m
+[32m+[m[32m    EXPECT_EQ(Core::ERROR_NONE, status);[m
+[32m+[m[32m    status = DeactivateService("org.rdk.Network.1");[m
+[32m+[m[32m    EXPECT_EQ(Core::ERROR_NONE, status);[m
+     configurationParameter["language"] = "en-US";[m
+     configurationParameter["voice"] = "carol";[m
+[32m+[m[32m    printf("kykumar activate nw");[m
+[32m+[m[32m    status = ActivateService("org.rdk.Network.1");[m
+[32m+[m[32m    EXPECT_EQ(Core::ERROR_NONE, status);[m
+[32m+[m[32m    printf("kykumar activate tts\n");[m
+[32m+[m[32m    status = ActivateService("org.rdk.TextToSpeech.1");[m
+[32m+[m[32m    EXPECT_EQ(Core::ERROR_NONE, status);[m
+ [m
+[31m-    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);[m
+[32m+[m[32m    configurationParameter["language"] = "en-US";[m
+[32m+[m[32m    configurationParameter["voice"] = "carol";[m
+[32m+[m[32m    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);[m
+     EXPECT_EQ(Core::ERROR_NONE, status);[m
+ }[m
+ [m
