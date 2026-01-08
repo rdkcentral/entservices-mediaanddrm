@@ -105,6 +105,9 @@ TextToSpeechTest::TextToSpeechTest()
             *source = gst_element_factory_make("souphttpsrc", NULL);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
             *audioSink = gst_element_factory_make("fakesink", NULL);
+            
+            // Set sync=true to make fakesink respect audio timing instead of consuming instantly
+            g_object_set(*audioSink, "sync", TRUE, NULL);
 
             bool result = TRUE;
 
