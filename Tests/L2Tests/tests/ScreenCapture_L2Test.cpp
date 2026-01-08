@@ -160,7 +160,6 @@ ScreenCaptureTest::ScreenCaptureTest() : L2TestMocks()
             EXPECT_TRUE(m_screenCapturePlugin != nullptr);
             if (m_screenCapturePlugin)
             {
-                m_screenCapturePlugin->AddRef();
                 m_screenCapturePlugin->Register(&notify);
             }
             else
