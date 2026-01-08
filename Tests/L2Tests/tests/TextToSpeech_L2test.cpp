@@ -558,20 +558,20 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
     
-    speechID = responseSpeak["speechid"].Number();
+    uint32_t localSpeechID = responseSpeak["speechid"].Number();
 
     // Subscribe to onspeechstart and trigger cancel immediately when it fires
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
-        [this, speechID](const JsonObject event) {
+        [this, localSpeechID](const JsonObject event) {
             std::string eventString;
             event.ToString(eventString);
             TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
             
             // Trigger cancel immediately in a detached thread to avoid blocking the callback
-            std::thread([this, speechID]() {
+            std::thread([this, localSpeechID]() {
                 JsonObject parameterCancel;
                 JsonObject responseCancel;
-                parameterCancel["speechid"] = JsonValue((uint32_t)speechID);
+                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
                 uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "cancel", parameterCancel, responseCancel);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
             }).detach();
