@@ -262,7 +262,6 @@ uint32_t ScreenCaptureTest::CreateScreenCaptureInterfaceObject()
 
 TEST_F(ScreenCaptureTest, No_URL)
 {
-    uint32_t signalled = ScreenCapture_StateInvalid;
     uint32_t status = Core::ERROR_GENERAL;
     JsonObject params;
     JsonObject result;
@@ -462,6 +461,7 @@ TEST_F(ScreenCaptureTest, Upload_Failed)
     EXPECT_EQ(Core::ERROR_NONE, status);
     TEST_LOG("After InvokeServiceMethod ***\n");
     signalled = notify.WaitForRequestStatus(JSON_TIMEOUT, ScreenCapture_UploadComplete);
+    EXPECT_TRUE(signalled & ScreenCapture_UploadComplete);
     
     // Cleanup
     if (thread.joinable()) {
