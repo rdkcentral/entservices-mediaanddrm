@@ -39,7 +39,7 @@ void kms_setup_encoder( int fd, kms_ctx *kms )
 
         for( int j = 0; j < kms->res->count_crtcs; j++ ) {
 
-            if( kms->encoder->possible_crtcs & ( 1 << j ) ) {
+            if( kms->encoder && kms->encoder->possible_crtcs & ( 1 << j ) ) {
 
                 drmModeFreeEncoder( kms->encoder );
                 kms->encoder = drmModeGetEncoder(fd, kms->res->encoders[j]);
@@ -102,7 +102,7 @@ kms_ctx* kms_setup( int fd )
     kms_ctx *kms = NULL;
     kms = (kms_ctx*)calloc(1,sizeof(*kms));
     if( !kms )
-        assert(0);
+        return NULL;
 
     kms->res = drmModeGetResources(fd);
     if (!kms->res) {

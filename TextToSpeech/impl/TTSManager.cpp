@@ -218,7 +218,7 @@ TTS_Error TTSManager::setPrimaryVolDuck(const uint8_t prim)
 
 TTS_Error TTSManager::setAPIKey(string apikey)
 {
-    if(m_defaultConfiguration.setApiKey(apikey))
+    if(m_defaultConfiguration.setApiKey(std::move(apikey)))
     {
        if(m_defaultConfiguration.isFallbackEnabled() && (m_defaultConfiguration.getFallbackPath()).empty())
         {
@@ -373,8 +373,8 @@ void TTSManager::willSpeak(uint32_t speech_id, std::string callsign, std::string
 
     SpeechData d;
     d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
+    d.callsign = std::move(callsign);
+    d.text = std::move(text);
     m_callback->onWillSpeak(d);
 }
 
@@ -383,8 +383,8 @@ void TTSManager::started(uint32_t speech_id, std::string callsign, std::string t
 
     SpeechData d;
     d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
+    d.callsign = std::move(callsign);
+    d.text = std::move(text);
     m_callback->onSpeechStart(d);
 }
 
@@ -393,46 +393,46 @@ void TTSManager::spoke(uint32_t speech_id, std::string callsign, std::string tex
 
     SpeechData d;
     d.id = speech_id;
-    d.callsign = callsign;
-    d.text = text;
+    d.callsign = std::move(callsign);
+    d.text = std::move(text);
     m_callback->onSpeechComplete(d);
 }
 
 void TTSManager::paused(uint32_t speech_id, std::string callsign) {
     TTSLOG_TRACE(" [id=%d]", speech_id);
 
-    m_callback->onSpeechPause(speech_id, callsign);
+    m_callback->onSpeechPause(speech_id, std::move(callsign));
 }
 
 void TTSManager::resumed(uint32_t speech_id, std::string callsign) {
     TTSLOG_WARNING(" [id=%d]", speech_id);
 
-    m_callback->onSpeechResume(speech_id, callsign);
+    m_callback->onSpeechResume(speech_id, std::move(callsign));
 }
 
 void TTSManager::cancelled(std::vector<uint32_t> &speeches, std::string callsign) {
     if(speeches.size() <= 0)
         return;
 
-    m_callback->onSpeechCancelled(speeches, callsign);
+    m_callback->onSpeechCancelled(speeches, std::move(callsign));
 }
 
 void TTSManager::interrupted(uint32_t speech_id, std::string callsign) {
     TTSLOG_WARNING(" [id=%d]", speech_id);
 
-    m_callback->onSpeechInterrupted(speech_id, callsign);
+    m_callback->onSpeechInterrupted(speech_id, std::move(callsign));
 }
 
 void TTSManager::networkerror(uint32_t speech_id, std::string callsign){
     TTSLOG_WARNING(" [id=%d]", speech_id);
 
-    m_callback->onNetworkError(speech_id, callsign);
+    m_callback->onNetworkError(speech_id, std::move(callsign));
 }
 
 void TTSManager::playbackerror(uint32_t speech_id, std::string callsign){
     TTSLOG_WARNING(" [id=%d]", speech_id);
 
-    m_callback->onPlaybackError(speech_id, callsign);
+    m_callback->onPlaybackError(speech_id, std::move(callsign));
 }
 
 } // namespace TTS
