@@ -144,20 +144,6 @@ TextToSpeechTest::TextToSpeechTest()
             }
 
             return result;
-    
-    // Stop the GMainLoop and cleanup
-    if (m_mainLoop) {
-        g_main_loop_quit(m_mainLoop);
-    }
-    if (m_mainLoopThread.joinable()) {
-        m_mainLoopThread.join();
-    }
-    if (m_mainLoop) {
-        g_main_loop_unref(m_mainLoop);
-    }
-    if (m_mainContext) {
-        g_main_context_unref(m_mainContext);
-    }
         }));
 
     Core::JSONRPC::Message message;
@@ -174,6 +160,20 @@ TextToSpeechTest::~TextToSpeechTest()
 
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
+    
+    // Stop the GMainLoop and cleanup
+    if (m_mainLoop) {
+        g_main_loop_quit(m_mainLoop);
+    }
+    if (m_mainLoopThread.joinable()) {
+        m_mainLoopThread.join();
+    }
+    if (m_mainLoop) {
+        g_main_loop_unref(m_mainLoop);
+    }
+    if (m_mainContext) {
+        g_main_context_unref(m_mainContext);
+    }
 }
 
 TEST_F(TextToSpeechTest, getapiversion)
