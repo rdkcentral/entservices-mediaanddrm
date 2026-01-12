@@ -62,12 +62,32 @@ public:
     std::condition_variable cv;
     bool ready = false;
     uint32_t speechID;
+    
+    GMainLoop* m_mainLoop;
+    GMainContext* m_mainContext;
+    std::thread m_mainLoopThread;
 };
 
 TextToSpeechTest::TextToSpeechTest()
     : L2TestMocks()
+    , m_mainLoop(nullptr)
+    , m_mainContext(nullptr)
 {
     gst_init(nullptr, nullptr);
+    
+    // Create and start a GMainLoop to process GStreamer bus messages
+    // This is essential for proper pipeline state transitions
+    m_mainContext = g_main_context_new();
+    m_mainLoop = g_main_loop_new(m_mainContext, FALSE);
+    
+    m_mainLoopThread = std::thread([this]() {
+        g_main_context_push_thread_default(m_mainContext);
+        g_main_loop_run(m_mainLoop);
+        g_main_context_pop_thread_default(m_mainContext);
+    });
+    
+    // Give the main loop time to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioInitialize())
         .WillByDefault(
             ::testing::Invoke(
@@ -124,6 +144,20 @@ TextToSpeechTest::TextToSpeechTest()
             }
 
             return result;
+    
+    // Stop the GMainLoop and cleanup
+    if (m_mainLoop) {
+        g_main_loop_quit(m_mainLoop);
+    }
+    if (m_mainLoopThread.joinable()) {
+        m_mainLoopThread.join();
+    }
+    if (m_mainLoop) {
+        g_main_loop_unref(m_mainLoop);
+    }
+    if (m_mainContext) {
+        g_main_context_unref(m_mainContext);
+    }
         }));
 
     Core::JSONRPC::Message message;
