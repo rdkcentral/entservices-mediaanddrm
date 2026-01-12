@@ -62,12 +62,32 @@ public:
     std::condition_variable cv;
     bool ready = false;
     uint32_t speechID;
+    
+    GMainLoop* m_mainLoop;
+    GMainContext* m_mainContext;
+    std::thread m_mainLoopThread;
 };
 
 TextToSpeechTest::TextToSpeechTest()
     : L2TestMocks()
+    , m_mainLoop(nullptr)
+    , m_mainContext(nullptr)
 {
     gst_init(nullptr, nullptr);
+    
+    // Create and start a GMainLoop to process GStreamer bus messages
+    // This is essential for proper pipeline state transitions
+    m_mainContext = g_main_context_new();
+    m_mainLoop = g_main_loop_new(m_mainContext, FALSE);
+    
+    m_mainLoopThread = std::thread([this]() {
+        g_main_context_push_thread_default(m_mainContext);
+        g_main_loop_run(m_mainLoop);
+        g_main_context_pop_thread_default(m_mainContext);
+    });
+    
+    // Give the main loop time to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioInitialize())
         .WillByDefault(
             ::testing::Invoke(
@@ -105,6 +125,9 @@ TextToSpeechTest::TextToSpeechTest()
             *source = gst_element_factory_make("souphttpsrc", NULL);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
             *audioSink = gst_element_factory_make("fakesink", NULL);
+            
+            // Set sync=true to make fakesink respect audio timing instead of consuming instantly
+            g_object_set(*audioSink, "sync", TRUE, NULL);
 
             bool result = TRUE;
 
@@ -137,6 +160,20 @@ TextToSpeechTest::~TextToSpeechTest()
 
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
+    
+    // Stop the GMainLoop and cleanup
+    if (m_mainLoop) {
+        g_main_loop_quit(m_mainLoop);
+    }
+    if (m_mainLoopThread.joinable()) {
+        m_mainLoopThread.join();
+    }
+    if (m_mainLoop) {
+        g_main_loop_unref(m_mainLoop);
+    }
+    if (m_mainContext) {
+        g_main_context_unref(m_mainContext);
+    }
 }
 
 TEST_F(TextToSpeechTest, getapiversion)
@@ -386,25 +423,54 @@ TEST_F(TextToSpeechTest, speechInterruptEventCheck)
     // Enable TTS
     enableTTS(true);
 
-    // Subscribe to onspeechStart
+    // setACL
+    setACL();
+
+    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
+    std::string text2 = "Changing the text to be spoken";
+    std::string callsign = "testApp";
+
+    // Note: In test environment, audio playback completes extremely fast (~8ms instead of 13+ seconds).
+    // To ensure we interrupt WHILE speech is actually playing, we trigger the interrupt action
+    // immediately when onspeechstart fires, confirming speech has begun.
+
+    // Subscribe to onspeechstart - will trigger interrupt action immediately when speech begins
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this, &jsonrpc, &text2, &callsign](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            TEST_LOG("Speech started, triggering interrupt immediately");
+            
+            // Speech is NOW confirmed playing - immediately trigger second speak to interrupt
+            std::thread([&]() {
+                JsonObject parameterSpeak2;
+                JsonObject responseSpeak2;
+                parameterSpeak2["text"] = text2;
+                parameterSpeak2["callsign"] = callsign;
+                int status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak2, responseSpeak2);
+                if (status1 != Core::ERROR_NONE) {
+                    TEST_LOG("Error in second speak call");
+                }
+            }).detach();
+            
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
+
+    // Speak call
+
+    // Subscribe to onspeechinterrupted to catch the interrupt event
+    m_event_signalled = 0;
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
         [this](const JsonObject event) {
             std::unique_lock<std::mutex> lock(m_mutex);
             {
                 std::string eventString;
                 event.ToString(eventString);
-                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                TEST_LOG("Interrupt event received: %s", eventString.c_str());
                 m_event_signalled = 1;
             }
             m_condition_variable.notify_one();
         });
-
-    // setACL
-    setACL();
-
-    // Speak call
-    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
-    std::string callsign = "testApp";
 
     // First invocation of speak in the main thread
     JsonObject parameterSpeak;
@@ -412,62 +478,18 @@ TEST_F(TextToSpeechTest, speechInterruptEventCheck)
     parameterSpeak["text"] = text1;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        // Set the flag to notify the interrupt thread
-        // Wait for the speech invocation to complete (the second speak call)
-        uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
-        EXPECT_TRUE(signalled);
-        EXPECT_EQ(Core::ERROR_NONE, status);
-        jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-        m_event_signalled = 0;
+    EXPECT_EQ(Core::ERROR_NONE, status);
 
-        status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
-            [this](const JsonObject event) {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                {
-                    std::string eventString;
-                    event.ToString(eventString);
-                    TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                    m_event_signalled = 1;
-                }
-                m_condition_variable.notify_one();
-            });
-        ready = true;
-    }
+    // Wait for onspeechstart (which triggers the interrupt)
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 
-    cv.notify_one();
-
-    // Create and start the interrupt thread using a lambda function
-    std::thread interruptThread([&]() {
-        {
-            std::unique_lock<std::mutex> lock(mtx);
-            cv.wait(lock, [&] { return ready; }); // Wait for the signal
-        }
-
-        std::string text2 = "Changing the text to be spoken";
-
-        // Invoke the second speak which effectively interrupts the first one
-        JsonObject parameterSpeak2;
-        JsonObject responseSpeak2;
-        parameterSpeak2["text"] = text2;
-        parameterSpeak2["callsign"] = callsign;
-
-        // Call the service method inside the lambda function
-        int status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak2, responseSpeak2);
-
-        // Check status (optional)
-        if (status1 != Core::ERROR_NONE) {
-            std::cerr << "Error in speech synthesis!" << std::endl;
-        }
-    });
-
+    // Wait for interrupt event (flag already reset before subscription)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
     enableTTS(false);
-    // Wait for the interrupt thread to finish
-    interruptThread.join();
 }
 
 TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
@@ -482,25 +504,46 @@ TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
     // Enable TTS
     enableTTS(true);
 
-    // Subscribe to onspeechStart
+    // setACL
+    setACL();
+
+    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
+    std::string callsign = "testApp";
+
+    // Note: In test environment, audio playback completes extremely fast (~8ms instead of 13+ seconds).
+    // To ensure we interrupt WHILE speech is actually playing, we trigger the disable action
+    // immediately when onspeechstart fires, confirming speech has begun.
+
+    // Subscribe to onspeechstart - will disable TTS immediately when speech begins
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            TEST_LOG("Speech started, disabling TTS immediately to interrupt");
+            
+            // Speech is NOW confirmed playing - immediately disable TTS to interrupt
+            std::thread([this]() {
+                enableTTS(false);
+            }).detach();
+            
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
+
+    // Subscribe to onspeechinterrupted to catch the interrupt event
+    // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
+    // where event arrives between subscription and flag reset
+    m_event_signalled = 0;
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
         [this](const JsonObject event) {
             std::unique_lock<std::mutex> lock(m_mutex);
             {
                 std::string eventString;
                 event.ToString(eventString);
-                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                TEST_LOG("Interrupt event received: %s", eventString.c_str());
                 m_event_signalled = 1;
             }
             m_condition_variable.notify_one();
         });
-
-    // setACL
-    setACL();
-
-    // Speak call
-    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
-    std::string callsign = "testApp";
 
     // First invocation of speak in the main thread
     JsonObject parameterSpeak;
@@ -508,47 +551,17 @@ TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
     parameterSpeak["text"] = text1;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        // Set the flag to notify the interrupt thread
-        // Wait for the speech invocation to complete (the second speak call)
-        uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
-        EXPECT_TRUE(signalled);
-        EXPECT_EQ(Core::ERROR_NONE, status);
-        jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-        m_event_signalled = 0;
-        ready = true;
-        status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
-            [this](const JsonObject event) {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                {
-                    std::string eventString;
-                    event.ToString(eventString);
-                    TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                    m_event_signalled = 1;
-                } // Disable TTS
-                m_condition_variable.notify_one();
-            });
-    }
-    cv.notify_one();
+    EXPECT_EQ(Core::ERROR_NONE, status);
 
-    // Create and start the interrupt thread using a lambda function
-    std::thread interruptThread([&]() {
-        {
-            std::unique_lock<std::mutex> lock(mtx);
-            cv.wait(lock, [&] { return ready; }); // Wait for the signal
-        }
+    // Wait for onspeechstart (which triggers the disable)
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 
-        // Disable TTS
-        enableTTS(false);
-    });
-
+    // Wait for interrupt event (flag already reset before subscription)
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
-
-    // Wait for the interrupt thread to finish
-    interruptThread.join();
 }
 
 TEST_F(TextToSpeechTest, cancelDuringSpeak)
@@ -563,17 +576,9 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     enableTTS(true);
 
     // Subscribe to onspeechStart
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
-        [this](const JsonObject event) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            {
-                std::string eventString;
-                event.ToString(eventString);
-                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                m_event_signalled = 1;
-            }
-            m_condition_variable.notify_one();
-        });
+    // Note: In test environment, audio playback completes extremely fast (~8ms instead of 13+ seconds).
+    // To ensure we interrupt WHILE speech is actually playing, we trigger the cancel() immediately when
+    // onspeechstart fires, confirming speech has begun.
 
     // setACL
     setACL();
@@ -588,51 +593,52 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     parameterSpeak["text"] = text1;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    
+    uint32_t localSpeechID = responseSpeak["speechid"].Number();
 
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        // Wait for the speech invocation to complete (the second speak call)
-        uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
-        EXPECT_TRUE(signalled);
-        EXPECT_EQ(Core::ERROR_NONE, status);
-        jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-        m_event_signalled = 0;
-        speechID = responseSpeak["speechid"].Number();
-        ready = true;
-        status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
-            [this](const JsonObject event) {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                {
-                    std::string eventString;
-                    event.ToString(eventString);
-                    TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                    m_event_signalled = 1;
-                }
-                m_condition_variable.notify_one();
-            });
-    }
-    cv.notify_one();
+    // Subscribe to onspeechstart and trigger cancel immediately when it fires
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this, localSpeechID](const JsonObject event) {
+            std::string eventString;
+            event.ToString(eventString);
+            TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+            
+            // Trigger cancel immediately in a detached thread to avoid blocking the callback
+            std::thread([this, localSpeechID]() {
+                JsonObject parameterCancel;
+                JsonObject responseCancel;
+                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
+                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "cancel", parameterCancel, responseCancel);
+                EXPECT_EQ(Core::ERROR_NONE, status1);
+            }).detach();
+            
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
 
-    // Create and start the interrupt thread using a lambda function
-    std::thread interruptThread([&]() {
-        {
-            std::unique_lock<std::mutex> lock(mtx);
-            cv.wait(lock, [&] { return ready; }); // Wait for the signal
-        }
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 
-        JsonObject parameterCancel;
-        JsonObject responseCancel;
-        parameterCancel["speechid"] = JsonValue((uint32_t)speechID);
-        int status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "cancel", parameterCancel, responseCancel);
-        EXPECT_EQ(Core::ERROR_NONE, status1);
-    });
+    // Subscribe to onspeechinterrupted to catch the interrupt event
+    // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
+    m_event_signalled = 0;
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
+        [this](const JsonObject event) {
+            std::string eventString;
+            event.ToString(eventString);
+            TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
 
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
     enableTTS(false);
-    // Wait for the interrupt thread to finish
-    interruptThread.join();
 }
 
 void TextToSpeechTest::setTTSConfiguration()
