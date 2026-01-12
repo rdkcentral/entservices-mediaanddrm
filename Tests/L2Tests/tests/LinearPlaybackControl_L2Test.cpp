@@ -484,6 +484,10 @@ TEST_F(LinearPlaybackControlL2Test, GetStatus_Test) {
     std::string statusFilePath = fccDir + "/stream_status";
     updateFileInBothLocations("stream_status", "0,0");
     
+    // Wait for file write to be synced
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // Verify the file was written correctly
     std::ifstream verify(statusFilePath);
     bool fileWritten = false;
     if (verify.is_open()) {
@@ -497,7 +501,9 @@ TEST_F(LinearPlaybackControlL2Test, GetStatus_Test) {
     }
     
     EXPECT_TRUE(fileWritten) << "Failed to create/update status file: " << statusFilePath;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Additional wait to ensure service can read the file
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     // Now, get the status
     JsonObject getResults;
