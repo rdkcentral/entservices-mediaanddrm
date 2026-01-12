@@ -945,7 +945,7 @@ namespace Plugin {
         private:
             ::OCDM::ISession* FindSession(const CommonEncryptionData& keyIds, const string& keySystem) const
             {
-		_adminLock.Lock();    
+		  
                 ::OCDM::ISession* result = nullptr;
 
                 std::list<SessionImplementation*>::const_iterator index(_sessionList.begin());
@@ -959,7 +959,6 @@ namespace Plugin {
                         index++;
                     }
                 }
-		_adminLock.Unlock();
                 return (result);
             }
             void Remove(SessionImplementation* session, const string& keySystem, CDMi::IMediaKeySession* mediaKeySession)
