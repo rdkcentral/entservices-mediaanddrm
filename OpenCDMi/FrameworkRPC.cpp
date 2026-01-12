@@ -945,7 +945,6 @@ namespace Plugin {
         private:
             ::OCDM::ISession* FindSession(const CommonEncryptionData& keyIds, const string& keySystem) const
             {
-		  
                 ::OCDM::ISession* result = nullptr;
 
                 std::list<SessionImplementation*>::const_iterator index(_sessionList.begin());
