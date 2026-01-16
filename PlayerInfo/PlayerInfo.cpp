@@ -143,10 +143,10 @@ namespace Plugin {
                 _videoCodecs = nullptr;
             }
             if (_dolbyOut != nullptr) {
-                _dolbyNotification.Deinitialize();
-                Exchange::Dolby::JOutput::Unregister(*this);
-                _dolbyOut->Release();
-                _dolbyOut = nullptr;
+            Exchange::Dolby::JOutput::Unregister(*this);
+            _dolbyNotification.Deinitialize();
+            _dolbyOut->Release();
+            _dolbyOut = nullptr;
             }
 
             RPC::IRemoteConnection* connection(_service->RemoteConnection(_connectionId));

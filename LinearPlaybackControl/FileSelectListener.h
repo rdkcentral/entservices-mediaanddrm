@@ -65,7 +65,7 @@ private:
 
     void pollLoop() {
         char buf[mBufSize];
-        int fd;
+        int fd = -1;
         while (!mStop) {
             if (!file_exists(mFile)) {
                 syslog(LOG_ERR, "%s is missing. Retry in 2 seconds", mFile.c_str());
