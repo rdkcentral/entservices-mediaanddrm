@@ -205,14 +205,19 @@ namespace Plugin {
         }
          
         //callsign based unregister
-        std::map<string,Exchange::ITextToSpeech::INotification*>::iterator callsignIndex;
-        for (callsignIndex = _notificationCallsignClients.begin(); callsignIndex != _notificationCallsignClients.end(); ++callsignIndex)
+        std::map<string,Exchange::ITextToSpeech::INotification*>::iterator callsignIndex = _notificationCallsignClients.begin();
+        while (callsignIndex != _notificationCallsignClients.end())
         {
            if (callsignIndex->second == sink)
            {
                (callsignIndex->second)->Release();
-               _notificationCallsignClients.erase(callsignIndex);
+               callsignIndex = _notificationCallsignClients.erase(callsignIndex);
                TRACE_L1("Unregistered a sink on the browser %p", sink);
+               break;
+           }
+           else
+           {
+               ++callsignIndex;
            }
         }
 
