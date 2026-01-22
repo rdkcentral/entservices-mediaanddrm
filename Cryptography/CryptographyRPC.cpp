@@ -137,7 +137,7 @@ namespace Plugin {
                     }
                 }
                 else {
-   	            // Use file descriptor operations to avoid TOCTOU race condition
+   	                // Use file descriptor operations to avoid TOCTOU race condition
                     int fd = open(CONNECTOR_PATH, O_RDONLY);
                     if (fd >= 0) {
                         struct stat deStat;
@@ -156,12 +156,12 @@ namespace Plugin {
                                 TRACE(Trace::Information, (_T("getgrnam() failed: %s"), strerror(errno)));
                         }
                         else
-			    TRACE(Trace::Information, (_T("fstat() failed: %s"), strerror(errno)));
+			                TRACE(Trace::Information, (_T("fstat() failed: %s"), strerror(errno)));
 
                         close(fd);
                     }
                     else
-			TRACE(Trace::Information, (_T("open() failed: %s"), strerror(errno)));
+			            TRACE(Trace::Information, (_T("open() failed: %s"), strerror(errno)));
                 }
             }
 
