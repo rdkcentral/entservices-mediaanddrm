@@ -440,15 +440,23 @@ namespace WPEFramework
             if (got_screenshot)
             {
                 std::string error_str;
+                std::string local_url;
+                std::string local_callGUID;
+                
+                {
+                    std::lock_guard<std::mutex> guard(m_callMutex);
+                    local_url = url;
+                    local_callGUID = callGUID;
+                }
 
-                LOGWARN("uploading %u of png data to '%s'", (uint32_t)png_data.size(), url.c_str());
+                LOGWARN("uploading %u of png data to '%s'", (uint32_t)png_data.size(), local_url.c_str());
 
-                if (uploadDataToUrl(png_data, url.c_str(), error_str))
+                if (uploadDataToUrl(png_data, local_url.c_str(), error_str))
                 {
                     JsonObject params;
                     params["status"] = true;
                     params["message"] = "Success";
-                    params["call_guid"] = callGUID.c_str();
+                    params["call_guid"] = local_callGUID.c_str();
 
                     dispatchEvent(SCREENCAPTURE_EVENT_UPLOADCOMPLETE, params);
 
@@ -459,7 +467,7 @@ namespace WPEFramework
                     JsonObject params;
                     params["status"] = false;
                     params["message"] = std::string("Upload Failed: ") + error_str;
-                    params["call_guid"] = callGUID.c_str();
+                    params["call_guid"] = local_callGUID.c_str();
 
                     dispatchEvent(SCREENCAPTURE_EVENT_UPLOADCOMPLETE, params);
 
@@ -469,11 +477,16 @@ namespace WPEFramework
             else
             {
                 LOGERR("Error: could not get the screenshot");
+                std::string local_callGUID;
+                {
+                    std::lock_guard<std::mutex> guard(m_callMutex);
+                    local_callGUID = callGUID;
+                }
 
                 JsonObject params;
                 params["status"] = false;
                 params["message"] = "Failed to get screen data";
-                params["call_guid"] = callGUID.c_str();
+                params["call_guid"] = local_callGUID.c_str();
 
                 dispatchEvent(SCREENCAPTURE_EVENT_UPLOADCOMPLETE, params);
 
