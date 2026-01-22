@@ -315,7 +315,7 @@ TTS_Error TTSManager::speak(int speechId, std::string callsign, std::string text
         // TODO: Currently 'secure' is set to true. Need to decide about this variable while Resident app integration.
         if(checkAccess("speak", callsign))
         {
-            m_speaker->speak(this, speechId , callsign, text, true, m_defaultConfiguration.primVolDuck());
+            m_speaker->speak(this, speechId , std::move(callsign), std::move(text), true, m_defaultConfiguration.primVolDuck());
         }
         else
         {
