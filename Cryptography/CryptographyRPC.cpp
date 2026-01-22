@@ -21,9 +21,7 @@
 #include <cryptography/cryptography.h>
 #include <interfaces/IConfiguration.h>
 
-#include <fcntl.h>
 #include <grp.h>
-#include <unistd.h>
 
 #define CONNECTOR_PATH "/tmp/icryptography"
 #define APPS_GROUP_NAME "apps"
