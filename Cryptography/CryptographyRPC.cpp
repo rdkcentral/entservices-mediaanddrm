@@ -137,31 +137,23 @@ namespace Plugin {
                     }
                 }
                 else {
-   	                // Use file descriptor operations to avoid TOCTOU race condition
-                    int fd = open(CONNECTOR_PATH, O_RDONLY);
-                    if (fd >= 0) {
-                        struct stat deStat;
-                        if (0 == fstat(fd, &deStat)) {
-                            if (fchmod(fd, deStat.st_mode | S_IRGRP | S_IWGRP) != 0)
-                                TRACE(Trace::Information, (_T("fchmod() failed: %s"), strerror(errno)));
+   	                struct stat deStat;
+                    if (0 == stat(CONNECTOR_PATH, &deStat)) {
+                        if (chmod(CONNECTOR_PATH, deStat.st_mode | S_IRGRP | S_IWGRP) != 0)
+                            TRACE(Trace::Information, (_T("chmod() failed: %s"), strerror(errno)));
 
-                            struct group *grpData = getgrnam(APPS_GROUP_NAME);
-                            if (grpData != nullptr) {
-                                gid_t group = grpData->gr_gid;
+                        struct group *grpData = getgrnam(APPS_GROUP_NAME);
+                        if (grpData != nullptr) {
+                            gid_t group = grpData->gr_gid;
 
-                                if (fchown(fd, deStat.st_uid, group) != 0)
-                                    TRACE(Trace::Information, (_T("fchown() failed: %s"), strerror(errno)));
-                            }
-                            else
-                                TRACE(Trace::Information, (_T("getgrnam() failed: %s"), strerror(errno)));
+                            if (chown(CONNECTOR_PATH, deStat.st_uid, group) != 0)
+                                TRACE(Trace::Information, (_T("chown() failed: %s"), strerror(errno)));
                         }
                         else
-			                TRACE(Trace::Information, (_T("fstat() failed: %s"), strerror(errno)));
-
-                        close(fd);
+                            TRACE(Trace::Information, (_T("getgrnam() failed: %s"), strerror(errno)));
                     }
                     else
-			            TRACE(Trace::Information, (_T("open() failed: %s"), strerror(errno)));
+                        TRACE(Trace::Information, (_T("stat() failed: %s"), strerror(errno)));
                 }
             }
 
