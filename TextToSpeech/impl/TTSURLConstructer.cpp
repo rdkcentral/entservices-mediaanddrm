@@ -85,7 +85,7 @@ std::string TTSURLConstructer::httpgetURL(TTSConfiguration &config, std::string 
     
     // Sanitize String
     std::string sanitizedString;
-    sanitizeString((isfallback ? config.getFallbackValue() : text), sanitizedString);
+    sanitizeString((isfallback ? config.getFallbackValue() : std::move(text)), sanitizedString);
 
     ttsRequest.append("&text=");
     ttsRequest.append(sanitizedString);
@@ -107,7 +107,7 @@ std::string  TTSURLConstructer::httppostURL(TTSConfiguration &config, std::strin
         if(isFallback) {
             jsonConfig["input"] = config.getFallbackValue();
         } else {
-            jsonConfig["input"] = text;
+            jsonConfig["input"] = std::move(text);
         } 
 
         jsonConfig["language"] = config.language();
