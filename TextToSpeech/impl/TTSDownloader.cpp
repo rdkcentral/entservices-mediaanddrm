@@ -100,7 +100,7 @@ void TTSDownloader::downloadThread()
         }
 
         TTSLOG_INFO("TTSDownloader::download going to download file from location %s\n", ttsRequest.c_str());
-	if(!downloadFile(std::move(ttsRequest)))
+	    if(!downloadFile(std::move(ttsRequest)))
         {
              TTSLOG_INFO("TTSDownloader::downloadFile download failed..needs re-download\n");
              m_needDownload = true; //need re-download
