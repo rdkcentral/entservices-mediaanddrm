@@ -312,7 +312,7 @@ bool TTSConfiguration::updateWith(TTSConfiguration &nConfig) {
 }
 
 bool TTSConfiguration::isValid() {
-    std::lock_guard<std::mutex> lock(m_mutex);	
+    std::lock_guard<std::mutex> lock(m_mutex);
     if((m_ttsEndPoint.empty() && m_ttsEndPointSecured.empty() && m_ttsRFCEndpoint.empty())) {
         TTSLOG_ERROR("TTSEndPointEmpty=%d, TTSSecuredEndPointEmpty=%d , TTSRFCEndpoint=%d",
                 m_ttsEndPoint.empty(), m_ttsEndPointSecured.empty(), m_ttsRFCEndpoint.empty());
@@ -745,14 +745,14 @@ void TTSSpeaker::createPipeline(PipelineType type) {
 void TTSSpeaker::resetPipeline() {
     TTSLOG_WARNING("Resetting Pipeline...");
 
-	bool needsDestroy = false;
+    bool needsDestroy = false;
     bool pipelineExists = false;
     GstElement* pipeline = nullptr;
     
     {
         std::lock_guard<std::mutex> lock(m_stateMutex);
         // Detect pipe line error and destroy the pipeline if any
-		needsDestroy = m_pipelineError;
+        needsDestroy = m_pipelineError;
         if(needsDestroy) {
         TTSLOG_WARNING("Pipeline error occured, attempting to recover by re-creating pipeline");
         }
@@ -762,8 +762,12 @@ void TTSSpeaker::resetPipeline() {
         m_isPaused = false;
         m_isEOS = false;
 
-		pipelineExists = (m_pipeline != nullptr);
-        pipeline = m_pipeline;
+        pipelineExists = (m_pipeline != nullptr);
+        // Increment refcount to safely use pipeline outside mutex
+        if(m_pipeline && pipelineExists) {
+            gst_object_ref(m_pipeline);
+            pipeline = m_pipeline;
+        }
     }
 
     // Destroy pipeline outside lock if needed
@@ -779,6 +783,7 @@ void TTSSpeaker::resetPipeline() {
         if(pipeline) {
             gst_element_set_state(pipeline, GST_STATE_NULL);
             while(!waitForStatus(GST_STATE_NULL, 60*1000));
+            gst_object_unref(pipeline);
         }
     }
 }
@@ -806,6 +811,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     auto startTime = std::chrono::system_clock::now();
     gint64 lastPosition = 0;
 
+    // Check state flags - avoid nested mutex acquisition in lambda to prevent deadlock
     auto playbackInterrupted = [this] () -> bool {
         std::lock_guard<std::mutex> lock(m_stateMutex);
         return !m_pipeline || m_pipelineError || m_flushed;
@@ -816,9 +822,15 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     };
 
     while(timeout > std::chrono::system_clock::now()) {
+        // Check conditions before acquiring m_queueMutex to avoid nested locking
+        bool interrupted = playbackInterrupted();
+        bool completed = playbackCompleted();
+        
         std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [this, playbackInterrupted, playbackCompleted] () {
-            return playbackInterrupted() || playbackCompleted();
+        m_condition.wait_until(mlock, timeout, [&interrupted, &completed, playbackInterrupted, playbackCompleted] () {
+            interrupted = playbackInterrupted();
+            completed = playbackCompleted();
+            return interrupted || completed;
         });
 
         if(playbackInterrupted() || playbackCompleted()) {
@@ -850,11 +862,15 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
                     GstElement* pipeline = nullptr;
                     {
                         std::lock_guard<std::mutex> lock(m_stateMutex);
+                        if(m_pipeline) {
+                            gst_object_ref(m_pipeline);
                         pipeline = m_pipeline;
                     }
-                    if (pipeline && !(gst_element_query_position(pipeline, GST_FORMAT_TIME, &position)))
-                    {
-                        TTSLOG_ERROR("gst_element_query_position call failed");
+                    if (pipeline) {
+                        if(!(gst_element_query_position(pipeline, GST_FORMAT_TIME, &position))) {
+                            TTSLOG_ERROR("gst_element_query_position call failed");
+                        }
+                        gst_object_unref(pipeline);
                     }
                     if(position > 0 && position != (gint64)GST_CLOCK_TIME_NONE && position > lastPosition) {
                         TTSLOG_VERBOSE("Reached/Invalid duration, last position=%" GST_TIME_FORMAT ", current position=%" GST_TIME_FORMAT,
@@ -867,24 +883,30 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
         }
     }
 
-	bool isEOS = false;
+    bool isEOS = false;
     bool pipelineError = false;
     bool flushed = false;
     GstElement* pipeline = nullptr;
     {
         std::lock_guard<std::mutex> lock(m_stateMutex);
         isEOS = m_isEOS;
+        if(m_pipeline) {
+            gst_object_ref(m_pipeline);
+            pipeline = m_pipeline;
+        }
         pipeline = m_pipeline;
         pipelineError = m_pipelineError;
         flushed = m_flushed;
     }
-	
+
     TTSLOG_INFO("m_isEOS=%d, m_pipeline=%p, m_pipelineError=%d, m_flushed=%d",
             isEOS, pipeline, pipelineError, flushed);
 
     // Irrespective of EOS / Timeout reset pipeline
-    if(pipeline)
+    if(pipeline) {
         gst_element_set_state(pipeline, GST_STATE_NULL);
+        gst_object_unref(pipeline);
+    }
 
     if(!isEOS)
         TTSLOG_ERROR("Stopped waiting for audio to finish without hitting EOS!");
@@ -969,10 +991,10 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
         if(authrequired) { 
             token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
-	    }
-	    play(constructURL(config, data),data,authrequired,std::move(token));
+        }
+        play(constructURL(config, data),data,authrequired,std::move(token));
     } 
-	else {
+    else {
         TTSLOG_WARNING("m_pipeline=%p, m_pipelineError=%d", m_pipeline, m_pipelineError);
     }
 }
