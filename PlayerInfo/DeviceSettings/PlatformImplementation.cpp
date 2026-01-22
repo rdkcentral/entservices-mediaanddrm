@@ -67,7 +67,7 @@ private:
             FeatureList parserFactories{gst_element_factory_list_get_elements(GST_ELEMENT_FACTORY_TYPE_PARSER | type, GST_RANK_MARGINAL)};
 
             FeatureList elements;
-            for (auto index: caps) {
+            for (const auto& index: caps) {
 
                 MediaTypes mediaType{gst_caps_from_string(index.first.c_str())};
                 if (elements = std::move(GstUtils::GstRegistryGetElementForMediaType(decoderFactories.get(), std::move(mediaType)))) {
