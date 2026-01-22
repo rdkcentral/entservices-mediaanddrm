@@ -124,7 +124,7 @@ namespace Plugin {
         }
 
 #ifndef UNIT_TESTING
-	InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(std::move(expectedLanguageSet)));
+	    InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(std::move(expectedLanguageSet)));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(std::move(expectedVoicesSet)));
 #else
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSetCollection));
@@ -213,6 +213,7 @@ namespace Plugin {
                (callsignIndex->second)->Release();
                callsignIndex = _notificationCallsignClients.erase(callsignIndex);
                TRACE_L1("Unregistered a sink on the browser %p", sink);
+			   // Break after erasing since each sink is registered only once
                break;
            }
            else
@@ -515,7 +516,7 @@ namespace Plugin {
 
     void TextToSpeechImplementation::dispatchEvent(Event event, string callsign, const JsonValue &params)
     {
-	Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
+	    Core::IWorkerPool::Instance().Submit(Job::Create(this, event, std::move(callsign), params));
     }
 
     void TextToSpeechImplementation::Dispatch(Event event, string callsign, const JsonValue params)
@@ -571,7 +572,7 @@ namespace Plugin {
     void TextToSpeechImplementation::onVoiceChanged(std::string voice)
     {
         TTSLOG_INFO("Notify onvoicechanged, voice: %s", voice.c_str());
-        dispatchEvent(VOICE_CHANGED, " ", JsonValue((std::string)std::move(voice)));
+        dispatchEvent(VOICE_CHANGED, " ", JsonValue((std::string)voice));
     }
 
     void TextToSpeechImplementation::onWillSpeak(TTS::SpeechData &data)
