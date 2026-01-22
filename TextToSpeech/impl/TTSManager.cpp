@@ -63,8 +63,12 @@ TTS_Error TTSManager::enableTTS(bool enable) {
             shut(0);
         TTSLOG_INFO("TTS is %s", m_defaultConfiguration.enabled()? "Enabled" : "Disabled");
         m_defaultConfiguration.updateConfigStore();
-        m_callback->onTTSStateChanged(m_defaultConfiguration.enabled());
-        m_speaker->ensurePipeline(m_defaultConfiguration.enabled());
+        if(m_callback) {
+            m_callback->onTTSStateChanged(m_defaultConfiguration.enabled());
+        }
+        if(m_speaker) {
+            m_speaker->ensurePipeline(m_defaultConfiguration.enabled());
+        }
         force = false;
     }
     return TTS_OK;
