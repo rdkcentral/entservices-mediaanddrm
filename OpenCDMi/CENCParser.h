@@ -443,7 +443,7 @@ namespace Plugin {
                     }
                     
                     uint16_t keyLengthRaw = FindInXML(&(slot[begin + 10 + keyValue + 10 + keyStart]), end - keyValue - 10 - keyStart - 2, "\"", 1);
-                    if (keyLengthRaw < 2) {
+                    if (keyLengthRaw <= 1) {
                         size = 0;
                         break;
                     }
