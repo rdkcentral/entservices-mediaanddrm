@@ -183,7 +183,7 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_URL_VALID_RETURN_ON_FAIL(url.c_str());
         extractFileProtocol(url); //we do not store file:// for file playback
         _adminLock.Lock();
-        if(GetSessionFromUrl(std::move(url),playerid))
+        if(GetSessionFromUrl(url,playerid))
         {
             response["sessionId"] = (int) playerid;
         }
