@@ -226,8 +226,8 @@ namespace Plugin {
 
             _adminLock.Lock();
             if(SameModeNotPlaying(player,id)) {
-                _adminLock.Unlock();
                 player->Play(std::move(url));
+                _adminLock.Unlock();
                 returnResponse(true);
             }
             _adminLock.Unlock();
