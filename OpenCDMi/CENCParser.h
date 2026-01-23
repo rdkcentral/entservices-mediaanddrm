@@ -411,70 +411,35 @@ namespace Plugin {
                 //
                 // Now find the string "<KID " in this text
                 while ((size > 0) && ((begin = FindInXML(slot, size, "<KID ", 5)) < size)) {
-                    if (begin + 10 >= size) {
-                        break;  // Prevent underflow in size - begin - 10
-                    }
                     uint16_t end = FindInXML(&(slot[begin + 10]), size - begin - 10, "</KID>", 6);
 
-                    if (end >= (size - begin - 10)) {
-                        size = 0;
-                        break;
-                    }
+                    uint16_t keyValue = FindInXML(&(slot[begin + 10]), end, "VALUE", 5);  
+                    uint16_t keyStart = FindInXML(&(slot[begin + 10 + keyValue + 10]), end - keyValue - 10, "\"", 1) + 2;
+                    uint16_t keyLength = FindInXML(&(slot[begin + 10 + keyValue + 10 + keyStart]), end - keyValue - 10 - keyStart - 2, "\"", 1) - 2;
+                    
+                    if (end < (size - begin - 10)) {
+                        uint8_t byteArray[32];
 
-                    uint16_t keyValue = FindInXML(&(slot[begin + 10]), end, "VALUE", 5);
-                    
-                    // Prevent overflow in subsequent calculations
-                    if (keyValue + 10 >= end || keyValue + 10 > UINT16_MAX - begin - 10) {
-                        size = 0;
-                        break;
-                    }
+                        // We got a KID, translate its
+                        if (Base64(&(slot[begin + 10 + keyValue + 10 + keyStart]), static_cast<uint8_t>(keyLength), byteArray, sizeof(byteArray)) == KeyId::Length()) {
+                            // Pass it the microsoft way :-(
+                            uint32_t a = byteArray[0];
+                            a = (a << 8) | byteArray[1];
+                            a = (a << 8) | byteArray[2];
+                            a = (a << 8) | byteArray[3];
+                            uint16_t b = byteArray[4];
+                            b = (b << 8) | byteArray[5];
+                            uint16_t c = byteArray[6];
+                            c = (c << 8) | byteArray[7];
+                            uint8_t* d = &byteArray[8];
 
-                    uint16_t keyStartRaw = FindInXML(&(slot[begin + 10 + keyValue + 10]), end - keyValue - 10, "\"", 1);
-                    if (keyStartRaw > UINT16_MAX - 2) {
-                        size = 0;
-                        break;
-                    }
-                    uint16_t keyStart = keyStartRaw + 2;
-                    
-                    // Prevent overflow and underflow in keyLength calculation
-                    if (keyValue + 10 + keyStart >= end || keyValue + 10 + keyStart > UINT16_MAX - begin - 10) {
-                        size = 0;
-                        break;
-                    }
-                    
-                    uint16_t keyLengthRaw = FindInXML(&(slot[begin + 10 + keyValue + 10 + keyStart]), end - keyValue - 10 - keyStart - 2, "\"", 1);
-                    if (keyLengthRaw <= 1) {
-                        size = 0;
-                        break;
-                    }
-                    uint16_t keyLength = keyLengthRaw - 2;
-                    
-                    uint8_t byteArray[32];
-
-                    // We got a KID, translate its
-                    if (Base64(&(slot[begin + 10 + keyValue + 10 + keyStart]), static_cast<uint8_t>(keyLength), byteArray, sizeof(byteArray)) == KeyId::Length()) {
-                        // Pass it the microsoft way :-(
-                        uint32_t a = byteArray[0];
-                        a = (a << 8) | byteArray[1];
-                        a = (a << 8) | byteArray[2];
-                        a = (a << 8) | byteArray[3];
-                        uint16_t b = byteArray[4];
-                        b = (b << 8) | byteArray[5];
-                        uint16_t c = byteArray[6];
-                        c = (c << 8) | byteArray[7];
-                        uint8_t* d = &byteArray[8];
-
-                        // Add them in both endiannesses, since we have encountered both in the wild.
-                        AddKeyId(KeyId(PLAYREADY, a, b, c, d));
-                    }
-                    
-                    // Prevent integer overflow when updating size and slot
-                    uint32_t offset = static_cast<uint32_t>(begin) + 10 + end + 12;
-                    if (offset > size) {
-                        size = 0;
+                            // Add them in both endiannesses, since we have encountered both in the wild.
+                            AddKeyId(KeyId(PLAYREADY, a, b, c, d));
+                        }
+                        size -= (begin + 10 + end + 12);
+                        slot += (begin + 10 + end + 12);
                     } else {
-                        size -= offset;
-                        slot += offset;
+                        size = 0;
                     }
                 }
         }
