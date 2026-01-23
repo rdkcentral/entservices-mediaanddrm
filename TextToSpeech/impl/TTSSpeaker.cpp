@@ -811,7 +811,6 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     auto startTime = std::chrono::system_clock::now();
     gint64 lastPosition = 0;
 
-    // Check state flags - avoid nested mutex acquisition in lambda to prevent deadlock
     auto playbackInterrupted = [this] () -> bool {
         std::lock_guard<std::mutex> lock(m_stateMutex);
         return !m_pipeline || m_pipelineError || m_flushed;
@@ -822,15 +821,9 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     };
 
     while(timeout > std::chrono::system_clock::now()) {
-        // Check conditions before acquiring m_queueMutex to avoid nested locking
-        bool interrupted = playbackInterrupted();
-        bool completed = playbackCompleted();
-        
         std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [&interrupted, &completed, playbackInterrupted, playbackCompleted] () {
-            interrupted = playbackInterrupted();
-            completed = playbackCompleted();
-            return interrupted || completed;
+        m_condition.wait_until(mlock, timeout, [playbackInterrupted, playbackCompleted] () {
+            return playbackInterrupted() || playbackCompleted();
         });
 
         if(playbackInterrupted() || playbackCompleted()) {
@@ -865,6 +858,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
                         if(m_pipeline) {
                             gst_object_ref(m_pipeline);
                         pipeline = m_pipeline;
+                        }
                     }
                     if (pipeline) {
                         if(!(gst_element_query_position(pipeline, GST_FORMAT_TIME, &position))) {
@@ -894,7 +888,6 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
             gst_object_ref(m_pipeline);
             pipeline = m_pipeline;
         }
-        pipeline = m_pipeline;
         pipelineError = m_pipelineError;
         flushed = m_flushed;
     }
