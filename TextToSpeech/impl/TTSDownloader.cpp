@@ -56,7 +56,7 @@ TTSDownloader::~TTSDownloader()
 }
 
 
-void TTSDownloader::download(const TTSConfiguration config)
+void TTSDownloader::download(const TTSConfiguration& config)
 {
     TTSLOG_INFO("TTSDownloader::download \n");
     m_objectMutex.lock();
