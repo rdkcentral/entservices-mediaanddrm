@@ -88,7 +88,6 @@ int BufferQueue::count()
 void BufferQueue::clear()
 {
     Buffer *item;
-    int value;
     pthread_mutex_lock(&m_mutex);
     while(!m_buffer.empty())
     {
