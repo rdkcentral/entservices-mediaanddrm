@@ -44,8 +44,10 @@ void kms_setup_encoder( int fd, kms_ctx *kms )
                 drmModeFreeEncoder( kms->encoder );
                 kms->encoder = drmModeGetEncoder(fd, kms->res->encoders[j]);
 
-                kms->encoder->crtc_id = kms->crtc_id = j;
-                goto exit;
+                if( kms->encoder ) {
+                    kms->encoder->crtc_id = kms->crtc_id = j;
+                    goto exit;
+                }
             }
         }
     }
