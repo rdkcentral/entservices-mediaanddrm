@@ -135,7 +135,7 @@ namespace Plugin {
                     }
                 }
                 else {
-   	                struct stat deStat;
+                    struct stat deStat;
                     if (0 == stat(CONNECTOR_PATH, &deStat)) {
                         if (chmod(CONNECTOR_PATH, deStat.st_mode | S_IRGRP | S_IWGRP) != 0)
                             TRACE(Trace::Information, (_T("chmod() failed: %s"), strerror(errno)));
