@@ -94,7 +94,7 @@ void BufferQueue::clear()
         item = m_buffer.front();
         m_buffer.pop();
         item->deleteBuffer();
-    delete item;
+        delete item;
         // Use trywait to avoid blocking while holding the mutex
         if (sem_trywait(&m_sem_full) != 0) {
             // Semaphore already at 0 - indicates inconsistent state
