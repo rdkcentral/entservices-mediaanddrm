@@ -520,7 +520,7 @@ bool TTSSpeaker::reset() {
 }
 
 bool TTSSpeaker::pause(uint32_t id) {
-    std::lock_guard<std::mutex> lock(m_stateMutex);	
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
@@ -536,7 +536,7 @@ bool TTSSpeaker::pause(uint32_t id) {
 }
 
 bool TTSSpeaker::resume(uint32_t id) {
-    std::lock_guard<std::mutex> lock(m_stateMutex);	
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     if(!m_isSpeaking || !m_currentSpeech || (id != m_currentSpeech->id))
         return false;
 
@@ -857,7 +857,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
                         std::lock_guard<std::mutex> lock(m_stateMutex);
                         if(m_pipeline) {
                             gst_object_ref(m_pipeline);
-                        pipeline = m_pipeline;
+                            pipeline = m_pipeline;
                         }
                     }
                     if (pipeline) {
