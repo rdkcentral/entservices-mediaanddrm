@@ -182,6 +182,12 @@ jobs:
           ref: Test
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/comrpc-support-for-l2tests-plugin.patch
+          cd -
+
       - name: Build entservices-apis
         run: >
           cmake
