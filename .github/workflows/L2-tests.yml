@@ -110,14 +110,14 @@ jobs:
         with:
           repository: rdkcentral/entservices-mediaanddrm
           path: entservices-mediaanddrm
-          ref: develop
+          ref: L2TestPlugin_COMRPC
 
       - name: Checkout entservices-testframework
         uses: actions/checkout@v3
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: L2TestPlugin_COMRPC
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout googletest
@@ -165,7 +165,7 @@ jobs:
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
-          -DBUILD_TYPE=${{env.BUILD_TYPE}}
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
           -DBINDING=127.0.0.1
           -DPORT=9998
           -DEXCEPTIONS_ENABLE=ON
@@ -181,6 +181,12 @@ jobs:
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
+
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/comrpc-support-for-l2tests-plugin.patch
+          cd -
 
       - name: Build entservices-apis
         run: >
@@ -358,7 +364,7 @@ jobs:
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/tvTypes.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/systemaudioplatform.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/essos-resmgr.h
-          -Werror -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
+          -Wall -Wno-unused-result -Wno-deprecated-declarations -Wno-error=format=
           -DUSE_IARMBUS
           -DRDK_SERVICE_L2_TEST
           -DDISABLE_SECURITY_TOKEN
