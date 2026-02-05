@@ -111,7 +111,7 @@ std::string  TTSURLConstructer::httppostURL(TTSConfiguration &config, std::strin
         if(isFallback) {
             jsonConfig["input"] = config.getFallbackValue();
         } else {
-            jsonConfig["input"] = std::move(text);
+            jsonConfig["input"] = text;
         } 
 
         jsonConfig["language"] = config.language();
