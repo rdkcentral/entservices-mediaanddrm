@@ -48,7 +48,6 @@ if(RDK_SERVICES_L1_TEST)
     add_subdirectory(Tests/L1Tests)
 endif()
 
-
 if(PLUGIN_TEXTTOSPEECH)
     add_subdirectory(TextToSpeech)
 endif()
