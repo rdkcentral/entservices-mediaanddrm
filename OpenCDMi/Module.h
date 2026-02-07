@@ -24,17 +24,9 @@
 #define MODULE_NAME Plugin_OCDM
 #endif
 
+#include <core/core.h>
 #include <plugins/plugins.h>
-
-
-#ifdef USE_THUNDER_R4
 #include <interfaces/IOCDM.h>
-#else
-// Get in the definitions required for access to the OCDM
-// counter part living in the applications
-#include <ocdm/IOCDM.h>
-#include <ocdm/open_cdm.h>
-#endif /* USE_THUNDER_R4 */
 
 #undef EXTERNAL
 #define EXTERNAL

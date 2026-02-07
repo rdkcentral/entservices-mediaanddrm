@@ -23,6 +23,7 @@
 #define MODULE_NAME Plugin_CryptographyExtAccess
 #endif
 
+#include <core/core.h>
 #include <plugins/plugins.h>
 
 #undef EXTERNAL
