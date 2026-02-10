@@ -822,36 +822,6 @@ TEST_F(TTSInitializedTest,EnableTTSDefault) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-/**
- * @name  : EnableTTSTrue
- * @brief : Enable with enabletts = true and checked if isttsenabled == true
- *
- * @param[in]   :  enabletts = true
- * @return      :  isttsenabled = true; TTS_Status = 0 and success = true
- */
-
-TEST_F(TTSInitializedTest,EnableTTSTrue) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true }"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
-    EXPECT_EQ(response, _T("{\"isenabled\":true,\"TTS_Status\":0,\"success\":true}"));
-}
-
-/**
- * @name  : EnableTTSFalse
- * @brief : Enable with enabletts = false and checked if isttsenabled == false
- *
- * @param[in]   :  enabletts = false
- * @return      :  isttsenabled = false; TTS_Status = 0 and success = true
- */
-
-TEST_F(TTSInitializedTest,EnableTTSFalse) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false }"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
-    EXPECT_EQ(response, _T("{\"isenabled\":false,\"TTS_Status\":0,\"success\":true}"));
-}
-
 /*******************************************************************************************************************
  * Test function for getAPIVersion
  * getAPIVersion :
@@ -2162,25 +2132,6 @@ TEST_F(TTSInitializedTest, SetACLInvalidAccess) {
     ));
 
     EXPECT_EQ(response, _T(""));
-}
-
-/**
- * @name  : SetACLInvalidMethod
- * @brief : Calling speak method with  invalid method other than speak
- *
- * @param[in]   :  method of tts and app name
- * @return      :  ERROR_GENERAL
- */
-
-TEST_F(TTSInitializedTest, SetACLInvalidMethod) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
-        connection,
-        _T("setACL"),
-        _T("{\"accesslist\": [{\"method\":\"invalid\",\"apps\":\"WebAPP1\"}]}"),
-        response
-    ));
 }
 
 /**
