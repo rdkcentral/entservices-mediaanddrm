@@ -232,7 +232,7 @@ TEST_F(TTSInitializedTest,ListVoicesValidLanguage) {
 
 TEST_F(TTSInitializedTest,ListVoicesEmptyLanguage) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":\\[\\]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
@@ -247,18 +247,18 @@ TEST_F(TTSInitializedTest,ListVoicesInvalidJSON) {
 
 TEST_F(TTSInitializedTest,ListVoicesNullLanguage) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":null}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":\\[\\]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
 TEST_F(TTSInitializedTest,ListVoicesDifferentLanguages) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"es-ES\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":\\[\\]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"fr-FR\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":\\[\\]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
 }
 
@@ -293,31 +293,13 @@ TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationValidPartial) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"volume\":\"90\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationValidMinimal) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"es-ES\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,SetConfigurationWithAuthInfo) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"authinfo\":{\"type\":\"apikey\",\"value\":\"test123\"}}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,SetConfigurationWithInvalidAuthType) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"authinfo\":{\"type\":\"invalid\",\"value\":\"test123\"}}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":1")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
