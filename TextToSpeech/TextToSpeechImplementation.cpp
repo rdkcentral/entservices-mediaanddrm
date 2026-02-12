@@ -74,7 +74,7 @@ namespace Plugin {
         InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
-        InputValidation::Instance().addValidator("enable", ExpectedValues<bool>());
+        InputValidation::Instance().addValidator("enable", Type<bool>());
 
         JsonObject config;
         config.FromString(service->ConfigLine());
