@@ -52,10 +52,6 @@ if(PLUGIN_SCREENCAPTURE)
     add_subdirectory(ScreenCapture)
 endif()
 
-if(PLUGIN_OPENCDMI)
-    add_subdirectory(OpenCDMi)
-endif()
-
 if(PLUGIN_PLAYERINFO)
     add_subdirectory(PlayerInfo)
 endif()
