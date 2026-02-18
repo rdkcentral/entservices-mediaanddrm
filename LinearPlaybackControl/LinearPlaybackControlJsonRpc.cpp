@@ -83,16 +83,22 @@ namespace Plugin {
     //  - ERROR_WRITE_ERROR: Error writing to file
     uint32_t LinearPlaybackControl::endpoint_set_channel(const string& demuxerId,const ChannelData& params)
     {
+        syslog(LOG_ERR, "Naveen endpoint_set_channel enter - LinearPlaybackControlJsonRpc.cpp");
+        syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_channel");
         // Make sure that channel URI is defined (empty string is ok), otherwise return ERROR_BAD_REQUEST
         if (params.Channel.IsSet() == false) {
+            syslog(LOG_ERR, "Naveen endpoint_set_channel if condition - LinearPlaybackControlJsonRpc.cpp");
+            syslog(LOG_ERR, "Naveen endpoint_set_channel exit - LinearPlaybackControlJsonRpc.cpp");
             return Core::ERROR_BAD_REQUEST;
         }
 
-        syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_channel");
-        return callDemuxer(demuxerId,
+        syslog(LOG_ERR, "Naveen endpoint_set_channel middle - LinearPlaybackControlJsonRpc.cpp");
+        uint32_t result = callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                return DmxStatusToCoreStatus(dmx->setChannel(params.Channel.Value()));
                            });
+        syslog(LOG_ERR, "Naveen endpoint_set_channel exit - LinearPlaybackControlJsonRpc.cpp");
+        return result;
     }
 
     // Property: channel - Get channel URI for a certain demuxer ID (optional - default is 0)
@@ -101,14 +107,18 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_channel(const string& demuxerId, ChannelData& params) const
     {
+        syslog(LOG_ERR, "Naveen endpoint_get_channel enter - LinearPlaybackControlJsonRpc.cpp");
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_get_channel");
-        return callDemuxer(demuxerId,
+        syslog(LOG_ERR, "Naveen endpoint_get_channel middle - LinearPlaybackControlJsonRpc.cpp");
+        uint32_t result = callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                std::string chan;
                                auto result = DmxStatusToCoreStatus(dmx->getChannel(chan));
                                params.Channel = chan;
                                return result;
                            });
+        syslog(LOG_ERR, "Naveen endpoint_get_channel exit - LinearPlaybackControlJsonRpc.cpp");
+        return result;
     }
 
     // Property: seek - Set seek position for current stream for a certain demuxer ID (optional - default is 0)
@@ -118,17 +128,23 @@ namespace Plugin {
     //  - ERROR_WRITE_ERROR: Error writing to file
     uint32_t LinearPlaybackControl::endpoint_set_seek(const string& demuxerId, const SeekData& params)
     {
+        syslog(LOG_ERR, "Naveen endpoint_set_seek enter - LinearPlaybackControlJsonRpc.cpp");
         syslog(LOG_ERR, "Invoked LinearPlaybackControl::endpoint_set_seek");
 
         // Make sure that the seek is defined, otherwise return ERROR_BAD_REQUEST
         if (params.SeekPosInSeconds.IsSet() == false) {
+            syslog(LOG_ERR, "Naveen endpoint_set_seek if condition - LinearPlaybackControlJsonRpc.cpp");
+            syslog(LOG_ERR, "Naveen endpoint_set_seek exit - LinearPlaybackControlJsonRpc.cpp");
             return Core::ERROR_BAD_REQUEST;
         }
 
-        return callDemuxer(demuxerId,
+        syslog(LOG_ERR, "Naveen endpoint_set_seek middle - LinearPlaybackControlJsonRpc.cpp");
+        uint32_t result = callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                return DmxStatusToCoreStatus(dmx->setSeekPosInSeconds(params.SeekPosInSeconds.Value()));
                            });
+        syslog(LOG_ERR, "Naveen endpoint_set_seek exit - LinearPlaybackControlJsonRpc.cpp");
+        return result;
     }
 
     // Property: seek - Get seek position for current stream for a certain demuxer ID (optional - default is 0)
@@ -138,16 +154,21 @@ namespace Plugin {
     //  - ERROR_READ_ERROR: Error reading file or parsing one or more values
     uint32_t LinearPlaybackControl::endpoint_get_seek(const string& demuxerId, SeekData& params) const
     {
+        syslog(LOG_ERR, "Naveen endpoint_get_seek enter - LinearPlaybackControlJsonRpc.cpp");
         syslog(LOG_DEBUG, "Invoked LinearPlaybackControl::endpoint_get_seek");
-        return callDemuxer(demuxerId,
+        syslog(LOG_ERR, "Naveen endpoint_get_seek middle - LinearPlaybackControlJsonRpc.cpp");
+        uint32_t result = callDemuxer(demuxerId,
                            [&](IDemuxer* dmx)->uint32_t {
                                IDemuxer::SeekType seek  = {};
                                auto status = DmxStatusToCoreStatus(dmx->getSeek(seek));
                                if (status == Core::ERROR_NONE) {
+                                   syslog(LOG_ERR, "Naveen endpoint_get_seek if condition - LinearPlaybackControlJsonRpc.cpp");
                                    params.SeekPosInSeconds = seek.seekPosInSeconds;
                                }
                                return status;
                            });
+        syslog(LOG_ERR, "Naveen endpoint_get_seek exit - LinearPlaybackControlJsonRpc.cpp");
+        return result;
     }
 
     // Property: trickplay - Set trick play speed and direction for current stream for a certain demuxer ID (optional - default is 0)
