@@ -1,0 +1,12 @@
+precondition = ["Platform"]
+autostart = "@PLUGIN_LINEAR_PLAYBACK_CONTROL_AUTOSTART@"
+startuporder = "@PLUGIN_LINEARPLAYBACKCTL_STARTUPORDER@"
+
+configuration = JSON()
+
+rootobject = JSON()
+rootobject.add("outofprocess", True)
+rootobject.add("mountpoint", "/mnt/streamfs")
+rootobject.add("streamfs_enabled", True)
+
+configuration.add("root", rootobject)
