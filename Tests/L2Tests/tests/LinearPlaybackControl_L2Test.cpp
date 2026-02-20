@@ -46,22 +46,27 @@ protected:
     
     // Helper function to update files in both locations
     void updateFileInBothLocations(const std::string& relativePath, const std::string& content) {
+        auto writeAndSync = [](const std::string& path, const std::string& data) -> bool {
+            std::ofstream file(path);
+            if (file.is_open()) {
+                file << data;
+                file.flush();  // Ensure data is written to OS buffer
+                file.close();
+                // Sync to ensure data is flushed to disk
+                sync();
+                return true;
+            }
+            return false;
+        };
+        
         // Update in our test directory
         std::string testFilePath = fccDir + "/" + relativePath;
-        std::ofstream testFile(testFilePath);
-        if (testFile.is_open()) {
-            testFile << content;
-            testFile.close();
-        }
+        writeAndSync(testFilePath, content);
         
         // Also update in expected location if we're not using it as primary
         if (!usingExpectedLocation) {
             std::string expectedFilePath = "/mnt/streamfs/fcc/" + relativePath;
-            std::ofstream expectedFile(expectedFilePath);
-            if (expectedFile.is_open()) {
-                expectedFile << content;
-                expectedFile.close();
-            }
+            writeAndSync(expectedFilePath, content);
         }
     }
 
@@ -373,11 +378,26 @@ TEST_F(LinearPlaybackControlL2Test, GetSeek_Test) {
     uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "seek@0", setParams, setResults);
     EXPECT_EQ(Core::ERROR_NONE, setResult);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Wait for the SET operation to complete
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     
     EXPECT_TRUE(writeSeekFile("10,0,0,0,0")) << "Failed to update seek file with expected format";
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // Wait for file to be fully written and synced
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    
+    // Verify the file was written correctly before attempting GET
+    {
+        std::ifstream verifyFile(seekFilePath);
+        if (verifyFile.is_open()) {
+            std::string content;
+            std::getline(verifyFile, content);
+            verifyFile.close();
+            EXPECT_EQ(content, "10,0,0,0,0") << "Seek file content mismatch before GET";
+        } else {
+            FAIL() << "Could not verify seek file before GET operation";
+        }
+    }
 
     // Now, get the seek position 
     JsonObject getResults;
@@ -433,11 +453,11 @@ TEST_F(LinearPlaybackControlL2Test, GetTrickplay_Test) {
     uint32_t setResult = InvokeServiceMethod(LINEARPLAYBACKCONTROL_CALLSIGN, "trickplay@0", setParams, setResults);
     EXPECT_EQ(Core::ERROR_NONE, setResult);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
     updateFileInBothLocations("trick_play0", "-4");
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Now, get the trickplay speed 
     JsonObject getResults;
@@ -464,6 +484,10 @@ TEST_F(LinearPlaybackControlL2Test, GetStatus_Test) {
     std::string statusFilePath = fccDir + "/stream_status";
     updateFileInBothLocations("stream_status", "0,0");
     
+    // Wait for file write to be synced
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    
+    // Verify the file was written correctly
     std::ifstream verify(statusFilePath);
     bool fileWritten = false;
     if (verify.is_open()) {
@@ -477,7 +501,9 @@ TEST_F(LinearPlaybackControlL2Test, GetStatus_Test) {
     }
     
     EXPECT_TRUE(fileWritten) << "Failed to create/update status file: " << statusFilePath;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Additional wait to ensure service can read the file
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     // Now, get the status
     JsonObject getResults;
