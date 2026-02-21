@@ -20,8 +20,8 @@ set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 if (NOT RDK_SERVICES_L1_TEST AND NOT RDK_SERVICE_L2_TEST)
-find_package(${NAMESPACE}Protocols REQUIRED)
-find_package(${NAMESPACE}Definitions REQUIRED)
+find_package(${NAMESPACE}Protocols)
+find_package(${NAMESPACE}Definitions)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH
@@ -30,7 +30,7 @@ list(APPEND CMAKE_MODULE_PATH
 find_package(IARMBus)
 
 if (NOT RDK_SERVICES_L1_TEST AND NOT RDK_SERVICE_L2_TEST)
-find_package(LMPLAYER REQUIRED)
+find_package(LMPLAYER)
 else()
 include_directories(
         ${PROJECT_SOURCE_DIR}/../entservices-testframework/Tests/mocks/
