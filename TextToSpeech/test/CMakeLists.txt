@@ -19,11 +19,7 @@ set(PLUGIN_NAME TTSThunderAPITest)
 
 find_package(${NAMESPACE}Core REQUIRED)
 
-if (USE_THUNDER_R4)
-    find_package(${NAMESPACE}COM REQUIRED)
-else ()
-    find_package(${NAMESPACE}Protocols REQUIRED)
-endif (USE_THUNDER_R4)
+find_package(${NAMESPACE}COM REQUIRED)
 
 find_package(securityagent REQUIRED)
 
@@ -41,11 +37,7 @@ target_include_directories(${PLUGIN_NAME} PRIVATE ../../helpers ../impl)
 
 target_link_libraries(${PLUGIN_NAME} PUBLIC ${LIBRARIES} PRIVATE ${NAMESPACE}Core::${NAMESPACE}Core)
 
-if (USE_THUNDER_R4)
 target_link_libraries(${PLUGIN_NAME} PUBLIC ${LIBRARIES} PRIVATE ${NAMESPACE}COM::${NAMESPACE}COM ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket)
-else ()
-target_link_libraries(${PLUGIN_NAME} PUBLIC ${LIBRARIES} PRIVATE ${NAMESPACE}Protocols::${NAMESPACE}Protocols)
-endif (USE_THUNDER_R4)
 
 install(TARGETS ${PLUGIN_NAME} DESTINATION bin)
 

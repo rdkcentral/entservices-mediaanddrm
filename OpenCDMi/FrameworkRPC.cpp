@@ -114,9 +114,6 @@ namespace Plugin {
                 : RPC::Communicator(source, _T(""), Core::ProxyType<Core::IIPCServer>(engine))
                 , _parentInterface(parentInterface)
             {
-#if ((THUNDER_VERSION == 2) || ((THUNDER_VERSION == 4) && (THUNDER_VERSION_MINOR == 2)))
-                engine->Announcements(Announcement());
-#endif
                 Open(Core::infinite);
             }
             ~ExternalAccess()
@@ -125,11 +122,7 @@ namespace Plugin {
             }
 
         private:
-#ifndef USE_THUNDER_R4
-            virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-#else
             virtual void* Acquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-#endif /* USE_THUNDER_R4 */
             {
                 void* result = nullptr;
 
