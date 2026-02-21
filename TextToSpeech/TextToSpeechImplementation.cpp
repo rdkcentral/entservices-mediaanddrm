@@ -74,6 +74,7 @@ namespace Plugin {
         InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
+        InputValidation::Instance().addValidator("enable", Type<bool>());
 
         JsonObject config;
         config.FromString(service->ConfigLine());
@@ -246,10 +247,13 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::Enable(const bool enable)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
+        auto status = TTS::TTS_FAIL;
 
-        _adminLock.Lock();
-        auto status = _ttsManager->enableTTS(enable);
-        _adminLock.Unlock();
+        if(InputValidation::Instance().validate("enable", enable)) {
+            _adminLock.Lock();
+            auto status = _ttsManager->enableTTS(enable);
+            _adminLock.Unlock();
+        }
 
         TTSLOG_INFO("Enable TTS %s", enable ? "Enabled" : "Disabled");
         logResponse(status);
@@ -284,7 +288,7 @@ namespace Plugin {
         || (!object.voice.empty() && !InputValidation::Instance().validate("voice", toLower(object.voice)))
         || (!InputValidation::Instance().validate("rate", object.rate))
         || (!InputValidation::Instance().validate("volume", object.volume))) {
-            TTSLOG_WARNING("Input configuration(s) are invalid");
+            TTSLOG_ERROR("Input configuration(s) are invalid");
             return Core::ERROR_GENERAL;
         }
 
