@@ -809,19 +809,19 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     auto startTime = std::chrono::system_clock::now();
     gint64 lastPosition = 0;
 
-    while(timeout > std::chrono::system_clock::now()) {
-        // Check state variables before acquiring m_queueMutex to avoid nested mutex acquisition
-        bool interrupted = false;
-        bool completed = false;
-        {
-            std::lock_guard<std::mutex> lock(m_stateMutex);
-            interrupted = !m_pipeline || m_pipelineError || m_flushed;
-            completed = m_isEOS;
-        }
+    auto playbackInterrupted = [this] () -> bool {
+        std::lock_guard<std::mutex> lock(m_stateMutex);
+        return !m_pipeline || m_pipelineError || m_flushed;
+    };
+    auto playbackCompleted = [this] () -> bool {
+        std::lock_guard<std::mutex> lock(m_stateMutex);
+        return m_isEOS;
+    };
 
+    while(timeout > std::chrono::system_clock::now()) {
         std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [&interrupted, &completed] () {
-            return interrupted || completed;
+        m_condition.wait_until(mlock, timeout, [playbackInterrupted, playbackCompleted] () {
+            return playbackInterrupted() || playbackCompleted();
         });
 
         if(playbackInterrupted() || playbackCompleted()) {
