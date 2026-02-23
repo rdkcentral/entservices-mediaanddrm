@@ -777,7 +777,7 @@ void TTSSpeaker::resetPipeline() {
         // If pipeline is present and not destroyed, bring it to NULL state
         gst_element_set_state(pipeline, GST_STATE_NULL);
         while(!waitForStatus(GST_STATE_NULL, 60*1000));
-        gst_object_unref(pipeline);	
+        gst_object_unref(pipeline);
     }
 
     if(!pipelineExists) {
