@@ -763,8 +763,8 @@ void TTSSpeaker::resetPipeline() {
         m_isEOS = false;
 
         pipelineExists = (m_pipeline != nullptr);
-        // Increment refcount to safely use pipeline outside mutex
-        if(m_pipeline && pipelineExists) {
+        // Increment refcount to safely use pipeline outside mutex only if not destroying
+        if(m_pipeline && pipelineExists && !needsDestroy) {
             gst_object_ref(m_pipeline);
             pipeline = m_pipeline;
         }
@@ -773,18 +773,16 @@ void TTSSpeaker::resetPipeline() {
     // Destroy pipeline outside lock if needed
     if(needsDestroy) {
         destroyPipeline();
+	} else if(pipelineExists && pipeline) {
+        // If pipeline is present and not destroyed, bring it to NULL state
+        gst_element_set_state(pipeline, GST_STATE_NULL);
+        while(!waitForStatus(GST_STATE_NULL, 60*1000));
+        gst_object_unref(pipeline);	
     }
 
     if(!pipelineExists) {
         // If pipe line is NULL, create one
         createPipeline(m_pipelinetype);
-    } else {
-        // If pipeline is present, bring it to NULL state
-        if(pipeline) {
-            gst_element_set_state(pipeline, GST_STATE_NULL);
-            while(!waitForStatus(GST_STATE_NULL, 60*1000));
-            gst_object_unref(pipeline);
-        }
     }
 }
 
@@ -811,19 +809,19 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     auto startTime = std::chrono::system_clock::now();
     gint64 lastPosition = 0;
 
-    auto playbackInterrupted = [this] () -> bool {
-        std::lock_guard<std::mutex> lock(m_stateMutex);
-        return !m_pipeline || m_pipelineError || m_flushed;
-    };
-    auto playbackCompleted = [this] () -> bool {
-        std::lock_guard<std::mutex> lock(m_stateMutex);
-        return m_isEOS;
-    };
-
     while(timeout > std::chrono::system_clock::now()) {
+        // Check state variables before acquiring m_queueMutex to avoid nested mutex acquisition
+        bool interrupted = false;
+        bool completed = false;
+        {
+            std::lock_guard<std::mutex> lock(m_stateMutex);
+            interrupted = !m_pipeline || m_pipelineError || m_flushed;
+            completed = m_isEOS;
+        }
+
         std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [playbackInterrupted, playbackCompleted] () {
-            return playbackInterrupted() || playbackCompleted();
+        m_condition.wait_until(mlock, timeout, [&interrupted, &completed] () {
+            return interrupted || completed;
         });
 
         if(playbackInterrupted() || playbackCompleted()) {
