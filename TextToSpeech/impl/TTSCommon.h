@@ -73,7 +73,7 @@ namespace Plugin {
 
 #define CHECK_TTS_PARAMETER_TYPE_RETURN_ON_FAIL(param, type) do {\
     if (!parameters.HasLabel(param) || parameters[param].Content() != type) { \
-        LOGERR("Invalid parameter type for \"%s\"", param); \
+        printf("Invalid parameter type for \"%s\"", param); \
         return Core::ERROR_GENERAL; \
     } } while(0)
 

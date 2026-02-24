@@ -141,7 +141,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     uint32_t TextToSpeech::ListVoices(const JsonObject& parameters, JsonObject& response)
     {
         if(_tts) {
-            CHECK_TTS_PARAMETER_RETURN_ON_FAIL("language");
+            CHECK_TTS_PARAMETER_TYPE_RETURN_ON_FAIL("language", JsonValue::type::STRING);
             RPC::IStringIterator* voices = nullptr;
             auto status = _tts->ListVoices(parameters["language"].String(), voices);
             if (voices == nullptr || status != TTS::TTS_OK) {

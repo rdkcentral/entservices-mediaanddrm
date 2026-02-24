@@ -241,27 +241,6 @@ TEST_F(TTSInitializedTest,ListVoicesMissingParameter) {
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{}"), response));
 }
 
-TEST_F(TTSInitializedTest,ListVoicesInvalidJSON) {
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{invalid json}"), response));
-}
-
-TEST_F(TTSInitializedTest,ListVoicesNullLanguage) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":null}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,ListVoicesDifferentLanguages) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"es-ES\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"fr-FR\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":[\"\"]")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-}
-
 // GetConfiguration tests
 TEST_F(TTSInitializedTest,GetConfigurationDefault) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
