@@ -502,7 +502,7 @@ TEST_F(TTSInitializedTest,ResumeInvalidJSON) {
 }
 
 TEST_F(TTSInitializedTest,ResumeNegativeSpeechId) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), 
         _T("{\"speechid\":-1}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":")));
 }
@@ -517,21 +517,21 @@ TEST_F(TTSInitializedTest,IsSpeakingValidSpeechId) {
 }
 
 TEST_F(TTSInitializedTest,IsSpeakingZeroSpeechId) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), 
         _T("{\"speechid\":0}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
 }
 
 TEST_F(TTSInitializedTest,IsSpeakingLargeSpeechId) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), 
         _T("{\"speechid\":999999}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
 }
 
 TEST_F(TTSInitializedTest,IsSpeakingMissingSpeechId) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), _T("{}"), response));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
 }
 
@@ -545,7 +545,7 @@ TEST_F(TTSInitializedTest,IsSpeakingInvalidJSON) {
 }
 
 TEST_F(TTSInitializedTest,IsSpeakingNegativeSpeechId) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), 
         _T("{\"speechid\":-1}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
 }
