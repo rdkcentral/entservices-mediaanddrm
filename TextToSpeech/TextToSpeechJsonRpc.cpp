@@ -130,7 +130,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     uint32_t TextToSpeech::Enable(const JsonObject& parameters, JsonObject& response)
     {
         if(_tts) {
-            CHECK_TTS_PARAMETER_RETURN_ON_FAIL("enabletts");
+            CHECK_TTS_PARAMETER_TYPE_RETURN_ON_FAIL("enabletts", JsonValue::type::BOOLEAN);
             _tts->Enable(parameters["enabletts"].Boolean());
             response["TTS_Status"] = static_cast<uint32_t> (TTS::TTS_OK);
             returnResponse(true);
