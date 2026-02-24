@@ -546,6 +546,7 @@ jobs:
           sudo mkdir -p -m 777
           /tmp/test/testApp/etc/apps
           /opt/persistent
+          /opt/www
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
@@ -576,6 +577,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -600,6 +602,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
