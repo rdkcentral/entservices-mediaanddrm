@@ -22,7 +22,7 @@ env:
 jobs:
   L1-tests:
     name: Build and run unit tests
-    runs-on: comcast-ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         compiler: [ gcc, clang ]
