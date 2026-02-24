@@ -1001,7 +1001,7 @@ TEST_F(TTSInitializedTest,IsSpeaking) {
 
 TEST_F(TTSInitializedTest,IsSpeakingEmptySpeechId) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{\"speechid\": }"), response));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{\"speechid\": \"\"}"), response));
 }
 
 /**
@@ -1051,7 +1051,7 @@ TEST_F(TTSInitializedTest,SpeechState) {
 
 TEST_F(TTSInitializedTest,GetSpeechStateEmptySpeechId) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{\"speechid\": }"), response));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{\"speechid\": \"\"}"), response));
 }
 
 /**
@@ -1101,7 +1101,7 @@ TEST_F(TTSInitializedTest,Cancel) {
 
 TEST_F(TTSInitializedTest,CancelEmptySpeechId) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{\"speechid\": }"), response));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{\"speechid\": \"\"}"), response));
 }
 
 /**
@@ -1513,7 +1513,7 @@ TEST_F(TTSInitializedTest, SetVolumeGreaterThanMaxValue) {
 
 TEST_F(TTSInitializedTest, SetEmptyVolume) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\":}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t volumePos = response.find("\"volume\"");
 
