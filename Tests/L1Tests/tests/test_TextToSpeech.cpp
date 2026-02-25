@@ -347,7 +347,7 @@ TEST_F(TTSInitializedTest,SpeakWithCallsign) {
 }
 
 TEST_F(TTSInitializedTest,SpeakEmptyText) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
         _T("{\"language\": \"en-US\",\"voice\": \"carol\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
@@ -725,6 +725,14 @@ TEST_F(TTSInitializedTest,SpeakAfterEnable) {
 }
 
 TEST_F(TTSInitializedTest,SpeakAfterDisable) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
@@ -753,6 +761,14 @@ TEST_F(TTSInitializedTest,ConfigurationBoundaryRate) {
 }
 
 TEST_F(TTSInitializedTest,SequentialOperations) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"Test sequence\"}"), response));
     
@@ -769,6 +785,14 @@ TEST_F(TTSInitializedTest,SequentialOperations) {
 }
 
 TEST_F(TTSInitializedTest,MultipleSpeak) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"First speech\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
     

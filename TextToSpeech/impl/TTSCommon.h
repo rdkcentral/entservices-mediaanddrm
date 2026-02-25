@@ -70,12 +70,4 @@ namespace Plugin {
         LOGERR("Parameter \"%s\" is not found", param); \
         returnResponse(false); \
     } } while(0)
-
-#define CHECK_TTS_PARAMETER_TYPE_RETURN_ON_FAIL(param, type) do {\
-    if (!parameters.HasLabel(param) || parameters[param].Content() != type) { \
-        printf("Invalid parameter type for \"%s\"", param); \
-        return Core::ERROR_GENERAL; \
-    } } while(0)
-
-
 #endif
