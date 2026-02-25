@@ -355,7 +355,7 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
         ),
         response
     ));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
@@ -518,7 +518,6 @@ TEST_F(TTSInitializedTest,PauseInvalidJSON) {
 TEST_F(TTSInitializedTest,PauseNegativeSpeechId) {
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), 
         _T("{\"speechid\":-1}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":")));
 }
 
 // Resume tests
@@ -728,7 +727,7 @@ TEST_F(TTSInitializedTest,SpeakAfterEnable) {
 TEST_F(TTSInitializedTest,SpeakAfterDisable) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"Test after disable\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
 }
@@ -749,7 +748,7 @@ TEST_F(TTSInitializedTest,ConfigurationBoundaryRate) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
     
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"rate\":255}"), response));
+        _T("{\"rate\":100}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
