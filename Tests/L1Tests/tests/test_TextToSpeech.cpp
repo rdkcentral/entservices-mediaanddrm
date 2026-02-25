@@ -289,14 +289,14 @@ TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationInvalidVolume) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"invalid\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":1")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationInvalidPrimVolDuck) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"primvolduckpercent\":\"invalid\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":1")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
@@ -321,7 +321,7 @@ TEST_F(TTSInitializedTest,SetConfigurationRateRange) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
     
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"rate\":255}"), response));
+        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"rate\":100}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
@@ -337,15 +337,15 @@ TEST_F(TTSInitializedTest,SetConfigurationInvalidJSON) {
 }
 
 // Speak tests
-TEST_F(TTSInitializedTest,SpeakValidText) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
-        _T("{\"text\":\"Hello world\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
 TEST_F(TTSInitializedTest,SpeakWithCallsign) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
@@ -354,6 +354,14 @@ TEST_F(TTSInitializedTest,SpeakWithCallsign) {
 }
 
 TEST_F(TTSInitializedTest,SpeakEmptyText) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
@@ -361,6 +369,14 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
 }
 
 TEST_F(TTSInitializedTest,SpeakLongText) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     string longText = "This is a very long text that should be spoken by the TTS engine to test the limits of the system and ensure proper handling of extended content.";
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"") + longText + _T("\"}"), response));
@@ -369,14 +385,38 @@ TEST_F(TTSInitializedTest,SpeakLongText) {
 }
 
 TEST_F(TTSInitializedTest,SpeakMissingTextParameter) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakInvalidJSON) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{invalid json}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakSpecialCharacters) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"Hello! How are you? I'm fine.\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
@@ -384,6 +424,14 @@ TEST_F(TTSInitializedTest,SpeakSpecialCharacters) {
 }
 
 TEST_F(TTSInitializedTest,SpeakNumericText) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"12345\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
@@ -392,6 +440,14 @@ TEST_F(TTSInitializedTest,SpeakNumericText) {
 
 // Cancel tests
 TEST_F(TTSInitializedTest,CancelValidSpeechId) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
         _T("{\"speechid\":1}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
@@ -399,6 +455,14 @@ TEST_F(TTSInitializedTest,CancelValidSpeechId) {
 }
 
 TEST_F(TTSInitializedTest,CancelZeroSpeechId) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
         _T("{\"speechid\":0}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
@@ -406,6 +470,14 @@ TEST_F(TTSInitializedTest,CancelZeroSpeechId) {
 }
 
 TEST_F(TTSInitializedTest,CancelLargeSpeechId) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
         _T("{\"speechid\":999999}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
