@@ -452,8 +452,7 @@ jobs:
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
           -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
-          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://http://example-tts-dummy.net/nuanceEvetest/tts?"
-          -DPLUGIN_TEXTTOSPEECH_LOCALVOICE_FOR_EN="carol"
+          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
@@ -533,6 +532,9 @@ jobs:
           -DDS_FOUND=ON
           -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DPLUGIN_PLAYERINFO=ON
           -DPLUGIN_LINEARPLAYBACKCONTROL=ON
