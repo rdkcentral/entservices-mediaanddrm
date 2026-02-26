@@ -94,12 +94,10 @@ void BufferQueue::clear()
         item = m_buffer.front();
         m_buffer.pop();
         item->deleteBuffer();
-        delete item;
-        // Use trywait to avoid blocking while holding the mutex
-        if (sem_trywait(&m_sem_full) != 0) {
-            // Semaphore already at 0 - indicates inconsistent state
-            SAPLOG_TRACE("SAP: Warning - sem_full underflow detected during clear");
-        }
+    delete item;
+        sem_getvalue(&m_sem_full,&value);
+        if(value != 0)
+            sem_wait(&m_sem_full);
         sem_post(&m_sem_empty);
     }
     pthread_mutex_unlock(&m_mutex);
