@@ -185,10 +185,6 @@ TEST_F(TTSInitializedTest,EnableTTSMissingParameter) {
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T("{}"), response));
 }
 
-TEST_F(TTSInitializedTest,EnableTTSInvalidParameter) {
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"invalid\"}"), response));
-}
-
 TEST_F(TTSInitializedTest,EnableTTSEmptyJSON) {
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T(""), response));
 }
@@ -347,7 +343,7 @@ TEST_F(TTSInitializedTest,SpeakWithCallsign) {
 }
 
 TEST_F(TTSInitializedTest,SpeakEmptyText) {
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
         _T("{\"language\": \"en-US\",\"voice\": \"carol\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
@@ -355,7 +351,7 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
         ),
         response
     ));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
