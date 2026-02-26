@@ -206,15 +206,7 @@ jobs:
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
-
-      - name: Remove DTV interface for L1 build
-        run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
-
-      - name: Apply patches entservices-apis
-        run: |
-          cd $GITHUB_WORKSPACE/entservices-apis
-          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
-          cd -
+          run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
       - name: Build entservices-apis
         run: >
