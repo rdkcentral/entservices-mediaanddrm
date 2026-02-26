@@ -284,7 +284,7 @@ namespace Plugin {
         || (!object.voice.empty() && !InputValidation::Instance().validate("voice", toLower(object.voice)))
         || (!InputValidation::Instance().validate("rate", object.rate))
         || (!InputValidation::Instance().validate("volume", object.volume))) {
-            TTSLOG_ERROR("Input configuration(s) are invalid");
+            TTSLOG_WARNING("Input configuration(s) are invalid");
             return Core::ERROR_GENERAL;
         }
 

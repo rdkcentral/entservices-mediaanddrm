@@ -70,4 +70,6 @@ namespace Plugin {
         LOGERR("Parameter \"%s\" is not found", param); \
         returnResponse(false); \
     } } while(0)
+
+    
 #endif
