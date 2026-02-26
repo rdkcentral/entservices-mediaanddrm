@@ -809,22 +809,30 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     auto startTime = std::chrono::system_clock::now();
     gint64 lastPosition = 0;
 
-    auto playbackInterrupted = [this] () -> bool {
-        std::lock_guard<std::mutex> lock(m_stateMutex);
-        return !m_pipeline || m_pipelineError || m_flushed;
-    };
-    auto playbackCompleted = [this] () -> bool {
-        std::lock_guard<std::mutex> lock(m_stateMutex);
-        return m_isEOS;
-    };
-
     while(timeout > std::chrono::system_clock::now()) {
-        std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [playbackInterrupted, playbackCompleted] () {
-            return playbackInterrupted() || playbackCompleted();
-        });
+        // Check state variables before acquiring m_queueMutex to avoid nested mutex acquisition
+        bool interrupted = false;
+        bool completed = false;
+        {
+            std::lock_guard<std::mutex> lock(m_stateMutex);
+            interrupted = !m_pipeline || m_pipelineError || m_flushed;
+            completed = m_isEOS;
+        }
 
-        if(playbackInterrupted() || playbackCompleted()) {
+        std::unique_lock<std::mutex> mlock(m_queueMutex);
+        m_condition.wait_until(mlock, timeout, [&interrupted, &completed] () {
+            return interrupted || completed;
+        });
+        mlock.unlock();
+
+        // Re-check state after waking up
+        {
+            std::lock_guard<std::mutex> lock(m_stateMutex);
+            interrupted = !m_pipeline || m_pipelineError || m_flushed;
+            completed = m_isEOS;
+        }
+
+        if(interrupted || completed) {
             bool flushed = false;
             {
                 std::lock_guard<std::mutex> lock(m_stateMutex);
@@ -874,7 +882,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
             }
         }
     }
-
+    
     bool isEOS = false;
     bool pipelineError = false;
     bool flushed = false;
@@ -889,7 +897,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
         pipelineError = m_pipelineError;
         flushed = m_flushed;
     }
-
+    
     TTSLOG_INFO("m_isEOS=%d, m_pipeline=%p, m_pipelineError=%d, m_flushed=%d",
             isEOS, pipeline, pipelineError, flushed);
 
