@@ -810,43 +810,31 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     gint64 lastPosition = 0;
 
     while(timeout > std::chrono::system_clock::now()) {
-        // Check state variables before acquiring m_queueMutex to avoid nested mutex acquisition
-        bool interrupted = false;
-        bool completed = false;
-        {
-            std::lock_guard<std::mutex> lock(m_stateMutex);
-            interrupted = !m_pipeline || m_pipelineError || m_flushed;
-            completed = m_isEOS;
-        }
-
         std::unique_lock<std::mutex> mlock(m_queueMutex);
-        m_condition.wait_until(mlock, timeout, [&interrupted, &completed] () {
-            return interrupted || completed;
+        m_condition.wait_until(mlock, timeout, [this] () {
+            std::lock_guard<std::mutex> lock(m_stateMutex);
+            return !m_pipeline || m_pipelineError || m_flushed || m_isEOS;
         });
         mlock.unlock();
 
-        // Re-check state after waking up
+        // Check state after waking up
+        bool interrupted = false;
+        bool completed = false;
+        bool flushed = false;
+        bool isPaused = false;
         {
             std::lock_guard<std::mutex> lock(m_stateMutex);
             interrupted = !m_pipeline || m_pipelineError || m_flushed;
             completed = m_isEOS;
+            flushed = m_flushed;
+            isPaused = m_isPaused;
         }
 
         if(interrupted || completed) {
-            bool flushed = false;
-            {
-                std::lock_guard<std::mutex> lock(m_stateMutex);
-                flushed = m_flushed;
-            }
             if(flushed)
                 TTSLOG_VERBOSE("Bailing out because of forced text queue (m_flushed=true)");
             break;
         } else {
-            bool isPaused = false;
-            {
-                std::lock_guard<std::mutex> lock(m_stateMutex);
-                isPaused = m_isPaused;
-            }
             if(isPaused) {
                 timeout = std::chrono::system_clock::now() + std::chrono::seconds((unsigned long)timeout_s);
             } else {
