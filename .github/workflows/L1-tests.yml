@@ -206,7 +206,15 @@ jobs:
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
-          run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
+
+      - name: Remove DTV interface JSON for L1 build
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json"
+          if [ -e "$GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json" ]; then
+            echo "DTV.json still exists"
+            exit 1
+          fi
+          echo "DTV.json removed successfully"
 
       - name: Build entservices-apis
         run: >
