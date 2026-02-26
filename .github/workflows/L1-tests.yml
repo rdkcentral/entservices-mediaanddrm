@@ -70,7 +70,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
       - run: pip install jsonref
 
       - name: ACK External Trigger
@@ -222,6 +222,7 @@ jobs:
           -S "$GITHUB_WORKSPACE/entservices-apis"
           -B build/entservices-apis
           -DEXCEPTIONS_ENABLE=ON
+          -DPYTHON_EXECUTABLE="$(which python3)"
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
           &&
