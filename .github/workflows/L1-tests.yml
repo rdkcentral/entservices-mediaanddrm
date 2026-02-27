@@ -205,9 +205,6 @@ jobs:
           path: entservices-apis
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
-
-      - name: Remove DTV.json
-        run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
           
       - name: Build entservices-apis
         run: >
