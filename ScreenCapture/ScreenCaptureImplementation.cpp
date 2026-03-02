@@ -440,7 +440,7 @@ namespace WPEFramework
             if (got_screenshot)
             {
                 std::string error_str;
-                
+
                 LOGWARN("uploading %u of png data to '%s'", (uint32_t)png_data.size(), url.c_str());
 
                 if (uploadDataToUrl(png_data, url.c_str(), error_str))
