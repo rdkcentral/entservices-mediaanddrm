@@ -62,7 +62,7 @@ namespace Plugin {
         }
     }
 
-    bool readTTSConfigFile(const std::string& path, std::string& out)
+    static bool readTTSConfigFile(const std::string& path, std::string& out)
     {
         std::ifstream file(path, std::ios::in | std::ios::binary);
         if (!file.is_open()) {
