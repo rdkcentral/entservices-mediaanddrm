@@ -97,12 +97,11 @@ namespace Plugin {
 #endif
 
         JsonObject config;
-        //printf("kykumar config %s\n", service->ConfigLine().c_str());
         std::string jsonText;
         if (!readTTSConfigFile(TTS_CONFIG_FILE_PATH, jsonText)) {
             TTSLOG_ERROR("Failed to read ttsconfig JSON file %s", TTS_CONFIG_FILE_PATH);
         }
-        printf("kykumar config %s\n", jsonText.c_str());
+        TTSLOG_INFO("tts config %s\n", jsonText.c_str());
         config.FromString(jsonText);
         
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
