@@ -21,12 +21,15 @@
 #include <sys/prctl.h>
 #include "UtilsJsonRpc.h"
 #include <mutex>
+#include <fstream>
+#include <sstream>
 
 #include "TextToSpeechValidator.h"
 #include "impl/RFCURLObserver.h"
 
 #define TTS_MAJOR_VERSION 1
 #define TTS_MINOR_VERSION 0
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
 
 #define GET_STR(map, key, def) ((map.HasLabel(key) && !map[key].String().empty() && map[key].String() != "null") ? map[key].String() : def)
 
@@ -59,6 +62,18 @@ namespace Plugin {
         }
     }
 
+    bool readTTSConfigFile(const std::string& path, std::string& out)
+    {
+        std::ifstream file(path, std::ios::in | std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+        std::ostringstream ss;
+        ss << file.rdbuf();   // read entire file
+        out = ss.str();
+        return !out.empty();
+    }
+
     uint32_t TextToSpeechImplementation::Configure(PluginHost::IShell* service)
     {
         if(!_ttsManager)
@@ -75,14 +90,21 @@ namespace Plugin {
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
 
-        JsonObject config;
-        config.FromString(service->ConfigLine());
-
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
 #ifndef UNIT_TESTING
         // To-do: DELIA-68409
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
 #endif
+
+        JsonObject config;
+        //printf("kykumar config %s\n", service->ConfigLine().c_str());
+        std::string jsonText;
+        if (!readTTSConfigFile(TTS_CONFIG_FILE_PATH, jsonText)) {
+            TTSLOG_ERROR("Failed to read ttsconfig JSON file %s", TTS_CONFIG_FILE_PATH);
+        }
+        printf("kykumar config %s\n", jsonText.c_str());
+        config.FromString(jsonText);
+        
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));
