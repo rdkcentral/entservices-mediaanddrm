@@ -21,7 +21,7 @@
 
 #include <interfaces/json/JsonData_LinearPlaybackControl.h>
 #include "Module.h"
-#include "DemuxerStreamFsFCC.h"
+// Removed circular include: #include "DemuxerStreamFsFCC.h"
 
 namespace WPEFramework {
 namespace Plugin {
