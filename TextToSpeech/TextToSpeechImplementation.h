@@ -71,11 +71,7 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(TextToSpeechImplementation *tts, Event event,string callsign,JsonValue params) {
-#ifndef USE_THUNDER_R4
-                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
-#else
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
-#endif
             }
 
             virtual void Dispatch() {
