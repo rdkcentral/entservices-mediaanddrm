@@ -49,21 +49,31 @@ namespace Plugin {
     {
         ASSERT(_service == nullptr);
 
+        syslog(LOG_ERR, "Naveen Initialize enter - LinearPlaybackControl.cpp");
+        syslog(LOG_ERR, "Naveen ConfigLine: %s - LinearPlaybackControl.cpp", service->ConfigLine().c_str());
+        
         LinearConfig::Config config;
         config.FromString(service->ConfigLine());
         _mountPoint = config.MountPoint.Value();
         _isStreamFSEnabled = config.IsStreamFSEnabled.Value();
+        
+        syslog(LOG_ERR, "Naveen MountPoint: %s - LinearPlaybackControl.cpp", _mountPoint.c_str());
+        syslog(LOG_ERR, "Naveen _isStreamFSEnabled: %s - LinearPlaybackControl.cpp", _isStreamFSEnabled ? "true" : "false");
 
         if (_isStreamFSEnabled) {
+            syslog(LOG_ERR, "Naveen Initialize if condition (streamFS enabled) - LinearPlaybackControl.cpp");
             // For now we only have one Nokia FCC demuxer interface with demux Id = 0
             _demuxer = std::unique_ptr<DemuxerStreamFsFCC>(new DemuxerStreamFsFCC(&config, 0));
             _trickPlayFileListener = std::unique_ptr<FileSelectListener>(new FileSelectListener(_demuxer->getTrickPlayFile(), 16,[this](const std::string &data){
                 speedchangedNotify(data);
             }));
+        } else {
+            syslog(LOG_ERR, "Naveen Initialize else condition (streamFS NOT enabled) - LinearPlaybackControl.cpp");
         }
 
         // Initialize streamfs and associated dependencies here.
 
+        syslog(LOG_ERR, "Naveen Initialize exit - LinearPlaybackControl.cpp");
         // No additional info to report in this initial/empty implementation.
         return string();
     }

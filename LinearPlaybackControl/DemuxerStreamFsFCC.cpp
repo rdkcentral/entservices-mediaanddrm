@@ -120,12 +120,13 @@ IDemuxer::IO_STATUS DemuxerStreamFsFCC::close()
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::setChannel(const std::string& channel)
 {
-
+    syslog(LOG_INFO, "NAVEEN demuxerStreamFsFcc file setChannel");
     return write(DemuxerStreamFsFCC::_fileChannel, channel);
 }
 
 IDemuxer::IO_STATUS DemuxerStreamFsFCC::getChannel(std::string& channel)
 {
+    syslog(LOG_INFO, "NAVEEN demuxerStreamFsFcc file getChannel");
     return read(DemuxerStreamFsFCC::_fileChannel, channel);
 }
 
