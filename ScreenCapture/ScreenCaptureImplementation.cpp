@@ -493,7 +493,7 @@ namespace WPEFramework
                 return false;
             }
 
-            LOGWARN("uploading png data of size %u to '%s'", (uint32_t)data.size(), url);
+            LOGWARN("uploading png data of size %u to '%s'", url);
 
             // init curl
             curl_global_init(CURL_GLOBAL_ALL);
