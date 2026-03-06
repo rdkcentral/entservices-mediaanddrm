@@ -213,8 +213,6 @@ namespace Plugin {
                (callsignIndex->second)->Release();
                callsignIndex = _notificationCallsignClients.erase(callsignIndex);
                TRACE_L1("Unregistered a sink on the browser %p", sink);
-			   // Break after erasing the first matching sink entry
-               break;
            }
            else
            {
