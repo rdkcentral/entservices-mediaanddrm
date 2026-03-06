@@ -450,6 +450,7 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
+          -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
           -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
