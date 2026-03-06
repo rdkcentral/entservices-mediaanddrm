@@ -159,7 +159,7 @@ namespace Plugin {
                 getNumberConfigParameter("rate",rate);
                 getNumberConfigParameter("channels",channels);
                 SAPLOG_INFO("SAP: Do PCM config ");
-                ret= player->configPCMCaps(std::move(format),rate,channels,std::move(layout));
+                ret= player->configPCMCaps(format,rate,channels,layout);
             }
             if (player->getSourceType() == SourceType::WEBSOCKET && parameters.HasLabel("websocketsecparam"))
             {
