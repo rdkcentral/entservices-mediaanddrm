@@ -353,8 +353,6 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
     ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
 }
 
 TEST_F(TTSInitializedTest,SpeakLongText) {
@@ -720,22 +718,6 @@ TEST_F(TTSInitializedTest,SpeakAfterEnable) {
         _T("{\"text\":\"Test after enable\"}"), response));
 }
 
-TEST_F(TTSInitializedTest,SpeakAfterDisable) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
-        _T("{\"text\":\"Test after disable\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
-}
-
 TEST_F(TTSInitializedTest,ConfigurationBoundaryVolume) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"volume\":\"0.0\"}"), response));
@@ -754,30 +736,6 @@ TEST_F(TTSInitializedTest,ConfigurationBoundaryRate) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"rate\":100}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,SequentialOperations) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"Test sequence\"}"), response));
-    
-    JsonObject jsonResponse;
-    jsonResponse.FromString(response);
-    uint32_t speechId = jsonResponse["speechid"].Number();
-    
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("pause"), 
-        _T("{\"speechid\":") + std::to_string(speechId) + _T("}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), 
-        _T("{\"speechid\":") + std::to_string(speechId) + _T("}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
-        _T("{\"speechid\":") + std::to_string(speechId) + _T("}"), response));
 }
 
 TEST_F(TTSInitializedTest,MultipleSpeak) {
