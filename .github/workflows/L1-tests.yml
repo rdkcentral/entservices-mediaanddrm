@@ -465,7 +465,7 @@ jobs:
           &&
           cp build/entservices-mediaanddrm/install/etc/WPEFramework/plugins/TextToSpeech.json /etc/WPEFramework/plugins/
           &&
-          /etc/WPEFramework/plugins/
+          cat /etc/WPEFramework/plugins/TextToSpeech.json
 
       - name: Build entservices-testframework
         run: >
