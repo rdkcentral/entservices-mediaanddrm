@@ -461,9 +461,11 @@ jobs:
           &&
           cmake --install build/entservices-mediaanddrm
           &&
-          ls /etc/WPEFramework/plugins/
+          mkdir -p /etc/WPEFramework/plugins
           &&
-          cat /etc/WPEFramework/plugins/TextToSpeech.json 
+          cp build/entservices-mediaanddrm/install/etc/WPEFramework/plugins/TextToSpeech.json /etc/WPEFramework/plugins/
+          &&
+          /etc/WPEFramework/plugins/
 
       - name: Build entservices-testframework
         run: >
