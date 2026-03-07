@@ -450,12 +450,22 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
+          -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           &&
           cmake --build build/entservices-mediaanddrm -j8
           &&
           cmake --install build/entservices-mediaanddrm
+          &&
+          mkdir -p /etc/WPEFramework/plugins
+          &&
+          cp build/entservices-mediaanddrm/install/etc/WPEFramework/plugins/TextToSpeech.json /etc/WPEFramework/plugins/
+          &&
+          cat /etc/WPEFramework/plugins/TextToSpeech.json
 
       - name: Build entservices-testframework
         run: >
@@ -526,6 +536,9 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
           -DPLUGIN_TEXTTOSPEECH=ON
+          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
+          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
@@ -540,6 +553,7 @@ jobs:
           sudo mkdir -p -m 777
           /tmp/test/testApp/etc/apps
           /opt/persistent
+          /opt/www
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
@@ -570,6 +584,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -594,6 +609,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
