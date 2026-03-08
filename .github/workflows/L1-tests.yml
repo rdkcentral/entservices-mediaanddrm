@@ -545,7 +545,6 @@ jobs:
       - name: Set up files
         run: >
           sudo mkdir -p -m 777
-          /etc/WPEFramework/plugins
           /tmp/test/testApp/etc/apps
           /opt/persistent
           /opt/www
@@ -630,10 +629,6 @@ jobs:
           ls -l /dev/disk/by-id/usb-Generic_Flash_Disk_B32FD507-0
           &&
           ls -l /dev/disk/by-id/usb-JetFlash_Transcend_16GB_UEUIRCXT-0
-          &&
-          sudo cp $GITHUB_WORKSPACE/install/etc/WPEFramework/plugins/*.json /etc/WPEFramework/plugins/
-          &&
-          cat /etc/WPEFramework/plugins/TextToSpeech.json
 
       - name: Run unit tests without valgrind
         run: >

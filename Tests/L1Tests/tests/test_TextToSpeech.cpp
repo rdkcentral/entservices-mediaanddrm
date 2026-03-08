@@ -64,6 +64,13 @@ protected:
                   [this]() {
                         return &comLinkMock;
                     }));
+        
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\"}"
+            ));
 
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
