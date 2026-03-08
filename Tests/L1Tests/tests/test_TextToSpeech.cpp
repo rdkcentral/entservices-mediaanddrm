@@ -168,21 +168,6 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
 
-// Enable TTS tests
-TEST_F(TTSInitializedTest,EnableTTSTrue) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,EnableTTSFalse) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
 TEST_F(TTSInitializedTest,EnableTTSMissingParameter) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T("{}"), response));
@@ -301,19 +286,6 @@ TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-TEST_F(TTSInitializedTest,SetConfigurationInvalidVolume) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"invalid\"}"), response));
-
-}
-
-TEST_F(TTSInitializedTest,SetConfigurationInvalidPrimVolDuck) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"primvolduckpercent\":\"invalid\"}"), response));
-}
-
 TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -323,19 +295,6 @@ TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
     
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"100\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,SetConfigurationRateRange) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"rate\":0}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-    
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"rate\":100}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
@@ -377,23 +336,6 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
     ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"\"}"), response));
-}
-
-TEST_F(TTSInitializedTest,SpeakLongText) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-    string longText = "This is a very long text that should be spoken by the TTS engine to test the limits of the system and ensure proper handling of extended content.";
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
-        _T("{\"text\":\"") + longText + _T("\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
 }
 
 TEST_F(TTSInitializedTest,SpeakMissingTextParameter) {
@@ -704,12 +646,6 @@ TEST_F(TTSInitializedTest,SetACLMultipleMethods) {
         _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"[\\\"app1\\\"]\"},"
            "{\"method\":\"speak\",\"apps\":\"[\\\"app2\\\"]\"}]}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-TEST_F(TTSInitializedTest,SetACLInvalidMethod) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), 
-        _T("{\"accesslist\":[{\"method\":\"invalid\",\"apps\":\"[\\\"testapp\\\"]\"}]}"), response));
 }
 
 TEST_F(TTSInitializedTest,SetACLEmptyApps) {

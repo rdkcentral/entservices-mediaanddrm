@@ -632,6 +632,8 @@ jobs:
           ls -l /dev/disk/by-id/usb-JetFlash_Transcend_16GB_UEUIRCXT-0
           &&
           sudo cp $GITHUB_WORKSPACE/install/etc/WPEFramework/plugins/*.json /etc/WPEFramework/plugins/
+          &&
+          cat /etc/WPEFramework/plugins/TextToSpeech.json
 
       - name: Run unit tests without valgrind
         run: >
