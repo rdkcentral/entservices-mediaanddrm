@@ -119,7 +119,7 @@ protected:
 
         ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
             .WillByDefault(::testing::Invoke(
-                [](GetServiceAccessTokenResult& result) {
+                [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& result) {
                     result.token = "MOCK_SAT_TOKEN";
                     return WPEFramework::Core::ERROR_NONE;
                 }));
