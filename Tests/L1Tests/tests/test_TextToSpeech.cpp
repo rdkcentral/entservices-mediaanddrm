@@ -112,6 +112,7 @@ protected:
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
             2, Core::Thread::DefaultStackSize(), 16))
     {
+        printf("kykumar constructor\n");
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
     p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
@@ -122,10 +123,6 @@ protected:
                   [this]() {
                         return &comLinkMock;
                     }));
-
-        
-
-        
 
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
@@ -151,6 +148,7 @@ protected:
 
     virtual ~TTSTest() override
     {
+        printf("kykumar destructor\n");
         plugin->Deinitialize(&service);
 
         dispatcher->Deactivate();
@@ -181,7 +179,7 @@ class TTSInitializedTest : public TTSTest {
 protected:
 
     TTSInitializedTest() : TTSTest() {
-
+        printf("kykumar TTSInitializedTest constructor\n");
     gst_init(nullptr, nullptr);
 
     ON_CALL(*p_systemAudioPlatformMock, systemAudioInitialize())
