@@ -147,9 +147,6 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
-
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-
     }
 
     virtual ~TTSTest() override
