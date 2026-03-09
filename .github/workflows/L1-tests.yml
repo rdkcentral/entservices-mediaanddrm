@@ -228,7 +228,7 @@ jobs:
           &&
           cmake --install build/entservices-apis
           &&
-          ls "$GITHUB_WORKSPACE/install/usr/include"
+          ls "$GITHUB_WORKSPACE/install/usr/include/WPEFramework"
           
       - name: Generate external headers
         # Empty headers to mute errors
