@@ -69,8 +69,16 @@ protected:
             .WillByDefault(::testing::Return(
                 "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
                 "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\"}"
-            ));
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+    ));
 
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
