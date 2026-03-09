@@ -306,7 +306,6 @@ TEST_F(TTSInitializedTest,ListVoicesMissingParameter) {
 
 // GetConfiguration tests
 TEST_F(TTSInitializedTest,GetConfigurationDefault) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -333,7 +332,6 @@ TEST_F(TTSInitializedTest,GetConfigurationWithExtraParams) {
 
 // SetConfiguration tests
 TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -344,7 +342,6 @@ TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationValidMinimal) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -352,7 +349,6 @@ TEST_F(TTSInitializedTest,SetConfigurationValidMinimal) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -362,7 +358,6 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -372,7 +367,6 @@ TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -387,7 +381,6 @@ TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationEmpty) {
-    mockTTSConfigure();
     mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{}"), response));
