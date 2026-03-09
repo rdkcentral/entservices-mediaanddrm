@@ -72,6 +72,16 @@ protected:
         ));
     }
 
+    void mockSATToken()
+    {
+        ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& result) {
+                    result.token = "MOCK_SAT_TOKEN";
+                    return WPEFramework::Core::ERROR_NONE;
+                }));
+    }
+
     void mockRFCURL()
     {
         ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
@@ -113,12 +123,7 @@ protected:
                         return &comLinkMock;
                     }));
 
-        ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
-            .WillByDefault(::testing::Invoke(
-                [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& result) {
-                    result.token = "MOCK_SAT_TOKEN";
-                    return WPEFramework::Core::ERROR_NONE;
-                }));
+        
 
         
 
@@ -2408,6 +2413,7 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
 TEST_F(TTSInitializedTest, speakWithRFCURL) {
     mockTTSConfigure();
     mockRFCURL();
+    mockSATToken();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
         _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
