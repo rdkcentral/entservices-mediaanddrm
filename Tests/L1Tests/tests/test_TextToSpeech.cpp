@@ -28,6 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -45,6 +46,7 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    NiceMock<RFCAPIMock>* p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
@@ -89,6 +91,7 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    p_rfcApiImplMock = new NiceMock<RFCAPIMock>();
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
