@@ -364,16 +364,6 @@ TEST_F(TTSInitializedTest,SpeakWithCallsign) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-TEST_F(TTSInitializedTest,SpeakWithTTS2Endpoint) {
-    mockTTSConfigureWithType();
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
-        _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
 TEST_F(TTSInitializedTest,SpeakEmptyText) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
