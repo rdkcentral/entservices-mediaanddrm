@@ -71,15 +71,16 @@ protected:
 
     void mockRFCURL()
     {
-        ON_CALL(*p_rfcApiImplMock,
-        getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
+        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Invoke(
-                [](char*, const char*, RFC_ParamData_t* param)
-            {
-                param->type = WDMP_STRING;
-                strcpy(param->value, "true");
-                return WDMP_SUCCESS;
-            }));
+                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    WDMP_STATUS wdmpStatus = WDMP_FAILURE;
+                    if (string(pcParameterName) == "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL") {
+                        strncpy(pstParamData->value, "https://example-rfc-dummy.net", sizeof(pstParamData->value));
+                        pstParamData->type = WDMP_STRING;
+                        return WDMP_SUCCESS;
+                    }
+                }));
     }
 
     TTSTest()
@@ -2252,4 +2253,15 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":NULL}]}"),
         response
     ));
+}
+
+TEST_F(TTSInitializedTest, speakWithRFCURL) {
+    mockTTSConfigure();
+    mockRFCURL();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
