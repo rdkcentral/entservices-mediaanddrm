@@ -78,13 +78,9 @@ protected:
             .WillByDefault(::testing::Invoke(
                 [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
                     printf("kykumar rfc read mock\n");
-                    WDMP_STATUS wdmpStatus = WDMP_FAILURE;
-                    if (string(pcParameterName) == "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL") {
                         strncpy(pstParamData->value, "https://example-rfc-dummy.net", sizeof(pstParamData->value));
                         pstParamData->type = WDMP_STRING;
                         return WDMP_SUCCESS;
-                    }
-                    return WDMP_FAILURE;
                 }));
     }
 
@@ -105,23 +101,19 @@ protected:
                   [this]() {
                         return &comLinkMock;
                     }));
-                    
-        ON_CALL(*p_rfcApiImplMock,
-        getRFCParameter(::testing::_, testing::StrEq("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL"), ::testing::_))
-            .WillByDefault(::testing::Return(WDMP_FAILURE));
-
-        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Invoke(
-                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
-                        printf("kykumar rfc read fail\n");
-                        return WDMP_FAILURE;
-                }));
 
         ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
             .WillByDefault(::testing::Invoke(
                 [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& result) {
                     result.token = "MOCK_SAT_TOKEN";
                     return WPEFramework::Core::ERROR_NONE;
+                }));
+
+        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                        printf("kykumar rfc read fail\n");
+                        return WDMP_FAILURE;
                 }));
 
 #ifdef USE_THUNDER_R4
