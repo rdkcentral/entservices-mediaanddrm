@@ -29,7 +29,6 @@
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
 #include "RfcApiMock.h"
-#include <IAuthService.h>
 #include "mockauthservices.h"
 
 using namespace WPEFramework;
