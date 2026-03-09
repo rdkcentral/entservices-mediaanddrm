@@ -74,8 +74,8 @@ protected:
 
     void mockRFCURL()
     {
-        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Invoke(
+        EXPECT_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
+            .WillRepeatedly(::testing::Invoke(
                 [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
                     printf("kykumar rfc read mock\n");
                         strncpy(pstParamData->value, "https://example-rfc-dummy.net", sizeof(pstParamData->value));
