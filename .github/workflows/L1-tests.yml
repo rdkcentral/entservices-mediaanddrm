@@ -124,7 +124,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: 93720cd9058115a32381dab8c931bc897c15c91f
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-mediaanddrm
@@ -452,9 +452,6 @@ jobs:
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
           -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_TEXTTOSPEECH=ON
-          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
-          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
-          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           &&
           cmake --build build/entservices-mediaanddrm -j8
@@ -530,9 +527,6 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
           -DPLUGIN_TEXTTOSPEECH=ON
-          -DPLUGIN_TEXTTOSPEECH_ENDPOINT="http://example-tts-dummy.net/tts/v1/cdn/location?"
-          -DPLUGIN_TEXTTOSPEECH_SECURE_ENDPOINT="https://example-tts-dummy.net/tts/v1/cdn/location?"
-          -DPLUGIN_TEXTTOSPEECH_LOCAL_ENDPOINT="http://example-tts-dummy.net/nuanceEvetest/tts?"
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON

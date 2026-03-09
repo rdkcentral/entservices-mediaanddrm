@@ -140,7 +140,6 @@ bool TTSDownloader::downloadFile(std::string ttsRequest)
             {
                 TTSLOG_ERROR("CURL error is:  %s\n", curl_easy_strerror(res));
             }
-#ifndef UNIT_TESTING
             if (curl_easy_perform(curl) != CURLE_OK)
             {
                 downloadDone = false;
@@ -150,9 +149,6 @@ bool TTSDownloader::downloadFile(std::string ttsRequest)
                 downloadDone = true;
                 saveConfiguration(CONFIG_PATH);
             }
-#else
-            downloadDone = true;
-#endif
             curl_easy_cleanup(curl);
         }
         fclose(fp);

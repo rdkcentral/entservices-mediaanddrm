@@ -28,6 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "TTSDownloaderMock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -48,6 +49,8 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    NiceMock<TTSDownloaderMock> downloaderMock;
+
 
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -80,6 +83,8 @@ protected:
                 "}"
     ));
 
+    EXPECT_CALL(downloaderMock, downloadFile(::testing::_))
+        .WillOnce(::testing::Return(true));
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
 			.WillByDefault(::testing::Invoke(
