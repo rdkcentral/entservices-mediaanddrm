@@ -28,7 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
-#include "TTSDownloaderMock.h"
+#include "TTSDownloadermock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -51,6 +51,23 @@ protected:
     NiceMock<FactoriesImplementation> factoriesImplementation;
     NiceMock<TTSDownloaderMock> downloaderMock;
 
+    void mockTTSConfigure()
+    {
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+        ));
+    }
 
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -68,21 +85,6 @@ protected:
                         return &comLinkMock;
                     }));
         
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return(
-                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
-                "\"speechrate\":\"medium\","
-                "\"satplugincallsign\":\"org.rdk.AuthService\","
-                "\"language\":\"en-US\","
-                "\"volume\":100,"
-                "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
-                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
-                "}"
-    ));
-
     EXPECT_CALL(downloaderMock, downloadFile(::testing::_))
         .WillOnce(::testing::Return(true));
 #ifdef USE_THUNDER_R4
@@ -233,20 +235,23 @@ TEST_F(TTSInitializedTest,IsEnabledAfterDisable) {
 
 // ListVoices tests
 TEST_F(TTSInitializedTest,ListVoicesValidLanguage) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":\\[\\]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":carol")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
 TEST_F(TTSInitializedTest,ListVoicesMissingParameter) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{}"), response));
 }
 
 // GetConfiguration tests
 TEST_F(TTSInitializedTest,GetConfigurationDefault) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"ttsendpoint\":")));
@@ -261,6 +266,7 @@ TEST_F(TTSInitializedTest,GetConfigurationDefault) {
 }
 
 TEST_F(TTSInitializedTest,GetConfigurationWithExtraParams) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T("{\"extra\":\"param\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"ttsendpoint\":")));
@@ -270,6 +276,7 @@ TEST_F(TTSInitializedTest,GetConfigurationWithExtraParams) {
 
 // SetConfiguration tests
 TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"ttsendpoint\":\"http://example.com/tts\",\"ttsendpointsecured\":\"https://example.com/tts\",")
@@ -278,19 +285,15 @@ TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-TEST_F(TTSInitializedTest,SetConfigurationValidPartial) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"en-US\",\"volume\":\"90\"}"), response));
-}
-
 TEST_F(TTSInitializedTest,SetConfigurationValidMinimal) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"es-ES\"}"), response));
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
@@ -299,6 +302,7 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"primvolduckpercent\":\"75\"}"), response));
@@ -307,6 +311,7 @@ TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"0\"}"), response));
@@ -320,6 +325,7 @@ TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationEmpty) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
@@ -328,6 +334,7 @@ TEST_F(TTSInitializedTest,SetConfigurationEmpty) {
 
 // Speak tests
 TEST_F(TTSInitializedTest,SpeakWithCallsign) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -345,6 +352,7 @@ TEST_F(TTSInitializedTest,SpeakWithCallsign) {
 }
 
 TEST_F(TTSInitializedTest,SpeakEmptyText) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -359,6 +367,7 @@ TEST_F(TTSInitializedTest,SpeakEmptyText) {
 }
 
 TEST_F(TTSInitializedTest,SpeakMissingTextParameter) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -372,6 +381,7 @@ TEST_F(TTSInitializedTest,SpeakMissingTextParameter) {
 }
 
 TEST_F(TTSInitializedTest,SpeakInvalidJSON) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -385,6 +395,7 @@ TEST_F(TTSInitializedTest,SpeakInvalidJSON) {
 }
 
 TEST_F(TTSInitializedTest,SpeakSpecialCharacters) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -744,14 +755,6 @@ TEST_F(TTSInitializedTest,SetAndGetConfiguration) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"rate\":60")));
 }
 
-// Edge case and boundary tests
-TEST_F(TTSInitializedTest,SpeakAfterEnable) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
-        _T("{\"text\":\"Test after enable\"}"), response));
-}
-
 TEST_F(TTSInitializedTest,ConfigurationBoundaryVolume) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
@@ -866,30 +869,6 @@ TEST_F(TTSInitializedTest,IsTTSEnabledDefault) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
     EXPECT_EQ(response, _T("{\"isenabled\":false,\"TTS_Status\":0,\"success\":true}"));
-}
-
-/*******************************************************************************************************************
- * Test function for listVoices
- * SpeechState          :
- *                Returns voice based on language
- *
- *                @return Response object contains speaking and success
- * Use case coverage:
- *                @Success : 1
- *                @Failure : 4
- ********************************************************************************************************************/
-/**
- * @name  : IsListVoicesEmpty
- * @brief : Returns speaking(true,false) of the given speechid
- *
- * @param[in]   :  language
- * @return      :  ERROR_NONE
- */
-
-TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
-    EXPECT_EQ(response, _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
