@@ -222,6 +222,7 @@ protected:
 };
 
 TEST_F(TTSInitializedTest,RegisteredMethods) {
+    mockRFCFail();
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("enabletts")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("cancel")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getapiversion")));
