@@ -28,7 +28,6 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
-#include "TTSDownloadermock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -49,7 +48,6 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
-    NiceMock<TTSDownloaderMock> downloaderMock;
 
     void mockTTSConfigure()
     {
@@ -84,9 +82,7 @@ protected:
                   [this]() {
                         return &comLinkMock;
                     }));
-        
-    EXPECT_CALL(downloaderMock, downloadFile(::testing::_))
-        .WillOnce(::testing::Return(true));
+                    
 #ifdef USE_THUNDER_R4
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
 			.WillByDefault(::testing::Invoke(
