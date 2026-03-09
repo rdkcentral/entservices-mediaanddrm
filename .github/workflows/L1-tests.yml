@@ -221,6 +221,8 @@ jobs:
           cmake --build build/entservices-apis -j8
           &&
           cmake --install build/entservices-apis
+          &&
+          ls "$GITHUB_WORKSPACE/install/usr"
           
       - name: Generate external headers
         # Empty headers to mute errors
