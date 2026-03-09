@@ -234,9 +234,9 @@ TEST_F(TTSInitializedTest,ListVoicesValidLanguage) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voices\":carol")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"voices\":\\[\"carol\"\\]"));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"TTS_Status\":0"));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"success\":true"));
 }
 
 TEST_F(TTSInitializedTest,ListVoicesMissingParameter) {
