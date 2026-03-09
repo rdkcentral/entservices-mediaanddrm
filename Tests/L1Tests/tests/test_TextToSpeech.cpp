@@ -145,6 +145,13 @@ protected:
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
 
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
+
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
         {
