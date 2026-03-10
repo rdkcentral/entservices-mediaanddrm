@@ -28,7 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
-#include "RfcApiMock.h"
+//#include "RfcApiMock.h"
 #include <interfaces/IAuthService.h>
 //#include "mockauthservices.h"
 
@@ -48,7 +48,7 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
-    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
+    //RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
@@ -81,7 +81,7 @@ protected:
                     return WPEFramework::Core::ERROR_NONE;
                 }));
     }
-#endif
+
     void mockRFCURL()
     {
         ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
@@ -104,7 +104,7 @@ protected:
                 }));
 
     }
-
+#endif
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -115,8 +115,8 @@ protected:
         printf("kykumar constructor\n");
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
-    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
-    RfcApi::setImpl(p_rfcApiImplMock);
+    //p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    //RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -145,7 +145,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
         mockTTSConfigure();
-        mockRFCFail();
+        //mockRFCFail();
         EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
 
@@ -161,14 +161,14 @@ protected:
         }
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
-
+#if 0
         RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr)
         {
             delete p_rfcApiImplMock;
             p_rfcApiImplMock = nullptr;
         }
-
+#endif
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
         {
