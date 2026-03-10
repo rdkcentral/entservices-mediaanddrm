@@ -117,11 +117,15 @@ string RFCURLObserver::getSecurityToken() {
 
 
 void RFCURLObserver::registerNotification() {
+    printf("kykumar registerNotification\n");
     if (m_systemService == nullptr && !m_eventRegistered) {
+        printf("kykumar getSecurityToken\n");
         std::string token = getSecurityToken();
         if(token.empty()) {
+            printf("kykumar token empty\n");
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"");
         } else {        
+            printf("kykumar token not empty\n");
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"", false, token);
         }
         printf("kykumar token %s\n", token.c_str());
