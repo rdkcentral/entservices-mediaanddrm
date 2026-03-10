@@ -28,6 +28,9 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
+#include <interfaces/IAuthService.h>
+#include "mockauthservices.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -45,9 +48,11 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    NiceMock<MockAuthService> authserviceMock;
 
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -58,6 +63,8 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -100,6 +107,13 @@ protected:
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
 
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
+        
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
         {
