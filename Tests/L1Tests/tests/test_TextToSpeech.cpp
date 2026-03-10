@@ -1422,8 +1422,8 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
  */
 
 TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
         _T("{\"language\": \"en-US\",\"voice\": \"carol\",\"ttsendpoint\":\"invalid1@#\","
@@ -1450,8 +1450,8 @@ TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
         _T("{\"language\": \"en-US\",\"voice\": \"carol\","
@@ -1478,8 +1478,8 @@ TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
@@ -1503,8 +1503,8 @@ TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsEndPointPos = response.find("\"ttsendpointsecured\"");
@@ -1528,8 +1528,8 @@ TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
@@ -1553,8 +1553,8 @@ TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
-    //mockRFCFail();
-    //EXPECT_EQ(string(""), plugin->Initialize(&service));
+    plugin->Deinitialize(&service);
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsendpointsecuredPos = response.find("\"ttsendpointsecured\"");
