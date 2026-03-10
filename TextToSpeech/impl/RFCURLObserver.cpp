@@ -50,16 +50,16 @@ void RFCURLObserver::triggerRFC(TTSConfiguration *config)
 {
    m_defaultConfig = config;
    fetchURLFromConfig();
+#ifndef UNIT_TESTING
    std::thread notificationThread(&RFCURLObserver::registerNotification, this);
    notificationThread.detach(); // Detach the thread to run independently
+#endif
 }
 
 void RFCURLObserver::fetchURLFromConfig() {
     bool  m_rfcURLSet = false;
     RFC_ParamData_t param;
-    #ifndef UNIT_TESTING
     m_rfcURLSet = Utils::getRFCConfig("Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.TextToSpeech.URL", param);
-    #endif
     if (m_rfcURLSet) {
 	TTSLOG_INFO("Received RFC URL %s\n",param.value);
         m_defaultConfig->setRFCEndPoint(param.value);
@@ -119,22 +119,29 @@ string RFCURLObserver::getSecurityToken() {
 
 
 void RFCURLObserver::registerNotification() {
+    printf("kykumar registerNotification\n");
     if (m_systemService == nullptr && !m_eventRegistered) {
+        printf("kykumar getSecurityToken\n");
         std::string token = getSecurityToken();
         if(token.empty()) {
+            printf("kykumar token empty\n");
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"");
         } else {        
+            printf("kykumar token not empty\n");
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"", false, token);
         }
-
+        printf("kykumar token %s\n", token.c_str());
         while (!m_eventRegistered) {		
+            printf("kykumar mgt subscribe start\n");
             if (m_systemService->Subscribe<JsonObject>(3000, "onDeviceMgtUpdateReceived",
                 &RFCURLObserver::onDeviceMgtUpdateReceivedHandler, this) == Core::ERROR_NONE) {
+                    printf("kykumar mgt subscribe success\n");
                 m_eventRegistered = true;
                 TTSLOG_INFO("Subscribed to notification handler: onDeviceMgtUpdateReceived");
                 break;
             } else {
                 TTSLOG_ERROR("Failed to subscribe to notification handler: onDeviceMgtUpdateReceived..Retrying");
+                printf("kykumar mgt subscribe fail\n");
                 std::this_thread::sleep_for(std::chrono::milliseconds(RETRY_DELAY_MS));
             }
         }

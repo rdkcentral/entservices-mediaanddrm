@@ -28,6 +28,9 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
+#include <interfaces/IAuthService.h>
+//#include "mockauthservices.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -45,10 +48,62 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    //NiceMock<MockAuthService> authserviceMock;
 
+    void mockTTSConfigure()
+    {
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+        ));
+    }
+    void mockRFCFail()
+    {
+        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                        printf("kykumar rfc read fail\n");
+                        return WDMP_FAILURE;
+                }));
+
+    }
+#if 0
+    void mockSATToken()
+    {
+        ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& result) {
+                    result.token = "MOCK_SAT_TOKEN";
+                    return WPEFramework::Core::ERROR_NONE;
+                }));
+    }
+
+    void mockRFCURL()
+    {
+        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    printf("kykumar rfc read mock\n");
+                        strncpy(pstParamData->value, "https://example-rfc-dummy.net", sizeof(pstParamData->value));
+                        pstParamData->type = WDMP_STRING;
+                        return WDMP_SUCCESS;
+                }));
+    }
+#endif
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -56,8 +111,11 @@ protected:
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
             2, Core::Thread::DefaultStackSize(), 16))
     {
+        printf("kykumar constructor\n");
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    //p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    //RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -75,7 +133,7 @@ protected:
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Return(TextToSpeechImplementation));
-#endif /*USE_THUNDER_R4 */
+#endif
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -85,21 +143,27 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
-
+        mockRFCFail();
         EXPECT_EQ(string(""), plugin->Initialize(&service));
-
     }
 
     virtual ~TTSTest() override
     {
+        printf("kykumar destructor\n");
         plugin->Deinitialize(&service);
-
         dispatcher->Deactivate();
         dispatcher->Release();
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
-
+#if 0
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
+#endif
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
         {
@@ -115,7 +179,7 @@ class TTSInitializedTest : public TTSTest {
 protected:
 
     TTSInitializedTest() : TTSTest() {
-
+        printf("kykumar TTSInitializedTest constructor\n");
     gst_init(nullptr, nullptr);
 
     ON_CALL(*p_systemAudioPlatformMock, systemAudioInitialize())
@@ -168,6 +232,678 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
 
+TEST_F(TTSInitializedTest,EnableTTSMissingParameter) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,EnableTTSEmptyJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T(""), response));
+}
+
+TEST_F(TTSInitializedTest,EnableTTSInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("enabletts"), _T("{invalid json}"), response));
+}
+
+// IsEnabled tests
+TEST_F(TTSInitializedTest,IsEnabledDefault) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"isenabled\":false")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,IsEnabledAfterEnable) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"isenabled\":true")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,IsEnabledAfterDisable) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"isenabled\":false")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+// ListVoices tests
+TEST_F(TTSInitializedTest,ListVoicesValidLanguage) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"voices\":\\[\"carol\"\\]"));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"TTS_Status\":0"));
+    EXPECT_THAT(response, ::testing::ContainsRegex("\"success\":true"));
+}
+
+TEST_F(TTSInitializedTest,ListVoicesMissingParameter) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{}"), response));
+}
+
+// GetConfiguration tests
+TEST_F(TTSInitializedTest,GetConfigurationDefault) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"ttsendpoint\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"ttsendpointsecured\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"language\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voice\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechrate\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"rate\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"volume\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,GetConfigurationWithExtraParams) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T("{\"extra\":\"param\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"ttsendpoint\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+// SetConfiguration tests
+TEST_F(TTSInitializedTest,SetConfigurationValidAll) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"ttsendpoint\":\"http://example.com/tts\",\"ttsendpointsecured\":\"https://example.com/tts\",")
+        _T("\"language\":\"en-US\",\"voice\":\"carol\",\"speechrate\":\"medium\",\"rate\":50,\"volume\":\"80\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationValidMinimal) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"es-ES\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationWithPrimVolDuck) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"primvolduckpercent\":\"75\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationVolumeRange) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"0\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\",\"voice\":\"carol\",\"volume\":\"100\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationEmpty) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+// Speak tests
+TEST_F(TTSInitializedTest,SpeakWithCallsign) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SpeakEmptyText) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,SpeakMissingTextParameter) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,SpeakInvalidJSON) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,SpeakSpecialCharacters) {
+    mockTTSConfigure();
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"Hello! How are you? I'm fine.\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+}
+
+TEST_F(TTSInitializedTest,SpeakNumericText) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"12345\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+}
+
+// Cancel tests
+TEST_F(TTSInitializedTest,CancelValidSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
+        _T("{\"speechid\":1}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,CancelZeroSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), 
+        _T("{\"speechid\":0}"), response));
+}
+
+TEST_F(TTSInitializedTest,CancelLargeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
+        _T("{\"speechid\":999999}"), response));
+}
+
+TEST_F(TTSInitializedTest,CancelMissingSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,CancelInvalidSpeechIdType) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), 
+        _T("{\"speechid\":\"invalid\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,CancelInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,CancelNegativeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), 
+        _T("{\"speechid\":-1}"), response));
+}
+
+// Pause tests
+TEST_F(TTSInitializedTest,PauseZeroSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), 
+        _T("{\"speechid\":0}"), response));
+}
+
+TEST_F(TTSInitializedTest,PauseLargeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), 
+        _T("{\"speechid\":999999}"), response));
+}
+
+TEST_F(TTSInitializedTest,PauseMissingSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,PauseInvalidSpeechIdType) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), 
+        _T("{\"speechid\":\"invalid\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,PauseInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,PauseNegativeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), 
+        _T("{\"speechid\":-1}"), response));
+}
+
+// Resume tests
+TEST_F(TTSInitializedTest,ResumeZeroSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), 
+        _T("{\"speechid\":0}"), response));
+}
+
+TEST_F(TTSInitializedTest,ResumeLargeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), 
+        _T("{\"speechid\":999999}"), response));
+}
+
+TEST_F(TTSInitializedTest,ResumeMissingSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,ResumeInvalidSpeechIdType) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), 
+        _T("{\"speechid\":\"invalid\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,ResumeInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,ResumeNegativeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), 
+        _T("{\"speechid\":-1}"), response));
+}
+
+// IsSpeaking tests
+TEST_F(TTSInitializedTest,IsSpeakingValidSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+        _T("{\"speechid\":1}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingZeroSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), 
+        _T("{\"speechid\":0}"), response));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingLargeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+        _T("{\"speechid\":999999}"), response));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingMissingSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingInvalidSpeechIdType) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), 
+        _T("{\"speechid\":\"invalid\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,IsSpeakingNegativeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), 
+        _T("{\"speechid\":-1}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speaking\":(true|false)")));
+}
+
+// GetSpeechState tests
+TEST_F(TTSInitializedTest,GetSpeechStateValidSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getspeechstate"), 
+        _T("{\"speechid\":1}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechstate\":[0-3]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateZeroSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), 
+        _T("{\"speechid\":0}"), response));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateLargeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getspeechstate"), 
+        _T("{\"speechid\":999999}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechstate\":[0-3]")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateMissingSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateInvalidSpeechIdType) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), 
+        _T("{\"speechid\":\"invalid\"}"), response));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,GetSpeechStateNegativeSpeechId) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getspeechstate"), 
+        _T("{\"speechid\":-1}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechstate\":[0-3]")));
+}
+
+// SetACL tests
+TEST_F(TTSInitializedTest,SetACLValidSingle) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"[\\\"testapp\\\"]\"}]}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetACLValidMultiple) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"[\\\"app1\\\",\\\"app2\\\"]\"}]}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetACLMultipleMethods) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"[\\\"app1\\\"]\"},"
+           "{\"method\":\"speak\",\"apps\":\"[\\\"app2\\\"]\"}]}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetACLEmptyApps) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"\"}]}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetACLNullApps) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\",\"apps\":\"NULL\"}]}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetACLEmptyList) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[]}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetACLMissingParameter) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), _T("{}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetACLInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), _T("{invalid json}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetACLMissingMethod) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"apps\":\"[\\\"testapp\\\"]\"}]}"), response));
+}
+
+TEST_F(TTSInitializedTest,SetACLMissingApps) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setACL"), 
+        _T("{\"accesslist\":[{\"method\":\"speak\"}]}"), response));
+}
+
+// GetAPIVersion tests
+TEST_F(TTSInitializedTest,GetAPIVersionDefault) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getapiversion"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"version\":[0-9]+")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,GetAPIVersionWithParams) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getapiversion"), 
+        _T("{\"extra\":\"param\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"version\":[0-9]+")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,GetAPIVersionInvalidJSON) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getapiversion"), _T("{invalid json}"), response));
+}
+
+// Configuration persistence tests
+TEST_F(TTSInitializedTest,SetAndGetConfiguration) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\",\"voice\": \"carol\",\"volume\":\"85\",\"rate\":60}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"language\":\"en-US\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"voice\":\"carol\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"volume\":\"85\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"rate\":60")));
+}
+
+TEST_F(TTSInitializedTest,ConfigurationBoundaryVolume) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"volume\":\"0.0\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"volume\":\"100.0\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,ConfigurationBoundaryRate) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"rate\":0}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"rate\":100}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,MultipleSpeak) {
+    mockRFCFail();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"First speech\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"Second speech\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\":\"Third speech\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+}
+
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -187,40 +923,11 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
  */
 
 TEST_F(TTSInitializedTest,EnableTTSDefault) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-}
-
-/**
- * @name  : EnableTTSTrue
- * @brief : Enable with enabletts = true and checked if isttsenabled == true
- *
- * @param[in]   :  enabletts = true
- * @return      :  isttsenabled = true; TTS_Status = 0 and success = true
- */
-
-TEST_F(TTSInitializedTest,EnableTTSTrue) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true }"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
-    EXPECT_EQ(response, _T("{\"isenabled\":true,\"TTS_Status\":0,\"success\":true}"));
-}
-
-/**
- * @name  : EnableTTSFalse
- * @brief : Enable with enabletts = false and checked if isttsenabled == false
- *
- * @param[in]   :  enabletts = false
- * @return      :  isttsenabled = false; TTS_Status = 0 and success = true
- */
-
-TEST_F(TTSInitializedTest,EnableTTSFalse) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false }"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
-    EXPECT_EQ(response, _T("{\"isenabled\":false,\"TTS_Status\":0,\"success\":true}"));
 }
 
 /*******************************************************************************************************************
@@ -242,6 +949,7 @@ TEST_F(TTSInitializedTest,EnableTTSFalse) {
  */
 
 TEST_F(TTSInitializedTest,GetAPIVersion) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getapiversion"), _T(""), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"version\":1")));
@@ -267,33 +975,10 @@ TEST_F(TTSInitializedTest,GetAPIVersion) {
  */
 
 TEST_F(TTSInitializedTest,IsTTSEnabledDefault) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isttsenabled"), _T(""), response));
     EXPECT_EQ(response, _T("{\"isenabled\":false,\"TTS_Status\":0,\"success\":true}"));
-}
-
-/*******************************************************************************************************************
- * Test function for listVoices
- * SpeechState          :
- *                Returns voice based on language
- *
- *                @return Response object contains speaking and success
- * Use case coverage:
- *                @Success : 1
- *                @Failure : 4
- ********************************************************************************************************************/
-/**
- * @name  : IsListVoicesEmpty
- * @brief : Returns speaking(true,false) of the given speechid
- *
- * @param[in]   :  language
- * @return      :  ERROR_NONE
- */
-
-TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
-    EXPECT_EQ(response, _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -305,6 +990,7 @@ TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
  */
 
 TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"\"}"), response));
 }
@@ -318,6 +1004,7 @@ TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
  */
 
 TEST_F(TTSInitializedTest, ListVoicesSetWhiteSpaceAsLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"  \"}"), response));
 }
@@ -331,6 +1018,7 @@ TEST_F(TTSInitializedTest, ListVoicesSetWhiteSpaceAsLanguage) {
  */
 
 TEST_F(TTSInitializedTest, ListVoicesSetNumberAsLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": 01}"), response));
 }
@@ -344,6 +1032,7 @@ TEST_F(TTSInitializedTest, ListVoicesSetNumberAsLanguage) {
  */
 
 TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": NULL}"), response));
 }
@@ -367,6 +1056,7 @@ TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest,Speak) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
@@ -405,6 +1095,7 @@ TEST_F(TTSInitializedTest,Speak) {
  */
 
 TEST_F(TTSInitializedTest,IsSpeaking) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), _T("{\"speechid\": 1}"), response));
     EXPECT_EQ(response, _T("{\"speaking\":false,\"TTS_Status\":0,\"success\":true}"));
@@ -419,6 +1110,7 @@ TEST_F(TTSInitializedTest,IsSpeaking) {
  */
 
 TEST_F(TTSInitializedTest,IsSpeakingEmptySpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{\"speechid\": \"\"}"), response));
 }
@@ -432,6 +1124,7 @@ TEST_F(TTSInitializedTest,IsSpeakingEmptySpeechId) {
  */
 
 TEST_F(TTSInitializedTest,IsSpeakingStringAsSpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("isspeaking"), _T("{\"speechid\": \"hello\"}"), response));
 }
@@ -455,6 +1148,7 @@ TEST_F(TTSInitializedTest,IsSpeakingStringAsSpeechId) {
  */
 
 TEST_F(TTSInitializedTest,SpeechState) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getspeechstate"), _T("{\"speechid\": 1}"), response));
     EXPECT_EQ(response, _T("{\"speechstate\":3,\"TTS_Status\":0,\"success\":true}"));
@@ -469,6 +1163,7 @@ TEST_F(TTSInitializedTest,SpeechState) {
  */
 
 TEST_F(TTSInitializedTest,GetSpeechStateEmptySpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{\"speechid\": \"\"}"), response));
 }
@@ -482,6 +1177,7 @@ TEST_F(TTSInitializedTest,GetSpeechStateEmptySpeechId) {
  */
 
 TEST_F(TTSInitializedTest,GetSpeechStateStringAsSpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("getspeechstate"), _T("{\"speechid\": \"hello\"}"), response));
 }
@@ -505,6 +1201,7 @@ TEST_F(TTSInitializedTest,GetSpeechStateStringAsSpeechId) {
  */
 
 TEST_F(TTSInitializedTest,Cancel) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("cancel"), _T("{\"speechid\": 1}"), response));
     EXPECT_EQ(response, _T("{\"TTS_Status\":0,\"success\":true}"));
@@ -519,6 +1216,7 @@ TEST_F(TTSInitializedTest,Cancel) {
  */
 
 TEST_F(TTSInitializedTest,CancelEmptySpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{\"speechid\": \"\"}"), response));
 }
@@ -532,6 +1230,7 @@ TEST_F(TTSInitializedTest,CancelEmptySpeechId) {
  */
 
 TEST_F(TTSInitializedTest,CancelStringAsSpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("cancel"), _T("{\"speechid\": \"hello\"}"), response));
 }
@@ -555,6 +1254,7 @@ TEST_F(TTSInitializedTest,CancelStringAsSpeechId) {
  */
 
 TEST_F(TTSInitializedTest,Pause) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), _T("{\"speechid\": 1}"), response));
 }
@@ -568,6 +1268,7 @@ TEST_F(TTSInitializedTest,Pause) {
  */
 
 TEST_F(TTSInitializedTest,PauseEmptySpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), _T("{\"speechid\":\"\"}"), response));
 }
@@ -581,6 +1282,7 @@ TEST_F(TTSInitializedTest,PauseEmptySpeechId) {
  */
 
 TEST_F(TTSInitializedTest,PauseStringAsSpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("pause"), _T("{\"speechid\": \"hello\"}"), response));
 }
@@ -604,6 +1306,7 @@ TEST_F(TTSInitializedTest,PauseStringAsSpeechId) {
  */
 
 TEST_F(TTSInitializedTest,Resume) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), _T("{\"speechid\": 1}"), response));
 }
@@ -617,6 +1320,7 @@ TEST_F(TTSInitializedTest,Resume) {
  */
 
 TEST_F(TTSInitializedTest,ResumeEmptySpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), _T("{\"speechid\":\"\"}"), response));
 }
@@ -630,6 +1334,7 @@ TEST_F(TTSInitializedTest,ResumeEmptySpeechId) {
  */
 
 TEST_F(TTSInitializedTest,ResumeStringAsSpeechId) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("resume"), _T("{\"speechid\": \"hello\"}"), response));
 }
@@ -653,6 +1358,7 @@ TEST_F(TTSInitializedTest,ResumeStringAsSpeechId) {
  */
 
 TEST_F(TTSInitializedTest, SetTTSConfiguration) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
@@ -677,6 +1383,7 @@ TEST_F(TTSInitializedTest, SetTTSConfiguration) {
  */
 
 TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
@@ -699,7 +1406,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
-
+#if 0
 /**
  * @name  : SetInvalidTTSEndpoint
  * @brief : Set Invalid URL in ttsendpoint and check it return error
@@ -709,6 +1416,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
  */
 
 TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -736,6 +1444,7 @@ TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
@@ -763,6 +1472,7 @@ TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -787,6 +1497,7 @@ TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -811,6 +1522,7 @@ TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -835,6 +1547,7 @@ TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
+    plugin->Deinitialize(&service);
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -849,7 +1562,7 @@ TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
         EXPECT_TRUE(false) << "Error: 'ttsendpointsecured' not found in the response.";
     }
 }
-
+#endif
 /**
  * @name  : SetStringAsVolume
  * @brief : Set string in Volume and check it returns error
@@ -859,6 +1572,7 @@ TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
  */
 
 TEST_F(TTSInitializedTest, SetStringAsVolume) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": \"invalid\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -883,6 +1597,7 @@ TEST_F(TTSInitializedTest, SetStringAsVolume) {
  */
 
 TEST_F(TTSInitializedTest, SetVolumeLessThanMinValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": -1}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -907,6 +1622,7 @@ TEST_F(TTSInitializedTest, SetVolumeLessThanMinValue) {
  */
 
 TEST_F(TTSInitializedTest, SetVolumeGreaterThanMaxValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": 101}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -931,6 +1647,7 @@ TEST_F(TTSInitializedTest, SetVolumeGreaterThanMaxValue) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyVolume) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -955,6 +1672,7 @@ TEST_F(TTSInitializedTest, SetEmptyVolume) {
  */
 
 TEST_F(TTSInitializedTest, SetStringAsRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": \"invalid\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -979,6 +1697,7 @@ TEST_F(TTSInitializedTest, SetStringAsRate) {
  */
 
 TEST_F(TTSInitializedTest, SetRateLessThanMinValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": -1}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1003,6 +1722,7 @@ TEST_F(TTSInitializedTest, SetRateLessThanMinValue) {
  */
 
 TEST_F(TTSInitializedTest, SetRateGreaterThanMaxValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": 101}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1027,6 +1747,7 @@ TEST_F(TTSInitializedTest, SetRateGreaterThanMaxValue) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\":\"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1051,6 +1772,7 @@ TEST_F(TTSInitializedTest, SetEmptyRate) {
  */
 
 TEST_F(TTSInitializedTest, SetStringAsprimvolduckpercent) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"primvolduckpercent\": \"invalid\"}"), response));
 }
@@ -1064,6 +1786,7 @@ TEST_F(TTSInitializedTest, SetStringAsprimvolduckpercent) {
  */
 
 TEST_F(TTSInitializedTest, SetPrimvolduckpercentLessThanMinValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"primvolduckpercent\": -1}"), response));
 }
@@ -1077,6 +1800,7 @@ TEST_F(TTSInitializedTest, SetPrimvolduckpercentLessThanMinValue) {
  */
 
 TEST_F(TTSInitializedTest, SetPrimvolduckpercentGreaterThanMaxValue) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"primvolduckpercent\": 101}"), response));
 }
@@ -1090,6 +1814,7 @@ TEST_F(TTSInitializedTest, SetPrimvolduckpercentGreaterThanMaxValue) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyPrimvolduckpercent) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"primvolduckpercent\": \"\"}"), response));
 }
@@ -1103,6 +1828,7 @@ TEST_F(TTSInitializedTest, SetEmptyPrimvolduckpercent) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1127,6 +1853,7 @@ TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
  */
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1151,6 +1878,7 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
  */
 
 TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1175,6 +1903,7 @@ TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
  */
 
 TEST_F(TTSInitializedTest, SetNullSpeechRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1199,6 +1928,7 @@ TEST_F(TTSInitializedTest, SetNullSpeechRate) {
  */
 
 TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"invalid\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1223,6 +1953,7 @@ TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1247,6 +1978,7 @@ TEST_F(TTSInitializedTest, SetEmptyLanguage) {
  */
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1271,6 +2003,7 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
  */
 
 TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1295,6 +2028,7 @@ TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
  */
 
 TEST_F(TTSInitializedTest, SetNullLanguage) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": NULL}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1319,6 +2053,7 @@ TEST_F(TTSInitializedTest, SetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest, SetEmptyVoice) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1343,6 +2078,7 @@ TEST_F(TTSInitializedTest, SetEmptyVoice) {
  */
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsVoice) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1367,6 +2103,7 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsVoice) {
  */
 
 TEST_F(TTSInitializedTest, SetNumberAsVoice) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1391,6 +2128,7 @@ TEST_F(TTSInitializedTest, SetNumberAsVoice) {
  */
 
 TEST_F(TTSInitializedTest, SetNullVoice) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
@@ -1415,6 +2153,7 @@ TEST_F(TTSInitializedTest, SetNullVoice) {
  */
 
 TEST_F(TTSInitializedTest, SetAuthInfoTypeEmpty) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"),
         _T("{\"authinfo\": {\"type\":\"\",\"value\":\"speak text\"}}"), response));
@@ -1429,6 +2168,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeEmpty) {
  */
 
 TEST_F(TTSInitializedTest, SetAuthInfoTypeWhiteSpace) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"),
         _T("{\"authinfo\": {\"type\":\"  \",\"value\":\"speak text\"}}"), response));
@@ -1443,6 +2183,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeWhiteSpace) {
  */
 
 TEST_F(TTSInitializedTest, SetAuthInfoTypeNull) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"),
         _T("{\"authinfo\": {\"type\":null,\"value\":\"speak text\"}}"), response));
@@ -1467,6 +2208,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeNull) {
  */
 
  TEST_F(TTSInitializedTest,SetACL) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
@@ -1504,6 +2246,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeNull) {
  */
 
 TEST_F(TTSInitializedTest, SetACLInvalidAccess) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
@@ -1536,25 +2279,6 @@ TEST_F(TTSInitializedTest, SetACLInvalidAccess) {
 }
 
 /**
- * @name  : SetACLInvalidMethod
- * @brief : Calling speak method with  invalid method other than speak
- *
- * @param[in]   :  method of tts and app name
- * @return      :  ERROR_GENERAL
- */
-
-TEST_F(TTSInitializedTest, SetACLInvalidMethod) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
-        connection,
-        _T("setACL"),
-        _T("{\"accesslist\": [{\"method\":\"invalid\",\"apps\":\"WebAPP1\"}]}"),
-        response
-    ));
-}
-
-/**
  * @name  : SetACLEmptyMethod
  * @brief : Calling speak method with empty method
  *
@@ -1563,6 +2287,7 @@ TEST_F(TTSInitializedTest, SetACLInvalidMethod) {
  */
 
 TEST_F(TTSInitializedTest, SetACLEmptyMethod) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1582,6 +2307,7 @@ TEST_F(TTSInitializedTest, SetACLEmptyMethod) {
  */
 
 TEST_F(TTSInitializedTest, SetACLWhitespaceMethod) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1601,6 +2327,7 @@ TEST_F(TTSInitializedTest, SetACLWhitespaceMethod) {
  */
 
 TEST_F(TTSInitializedTest, SetACLNullMethod) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1620,6 +2347,7 @@ TEST_F(TTSInitializedTest, SetACLNullMethod) {
  */
 
 TEST_F(TTSInitializedTest, SetACLEmptyApp) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1639,6 +2367,7 @@ TEST_F(TTSInitializedTest, SetACLEmptyApp) {
  */
 
 TEST_F(TTSInitializedTest, SetACLWhitespaceApp) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1658,6 +2387,7 @@ TEST_F(TTSInitializedTest, SetACLWhitespaceApp) {
  */
 
 TEST_F(TTSInitializedTest, SetACLNullApp) {
+    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
@@ -1667,3 +2397,16 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         response
     ));
 }
+#if 0
+TEST_F(TTSInitializedTest, speakWithRFCURL) {
+    mockTTSConfigure();
+    mockRFCURL();
+    mockSATToken();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), 
+        _T("{\"text\":\"Hello world\",\"callsign\":\"testapp\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\":")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+#endif

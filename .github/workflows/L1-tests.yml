@@ -208,6 +208,12 @@ jobs:
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
+          cd -
+
       - name: Build entservices-apis
         run: >
           cmake -G Ninja
@@ -221,6 +227,8 @@ jobs:
           cmake --build build/entservices-apis -j8
           &&
           cmake --install build/entservices-apis
+          &&
+          ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces
           
       - name: Generate external headers
         # Empty headers to mute errors
@@ -450,6 +458,7 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
+          -DPLUGIN_TEXTTOSPEECH_MODE="Off"
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
           &&
@@ -540,6 +549,7 @@ jobs:
           sudo mkdir -p -m 777
           /tmp/test/testApp/etc/apps
           /opt/persistent
+          /opt/www
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
@@ -570,6 +580,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -594,6 +605,7 @@ jobs:
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties

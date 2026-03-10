@@ -26,8 +26,10 @@ inline bool getRFCConfig(const char* paramName, RFC_ParamData_t& paramOutput)
 {
     WDMP_STATUS wdmpStatus = getRFCParameter(nullptr, paramName, &paramOutput);
     if (wdmpStatus == WDMP_SUCCESS || wdmpStatus == WDMP_ERR_DEFAULT_VALUE) {
+        printf("kykumar getrfc %d\n", wdmpStatus);
         return true;
     }
+    printf("kykumar getrfc fail %d\n", wdmpStatus);
     return false;
 }
 }
