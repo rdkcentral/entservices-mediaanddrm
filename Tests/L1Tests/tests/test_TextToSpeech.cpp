@@ -152,17 +152,17 @@ protected:
     virtual ~TTSTest() override
     {
         printf("kykumar destructor\n");
-        plugin->Deinitialize(&service);
-
         dispatcher->Deactivate();
+        plugin->Deinitialize(&service);
         dispatcher->Release();
-
-        Core::IWorkerPool::Assign(nullptr);
-
+        plugin.Release();
+        
         if (workerPool.IsValid()) {
             workerPool->Stop();
-            workerPool.Release();
         }
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
 
         RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr)
