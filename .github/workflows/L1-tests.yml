@@ -207,13 +207,14 @@ jobs:
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
-          
+
       - name: Build entservices-apis
         run: >
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-apis"
           -B build/entservices-apis
           -DEXCEPTIONS_ENABLE=ON
+          -DPYTHON_EXECUTABLE="$(which python3)"
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr"
           -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake"
           &&
@@ -449,12 +450,8 @@ jobs:
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
-          -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
-          -DPLUGIN_PLAYERINFO=ON
-          -DPLUGIN_LINEARPLAYBACKCONTROL=ON
-          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
           &&
           cmake --build build/entservices-mediaanddrm -j8
           &&
@@ -528,15 +525,11 @@ jobs:
           -DCMAKE_DISABLE_FIND_PACKAGE_RBus=ON
           -DCMAKE_BUILD_TYPE=Debug
           -DDS_FOUND=ON
-          -DPLUGIN_SCREENCAPTURE=ON
           -DPLUGIN_TEXTTOSPEECH=ON
           -DPLUGIN_SYSTEMAUDIOPLAYER=ON
-          -DPLUGIN_PLAYERINFO=ON
-          -DPLUGIN_LINEARPLAYBACKCONTROL=ON
           -DRDK_SERVICES_L1_TEST=ON
           -DUSE_THUNDER_R4=ON
           -DHIDE_NON_EXTERNAL_SYMBOLS=OFF
-          -DPLUGIN_UNIFIEDCASMANAGEMENT=ON
           &&
           cmake --build build/entservices-testframework -j8
           &&
