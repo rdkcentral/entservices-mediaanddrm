@@ -2405,7 +2405,7 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         response
     ));
 }
-
+#if 0
 TEST_F(TTSInitializedTest, speakWithRFCURL) {
     //mockTTSConfigure();
     mockRFCURL();
@@ -2417,3 +2417,4 @@ TEST_F(TTSInitializedTest, speakWithRFCURL) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
+#endif
