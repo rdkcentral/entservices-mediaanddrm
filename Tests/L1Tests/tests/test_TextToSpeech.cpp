@@ -71,7 +71,7 @@ protected:
                 "}"
         ));
     }
-
+#if 0
     void mockSATToken()
     {
         ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
@@ -81,7 +81,7 @@ protected:
                     return WPEFramework::Core::ERROR_NONE;
                 }));
     }
-
+#endif
     void mockRFCURL()
     {
         ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
