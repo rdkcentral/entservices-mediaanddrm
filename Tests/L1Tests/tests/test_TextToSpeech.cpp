@@ -54,6 +54,24 @@ protected:
     NiceMock<FactoriesImplementation> factoriesImplementation;
     NiceMock<MockAuthService> authserviceMock;
 
+    void mockTTSConfigure()
+    {
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+        ));
+    }
+
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -113,7 +131,7 @@ protected:
             delete p_rfcApiImplMock;
             p_rfcApiImplMock = nullptr;
         }
-        
+
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
         {
@@ -381,16 +399,8 @@ TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest,Speak) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(1);
