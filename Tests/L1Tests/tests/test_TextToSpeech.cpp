@@ -158,7 +158,11 @@ protected:
         dispatcher->Release();
 
         Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
+
+        if (workerPool.IsValid()) {
+            workerPool->Stop();
+            workerPool.Release();
+        }
 
         RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr)
