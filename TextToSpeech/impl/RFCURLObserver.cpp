@@ -124,15 +124,18 @@ void RFCURLObserver::registerNotification() {
         } else {        
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"", false, token);
         }
-
+        printf("kykumar token %s\n", token.c_str());
         while (!m_eventRegistered) {		
+            printf("kykumar mgt subscribe start\n");
             if (m_systemService->Subscribe<JsonObject>(3000, "onDeviceMgtUpdateReceived",
                 &RFCURLObserver::onDeviceMgtUpdateReceivedHandler, this) == Core::ERROR_NONE) {
+                    printf("kykumar mgt subscribe success\n");
                 m_eventRegistered = true;
                 TTSLOG_INFO("Subscribed to notification handler: onDeviceMgtUpdateReceived");
                 break;
             } else {
                 TTSLOG_ERROR("Failed to subscribe to notification handler: onDeviceMgtUpdateReceived..Retrying");
+                printf("kykumar mgt subscribe fail\n");
                 std::this_thread::sleep_for(std::chrono::milliseconds(RETRY_DELAY_MS));
             }
         }
