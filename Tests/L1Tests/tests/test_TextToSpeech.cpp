@@ -133,15 +133,11 @@ protected:
                     }));
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Return(TextToSpeechImplementation));
-#endif /*USE_THUNDER_R4 */
+            .WillByDefault(::testing::Return(reinterpret_cast<void*>(0x1)));
+#endif
 
         ON_CALL(comLinkMock, RemoteConnection(::testing::_))
             .WillByDefault(::testing::Return(nullptr));
-
-        Core::ProxyType<WPEFramework::RPC::CommunicatorClient> communicator = Core::ProxyType<WPEFramework::RPC::CommunicatorClient>::Create();
-
-        communicator->Open(0);
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
