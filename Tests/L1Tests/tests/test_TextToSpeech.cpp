@@ -139,6 +139,10 @@ protected:
         ON_CALL(comLinkMock, RemoteConnection(::testing::_))
             .WillByDefault(::testing::Return(nullptr));
 
+        Core::ProxyType<WPEFramework::RPC::CommunicatorClient> communicator = Core::ProxyType<WPEFramework::RPC::CommunicatorClient>::Create();
+
+        communicator->Open(0);
+
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
         Core::IWorkerPool::Assign(&(*workerPool));
