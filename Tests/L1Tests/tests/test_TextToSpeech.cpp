@@ -136,6 +136,9 @@ protected:
             .WillByDefault(::testing::Return(TextToSpeechImplementation));
 #endif /*USE_THUNDER_R4 */
 
+        ON_CALL(comLinkMock, RemoteConnection(::testing::_))
+            .WillByDefault(::testing::Return(nullptr));
+
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
         Core::IWorkerPool::Assign(&(*workerPool));
