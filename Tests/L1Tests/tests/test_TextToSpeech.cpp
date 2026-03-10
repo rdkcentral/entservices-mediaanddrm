@@ -217,9 +217,6 @@ protected:
 };
 
 TEST_F(TTSInitializedTest,RegisteredMethods) {
-    mockTTSConfigure();
-    mockRFCFail();
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("enabletts")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("cancel")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getapiversion")));
