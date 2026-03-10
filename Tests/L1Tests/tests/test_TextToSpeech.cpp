@@ -110,7 +110,7 @@ protected:
         , handler(*(plugin))
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
-            4, Core::Thread::DefaultStackSize(), 16))
+            2, Core::Thread::DefaultStackSize(), 16))
     {
         printf("kykumar constructor\n");
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
@@ -133,7 +133,7 @@ protected:
                     }));
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-            .WillByDefault(::testing::Return(reinterpret_cast<void*>(0x1)));
+            .WillByDefault(::testing::Return(TextToSpeechImplementation));
 #endif
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
@@ -152,7 +152,16 @@ protected:
     virtual ~TTSTest() override
     {
         printf("kykumar destructor\n");
-        
+        plugin->Deinitialize(&service);
+        dispatcher->Deactivate();
+        dispatcher->Release();
+
+        if (workerPool.IsValid()) {
+            workerPool->Stop();
+        }
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
+
         RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr)
         {
@@ -168,18 +177,6 @@ protected:
         }
 
         PluginHost::IFactories::Assign(nullptr);
-
-        dispatcher->Deactivate();
-        plugin->Deinitialize(&service);
-        dispatcher->Release();
-        plugin.Release();
-        
-        if (workerPool.IsValid()) {
-            workerPool->Stop();
-        }
-
-        Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
     }
 };
 
