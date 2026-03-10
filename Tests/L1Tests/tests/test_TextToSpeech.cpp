@@ -53,7 +53,7 @@ protected:
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
     //NiceMock<MockAuthService> authserviceMock;
-
+#if 0
     void mockTTSConfigure()
     {
         ON_CALL(service, ConfigLine())
@@ -71,7 +71,6 @@ protected:
                 "}"
         ));
     }
-#if 0
     void mockSATToken()
     {
         ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_))
@@ -144,7 +143,7 @@ protected:
         dispatcher = static_cast<PLUGINHOST_DISPATCHER*>(
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
-        mockTTSConfigure();
+        //mockTTSConfigure();
         //mockRFCFail();
         EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
