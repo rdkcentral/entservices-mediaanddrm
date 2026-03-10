@@ -50,10 +50,8 @@ void RFCURLObserver::triggerRFC(TTSConfiguration *config)
 {
    m_defaultConfig = config;
    fetchURLFromConfig();
-#ifndef UNIT_TESTING
    std::thread notificationThread(&RFCURLObserver::registerNotification, this);
    notificationThread.detach(); // Detach the thread to run independently
-#endif
 }
 
 void RFCURLObserver::fetchURLFromConfig() {
