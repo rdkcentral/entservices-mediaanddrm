@@ -229,8 +229,6 @@ jobs:
           cmake --install build/entservices-apis
           &&
           ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces
-          &&
-          cat $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/ISystemService.h
           
       - name: Generate external headers
         # Empty headers to mute errors
