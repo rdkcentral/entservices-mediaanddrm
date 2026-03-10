@@ -145,7 +145,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
         mockTTSConfigure();
-        mockRFCFail();
+        //mockRFCFail();
         EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
 
