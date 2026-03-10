@@ -110,7 +110,7 @@ protected:
         , handler(*(plugin))
         , INIT_CONX(1, 0)
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
-            2, Core::Thread::DefaultStackSize(), 16))
+            4, Core::Thread::DefaultStackSize(), 16))
     {
         printf("kykumar constructor\n");
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
@@ -152,18 +152,7 @@ protected:
     virtual ~TTSTest() override
     {
         printf("kykumar destructor\n");
-        dispatcher->Deactivate();
-        plugin->Deinitialize(&service);
-        dispatcher->Release();
-        plugin.Release();
         
-        if (workerPool.IsValid()) {
-            workerPool->Stop();
-        }
-
-        Core::IWorkerPool::Assign(nullptr);
-        workerPool.Release();
-
         RfcApi::setImpl(nullptr);
         if (p_rfcApiImplMock != nullptr)
         {
@@ -179,6 +168,18 @@ protected:
         }
 
         PluginHost::IFactories::Assign(nullptr);
+
+        dispatcher->Deactivate();
+        plugin->Deinitialize(&service);
+        dispatcher->Release();
+        plugin.Release();
+        
+        if (workerPool.IsValid()) {
+            workerPool->Stop();
+        }
+
+        Core::IWorkerPool::Assign(nullptr);
+        workerPool.Release();
     }
 };
 
