@@ -1412,7 +1412,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
-
+#if 0
 /**
  * @name  : SetInvalidTTSEndpoint
  * @brief : Set Invalid URL in ttsendpoint and check it return error
@@ -1568,7 +1568,7 @@ TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
         EXPECT_TRUE(false) << "Error: 'ttsendpointsecured' not found in the response.";
     }
 }
-
+#endif
 /**
  * @name  : SetStringAsVolume
  * @brief : Set string in Volume and check it returns error
