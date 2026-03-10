@@ -156,9 +156,6 @@ protected:
         dispatcher->Deactivate();
         dispatcher->Release();
 
-        if (workerPool.IsValid()) {
-            workerPool->Stop();
-        }
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
 #if 0
