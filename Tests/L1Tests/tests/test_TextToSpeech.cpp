@@ -30,7 +30,7 @@
 #include "systemaudioplatformmock.h"
 #include "RfcApiMock.h"
 #include <interfaces/IAuthService.h>
-#include "mockauthservices.h"
+//#include "mockauthservices.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -52,7 +52,7 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
-    NiceMock<MockAuthService> authserviceMock;
+    //NiceMock<MockAuthService> authserviceMock;
 
     void mockTTSConfigure()
     {
@@ -145,7 +145,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
         mockTTSConfigure();
-        //mockRFCFail();
+        mockRFCFail();
         EXPECT_EQ(string(""), plugin->Initialize(&service));
     }
 
