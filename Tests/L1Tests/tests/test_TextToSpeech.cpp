@@ -1720,7 +1720,7 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-TEST_F(TTSInitializedTest,Speak) {
+TEST_F(TTSInitializedTest,SpeakTTS2) {
     mockTTSConfigureTTS2();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
