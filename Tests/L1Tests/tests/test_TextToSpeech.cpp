@@ -72,24 +72,16 @@ protected:
         ));
     }
 
-    void mockTTSConfigureTTS2()
+    void mockRFCURL()
     {
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return(
-                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
-                "\"endpoint_type\":\"TTS2\","
-                "\"speechrate\":\"medium\","
-                "\"satplugincallsign\":\"org.rdk.AuthService\","
-                "\"satplugincallsign\":\"org.rdk.AuthService\","
-                "\"language\":\"en-US\","
-                "\"volume\":100,"
-                "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
-                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
-                "}"
-        ));
+        ON_CALL(*p_rfcApiImplMock, getRFCParameter(::testing::_, ::testing::_, ::testing::_))
+            .WillByDefault(::testing::Invoke(
+                [](char* pcCallerID, const char* pcParameterName, RFC_ParamData_t* pstParamData) {
+                    printf("kykumar rfc read mock\n");
+                        strncpy(pstParamData->value, "https://example-rfc-dummy.net", sizeof(pstParamData->value));
+                        pstParamData->type = WDMP_STRING;
+                        return WDMP_SUCCESS;
+                }));
     }
 
     TTSTest()
@@ -1720,8 +1712,9 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
-TEST_F(TTSInitializedTest,SpeakTTS2) {
-    mockTTSConfigureTTS2();
+TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    mockTTSConfigure();
+    mockRFCURL();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
