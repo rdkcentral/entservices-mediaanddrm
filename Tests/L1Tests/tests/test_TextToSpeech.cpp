@@ -1693,7 +1693,6 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
 }
 
 TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
-    mockRFCFail();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
         _T("{\"language\":\"en-US\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
