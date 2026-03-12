@@ -139,8 +139,8 @@ void RFCURLObserver::registerNotification() {
                 std::this_thread::sleep_for(std::chrono::milliseconds(RETRY_DELAY_MS));
             }
         }
-    }
 #endif
+    }
 }
 
 void RFCURLObserver::onDeviceMgtUpdateReceivedHandler(const JsonObject& parameters) {
