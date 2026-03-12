@@ -28,6 +28,9 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
+#include <interfaces/IAuthService.h>
+#include "mockauthservices.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -45,10 +48,48 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    NiceMock<MockAuthService> authserviceMock;
 
+    void mockTTSConfigure()
+    {
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+        ));
+    }
+
+    void mockTTSConfigureTTS2()
+    {
+        ON_CALL(service, ConfigLine())
+            .WillByDefault(::testing::Return(
+                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"endpoint_type\":\"TTS2\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
+                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "}"
+        ));
+    }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -58,6 +99,8 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -99,6 +142,13 @@ protected:
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
+
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
 
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
@@ -367,16 +417,8 @@ TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest,Speak) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(1);
@@ -1666,4 +1708,26 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":NULL}]}"),
         response
     ));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    plugin->Deinitialize(&service);
+    sleep(3);
+    mockTTSConfigureTTS2();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    sleep(3);
+
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
