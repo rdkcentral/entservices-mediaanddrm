@@ -235,6 +235,8 @@ protected:
 
                 result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
 
+                if (!result) 
+                    g_printerr("kykumar Failed to link GStreamer elements\n");
             } else if (type == PCM) {
 
             } else {
