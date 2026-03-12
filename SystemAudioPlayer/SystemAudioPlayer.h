@@ -65,12 +65,12 @@ namespace Plugin {
 
                 virtual void Activated(RPC::IRemoteConnection* /* connection */) final
                 {
-                    SAPLOG_WARNING("SystemAudioPlayer::Notification::Activated - %p", this);
+                    
                 }
 
                 virtual void Deactivated(RPC::IRemoteConnection* connection) final
                 {
-                    SAPLOG_WARNING("SystemAudioPlayer::Notification::Deactivated - %p", this);
+                    
                     _parent.Deactivated(connection);
                 }
 
