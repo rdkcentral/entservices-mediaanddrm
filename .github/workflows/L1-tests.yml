@@ -544,6 +544,7 @@ jobs:
       - name: Set up files
         run: >
           sudo mkdir -p -m 777
+          /etc/entservices
           /tmp/test/testApp/etc/apps
           /opt/persistent
           /opt/www
@@ -573,6 +574,7 @@ jobs:
           if [ ! -f mknod /dev/sdb2 c 240 0 ]; then mknod /dev/sdb2 c 240 0; fi
           &&
           sudo touch
+          /etc/entservices/ttsConfig.json
           /tmp/test/testApp/etc/apps/testApp_package.json
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
@@ -599,6 +601,7 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /etc/entservices/ttsConfig.json
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt

@@ -31,10 +31,15 @@
 #include "RfcApiMock.h"
 #include <interfaces/IAuthService.h>
 #include "mockauthservices.h"
+#include <iostream>
+#include <fstream>
+#include <string>
 
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
+
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
 
 class TTSTest : public Test{
 protected:
@@ -56,11 +61,16 @@ protected:
 
     void mockTTSConfigure()
     {
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return(
-                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+        std::ofstream file(TTS_CONFIG_FILE_PATH);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+            return false;
+        }
+
+        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
                 "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
                 "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"endpoint_type\":\"TTS2\","
                 "\"speechrate\":\"medium\","
                 "\"satplugincallsign\":\"org.rdk.AuthService\","
                 "\"language\":\"en-US\","
@@ -68,8 +78,11 @@ protected:
                 "\"rate\":50,"
                 "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
                 "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
-                "}"
-        ));
+                "}";
+
+        file << json;
+        file.close();
+        printf("TTS config written successfully.\n");
     }
 
     void mockTTSConfigureTTS2()
