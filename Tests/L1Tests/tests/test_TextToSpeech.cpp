@@ -61,7 +61,39 @@ protected:
 
     void mockTTSConfigure()
     {
-        std::ofstream file(TTS_CONFIG_FILE_PATH);
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        }
+
+        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                "}";
+
+        file << json;
+        file.close();
+        printf("TTS config written successfully.\n");
+    }
+
+    void cleanupTTSConfigFile()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        }
+        file.close();
+    }
+
+    void mockTTSConfigureTTS2()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
         if (!file.is_open()) {
             printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
         }
@@ -75,32 +107,13 @@ protected:
                 "\"language\":\"en-US\","
                 "\"volume\":100,"
                 "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
-                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
+                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                 "}";
 
         file << json;
         file.close();
         printf("TTS config written successfully.\n");
-    }
-
-    void mockTTSConfigureTTS2()
-    {
-        ON_CALL(service, ConfigLine())
-            .WillByDefault(::testing::Return(
-                "{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
-                "\"endpoint_type\":\"TTS2\","
-                "\"speechrate\":\"medium\","
-                "\"satplugincallsign\":\"org.rdk.AuthService\","
-                "\"language\":\"en-US\","
-                "\"volume\":100,"
-                "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"},"
-                "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"Angelica\",\"fr-CA\":\"amelie\",\"en-GB\":\"en-GB-Standard-N\",\"de-DE\":\"de-DE-Standard-G\",\"it-IT\":\"it-IT-Standard-E\"}"
-                "}"
-        ));
     }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -438,6 +451,7 @@ TEST_F(TTSInitializedTest,Speak) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    cleanupTTSConfigFile();
 }
 
 /*******************************************************************************************************************
@@ -1742,4 +1756,5 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    cleanupTTSConfigFile();
 }
