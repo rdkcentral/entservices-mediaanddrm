@@ -64,7 +64,6 @@ protected:
         std::ofstream file(TTS_CONFIG_FILE_PATH);
         if (!file.is_open()) {
             printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
-            return false;
         }
 
         std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
