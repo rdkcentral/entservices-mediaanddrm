@@ -934,10 +934,13 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
 
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
-
+printf("kykumar gst intialized\n");
     while(speaker && speaker->m_runThread) {
+        printf("kykumar needsPipelineUpdate\n");
         if(speaker->needsPipelineUpdate()) {
+            printf("kykumar m_ensurePipeline\n");
             if(speaker->m_ensurePipeline) {
+                printf("kykumar createPipeline\n");
                 speaker->createPipeline(speaker->getPipelineType());
 
                 // If pipeline creation fails, send playbackerror to the client and remove the req from queue
@@ -1014,7 +1017,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // stop the pipeline until the next tts string...
         speaker->resetPipeline();
     }
-
+printf("kykumar destroy pipeline\n");
     speaker->destroyPipeline();
 }
 
