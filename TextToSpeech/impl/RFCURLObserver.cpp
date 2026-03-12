@@ -121,12 +121,13 @@ string RFCURLObserver::getSecurityToken() {
 void RFCURLObserver::registerNotification() {
     if (m_systemService == nullptr && !m_eventRegistered) {
         std::string token = getSecurityToken();
+#ifndef UNIT_TESTING
         if(token.empty()) {
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"");
         } else {        
             m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"", false, token);
         }
-
+         TTSLOG_INFO("Subscribing to onDeviceMgtUpdateReceived notification");
         while (!m_eventRegistered) {		
             if (m_systemService->Subscribe<JsonObject>(3000, "onDeviceMgtUpdateReceived",
                 &RFCURLObserver::onDeviceMgtUpdateReceivedHandler, this) == Core::ERROR_NONE) {
@@ -139,6 +140,7 @@ void RFCURLObserver::registerNotification() {
             }
         }
     }
+#endif
 }
 
 void RFCURLObserver::onDeviceMgtUpdateReceivedHandler(const JsonObject& parameters) {
