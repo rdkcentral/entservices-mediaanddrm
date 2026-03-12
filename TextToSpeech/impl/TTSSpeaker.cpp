@@ -625,6 +625,7 @@ void TTSSpeaker::createPipeline(PipelineType type) {
     GstElement *capsfilter = NULL;
     m_pcmAudioEnabled = false;
     
+    printf("kykumar create pipeline type=%d\n", type);
     if(!m_ensurePipeline || m_pipeline) {
         TTSLOG_WARNING("Skipping Pipeline creation");
         return;
@@ -934,10 +935,13 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
 
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
-
+printf("kykumar while loop\n");
     while(speaker && speaker->m_runThread) {
+        printf("kykumar speaker && speaker->m_runThread\n");
         if(speaker->needsPipelineUpdate()) {
+            printf("kykumar needsPipelineUpdate\n");
             if(speaker->m_ensurePipeline) {
+                printf("kykumar createPipeline\n");
                 speaker->createPipeline(speaker->getPipelineType());
 
                 // If pipeline creation fails, send playbackerror to the client and remove the req from queue
