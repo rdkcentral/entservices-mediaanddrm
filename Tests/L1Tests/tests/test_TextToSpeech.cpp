@@ -217,7 +217,8 @@ protected:
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
-
+            
+            printf("kykumar create pipeline\n");
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("souphttpsrc", NULL);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
@@ -469,7 +470,7 @@ TEST_F(TTSInitializedTest,Speak) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(1);
+    sleep(3);
 
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
