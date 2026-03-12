@@ -213,12 +213,33 @@ protected:
     ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
-    ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
 
-            bool result = false;
+            *pipeline = gst_pipeline_new(NULL);
+            *source = gst_element_factory_make("souphttpsrc", NULL);
+            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            *audioSink = gst_element_factory_make("fakesink", NULL);
+            
+            // Set sync=true to make fakesink respect audio timing instead of consuming instantly
+            g_object_set(*audioSink, "sync", TRUE, NULL);
+
+            bool result = TRUE;
+
+            if (type == MP3) {
+                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
+                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
+                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
+
+                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
+
+            } else if (type == PCM) {
+
+            } else {
+            }
+
             return result;
         }));
 
