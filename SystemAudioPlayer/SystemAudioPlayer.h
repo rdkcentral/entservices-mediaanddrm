@@ -65,12 +65,10 @@ namespace Plugin {
 
                 virtual void Activated(RPC::IRemoteConnection* /* connection */) final
                 {
-                    
                 }
 
                 virtual void Deactivated(RPC::IRemoteConnection* connection) final
                 {
-                    
                     _parent.Deactivated(connection);
                 }
 
