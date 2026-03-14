@@ -1,0 +1,9 @@
+precondition = ["Platform"]
+callsign = "org.rdk.GStreamerPlayer"
+startuporder = "@PLUGIN_GSTREAMERPLAYER_STARTUPORDER@"
+autostart = "@PLUGIN_GSTREAMERPLAYER_AUTOSTART@"
+
+configuration = JSON()
+rootobject = JSON()
+rootobject.add("mode", "@PLUGIN_GSTREAMERPLAYER_MODE@")
+configuration.add("root", rootobject)
