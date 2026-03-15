@@ -576,6 +576,7 @@ jobs:
           sudo touch
           /etc/entservices/ttsConfig.json
           /tmp/test/testApp/etc/apps/testApp_package.json
+          /opt/persistent/tts.setting.ini
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
@@ -602,6 +603,7 @@ jobs:
           &&
           sudo chmod -R 777
           /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt

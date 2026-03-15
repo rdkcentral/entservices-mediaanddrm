@@ -987,7 +987,7 @@ printf("kykumar gst intialized\n");
         // Inform the client before speaking
         if(!speaker->m_flushed)
             data.client->willSpeak(data.id, data.callsign, data.text);
-
+        printf("kykumar pushed willspeak\n");
         // Push it to gstreamer for speaking
         if(!speaker->m_flushed) {
             printf("kykumar speaktext\n");
