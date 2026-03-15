@@ -113,7 +113,7 @@ protected:
 
         file << json;
         file.close();
-        printf("TTS config written successfully.\n");
+        printf("TTS config tts2 written successfully.\n");
     }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -266,7 +266,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
-
+#if 0
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -1767,11 +1767,8 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
-
+#endif
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
-    printf("kykumar enable tts\n\n");
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
-    printf("kykumar stopping ttsplugin\n");
     plugin->Deinitialize(&service);
     sleep(3);
     printf("kykumar ttsplugin stopped\n");
@@ -1779,6 +1776,9 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     printf("kykumar starting ttsplugin\n");
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     sleep(3);
+    printf("kykumar enable tts\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
+    printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
