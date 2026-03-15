@@ -58,10 +58,12 @@ TTSManager::~TTSManager() {
 
 TTS_Error TTSManager::enableTTS(bool enable) {
     static bool force = true; 
+    printf("kykumar enable %d\n", enable);
     if(force || m_defaultConfiguration.setEnabled(enable)) {
+        printf("kykumar after enabling %d\n", m_defaultConfiguration.enabled());
         if(!m_defaultConfiguration.enabled())
             shut(0);
-        TTSLOG_INFO("TTS is %s", m_defaultConfiguration.enabled()? "Enabled" : "Disabled");
+        printf("kykumar TTS is %s", m_defaultConfiguration.enabled()? "Enabled" : "Disabled");
         m_defaultConfiguration.updateConfigStore();
         m_callback->onTTSStateChanged(m_defaultConfiguration.enabled());
         m_speaker->ensurePipeline(m_defaultConfiguration.enabled());
