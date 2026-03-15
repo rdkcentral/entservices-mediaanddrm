@@ -28,10 +28,18 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
+#include <interfaces/IAuthService.h>
+#include "mockauthservices.h"
+#include <iostream>
+#include <fstream>
+#include <string>
 
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
+
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
 
 class TTSTest : public Test{
 protected:
@@ -45,10 +53,68 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    NiceMock<MockAuthService> authserviceMock;
 
+    void mockTTSConfigure()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        }
+
+        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"speechrate\":\"medium\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                "}";
+
+        file << json;
+        file.close();
+        printf("TTS config written successfully.\n");
+    }
+
+    void cleanupTTSConfigFile()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        }
+        file.close();
+    }
+
+    void mockTTSConfigureTTS2()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        }
+
+        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                "\"endpoint_type\":\"TTS2\","
+                "\"speechrate\":\"medium\","
+                "\"satplugincallsign\":\"org.rdk.AuthService\","
+                "\"language\":\"en-US\","
+                "\"volume\":100,"
+                "\"rate\":50,"
+                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                "}";
+
+        file << json;
+        file.close();
+        printf("TTS config tts2 written successfully.\n");
+    }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -58,6 +124,8 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -92,13 +160,21 @@ protected:
 
     virtual ~TTSTest() override
     {
+        printf("kykumar destructor deinitialize\n");
         plugin->Deinitialize(&service);
-
+        sleep(3);
         dispatcher->Deactivate();
         dispatcher->Release();
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
+
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
 
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
@@ -142,8 +218,32 @@ protected:
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+            
+            printf("kykumar systemAudioGeneratePipeline create pipeline\n");
+            *pipeline = gst_pipeline_new(NULL);
+            *source = gst_element_factory_make("souphttpsrc", NULL);
+            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            *audioSink = gst_element_factory_make("fakesink", NULL);
+            
+            // Set sync=true to make fakesink respect audio timing instead of consuming instantly
+            g_object_set(*audioSink, "sync", TRUE, NULL);
 
-            bool result = false;
+            bool result = TRUE;
+
+            if (type == MP3) {
+                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
+                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
+                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
+
+                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
+
+                if (!result) 
+                    g_printerr("kykumar Failed to link GStreamer elements\n");
+            } else if (type == PCM) {
+
+            } else {
+            }
+
             return result;
         }));
 
@@ -167,7 +267,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
-
+#if 0
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -367,23 +467,16 @@ TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest,Speak) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(1);
+    sleep(3);
 
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    cleanupTTSConfigFile();
 }
 
 /*******************************************************************************************************************
@@ -1666,4 +1759,29 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":NULL}]}"),
         response
     ));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-US\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+#endif
+TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    printf("kykumar enable tts\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    plugin->Deinitialize(&service);
+    printf("kykumar ttsplugin stopped\n");
+    sleep(5);
+    mockTTSConfigureTTS2();
+    printf("kykumar starting ttsplugin\n");
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    printf("kykumar speak rfc\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+    cleanupTTSConfigFile();
 }

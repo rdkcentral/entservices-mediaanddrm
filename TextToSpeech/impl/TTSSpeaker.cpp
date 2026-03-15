@@ -624,7 +624,7 @@ void TTSSpeaker::createPipeline(PipelineType type) {
     GstCaps *audiocaps = NULL;
     GstElement *capsfilter = NULL;
     m_pcmAudioEnabled = false;
-    
+    printf("kykumar create pipeline\n");
     if(!m_ensurePipeline || m_pipeline) {
         TTSLOG_WARNING("Skipping Pipeline creation");
         return;
@@ -839,6 +839,8 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
 }
 
 bool TTSSpeaker::needsPipelineUpdate() {
+    printf("kykumar needsPipelineUpdate %d max %d m_ensurePipeline %d m_pipeline %d \n", \
+        m_pipelineConstructionFailures, m_maxPipelineConstructionFailures, m_ensurePipeline, m_pipeline);
    return (m_pipelineConstructionFailures < m_maxPipelineConstructionFailures ? true : !m_queue.empty()) &&
        ((m_ensurePipeline && !m_pipeline) || (m_pipeline && !m_ensurePipeline));
 }
@@ -934,10 +936,13 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
 
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
-
+printf("kykumar gst intialized\n");
     while(speaker && speaker->m_runThread) {
+        printf("kykumar needsPipelineUpdate\n");
         if(speaker->needsPipelineUpdate()) {
+            printf("kykumar m_ensurePipeline\n");
             if(speaker->m_ensurePipeline) {
+                printf("kykumar createPipeline\n");
                 speaker->createPipeline(speaker->getPipelineType());
 
                 // If pipeline creation fails, send playbackerror to the client and remove the req from queue
@@ -982,15 +987,18 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // Inform the client before speaking
         if(!speaker->m_flushed)
             data.client->willSpeak(data.id, data.callsign, data.text);
-
+        printf("kykumar pushed willspeak\n");
         // Push it to gstreamer for speaking
         if(!speaker->m_flushed) {
+            printf("kykumar speaktext\n");
             speaker->speakText(*data.client->configuration(), data);
         }
+        printf("kykumar speaker->m_flushed\n");
 
         // Use Local endpoint for speaking as remote is down
         if(!speaker->m_flushed && speaker->m_remoteError) {
             TTSLOG_INFO("Speak with Local endpoint");
+            printf("kykumar speaktext local endpoint\n");
             speaker->speakText(*data.client->configuration(), data);
         }
 
@@ -1014,7 +1022,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // stop the pipeline until the next tts string...
         speaker->resetPipeline();
     }
-
+printf("kykumar destroy pipeline\n");
     speaker->destroyPipeline();
 }
 

@@ -207,6 +207,12 @@ jobs:
           ref: ${{env.INTERFACES_REF}}
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
+      
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
+          cd -
 
       - name: Build entservices-apis
         run: >
@@ -538,8 +544,10 @@ jobs:
       - name: Set up files
         run: >
           sudo mkdir -p -m 777
+          /etc/entservices
           /tmp/test/testApp/etc/apps
           /opt/persistent
+          /opt/www
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
@@ -566,10 +574,13 @@ jobs:
           if [ ! -f mknod /dev/sdb2 c 240 0 ]; then mknod /dev/sdb2 c 240 0; fi
           &&
           sudo touch
+          /etc/entservices/ttsConfig.json
           /tmp/test/testApp/etc/apps/testApp_package.json
+          /opt/persistent/tts.setting.ini
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -591,9 +602,12 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/rdk_maintenance.conf
           /opt/persistent/timeZoneDST
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -664,6 +678,7 @@ jobs:
           '*/Tests/mocks/*'
           '*/Tests/L1Tests/tests/*'
           '*/Thunder/*'
+          '*/logger.cpp'
           -o filtered_coverage.info
           &&
           genhtml
