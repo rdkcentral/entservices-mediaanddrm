@@ -988,12 +988,15 @@ printf("kykumar gst intialized\n");
 
         // Push it to gstreamer for speaking
         if(!speaker->m_flushed) {
+            printf("kykumar speaktext\n");
             speaker->speakText(*data.client->configuration(), data);
         }
+        printf("kykumar speaker->m_flushed\n");
 
         // Use Local endpoint for speaking as remote is down
         if(!speaker->m_flushed && speaker->m_remoteError) {
             TTSLOG_INFO("Speak with Local endpoint");
+            printf("kykumar speaktext local endpoint\n");
             speaker->speakText(*data.client->configuration(), data);
         }
 
