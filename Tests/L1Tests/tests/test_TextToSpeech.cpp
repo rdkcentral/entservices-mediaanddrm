@@ -160,8 +160,9 @@ protected:
 
     virtual ~TTSTest() override
     {
+        printf("kykumar destructor deinitialize\n");
         plugin->Deinitialize(&service);
-
+        sleep(3);
         dispatcher->Deactivate();
         dispatcher->Release();
 
@@ -218,7 +219,7 @@ protected:
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
             
-            printf("kykumar create pipeline\n");
+            printf("kykumar systemAudioGeneratePipeline create pipeline\n");
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("souphttpsrc", NULL);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
@@ -1769,14 +1770,14 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 }
 #endif
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    printf("kykumar enable tts\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     plugin->Deinitialize(&service);
     printf("kykumar ttsplugin stopped\n");
-    sleep(3);
+    sleep(5);
     mockTTSConfigureTTS2();
     printf("kykumar starting ttsplugin\n");
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    printf("kykumar enable tts\n");
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
