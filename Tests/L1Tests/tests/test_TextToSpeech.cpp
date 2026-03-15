@@ -1774,6 +1774,7 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     mockTTSConfigureTTS2();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(3);
 
