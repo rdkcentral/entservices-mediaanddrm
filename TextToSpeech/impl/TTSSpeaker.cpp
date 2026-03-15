@@ -839,6 +839,8 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
 }
 
 bool TTSSpeaker::needsPipelineUpdate() {
+    printf("kykumar needsPipelineUpdate %d max %d m_ensurePipeline %d m_pipeline %d \n", \
+        m_pipelineConstructionFailures, m_maxPipelineConstructionFailures, m_ensurePipeline, m_pipeline);
    return (m_pipelineConstructionFailures < m_maxPipelineConstructionFailures ? true : !m_queue.empty()) &&
        ((m_ensurePipeline && !m_pipeline) || (m_pipeline && !m_ensurePipeline));
 }
