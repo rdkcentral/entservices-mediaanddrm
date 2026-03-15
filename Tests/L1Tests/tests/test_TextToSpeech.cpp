@@ -1769,15 +1769,18 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 }
 
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    sleep(3);
+    printf("kykumar stopping ttsplugin\n");
     plugin->Deinitialize(&service);
     sleep(3);
+    printf("kykumar ttsplugin stopped\n");
     mockTTSConfigureTTS2();
+    printf("kykumar starting ttsplugin\n");
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-
+    sleep(3);
+    printf("kykumar enable tts\n\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(3);
-
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
