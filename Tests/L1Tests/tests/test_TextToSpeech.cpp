@@ -1776,12 +1776,11 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     printf("kykumar enable tts\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    #if 0
+    sleep(5);
     printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
     cleanupTTSConfigFile();
-    #endif
 }
