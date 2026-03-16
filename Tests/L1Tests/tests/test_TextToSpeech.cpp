@@ -227,9 +227,17 @@ protected:
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
 
+            if (!*pipeline || !*source || !convert || !*audioVolume || !*audioSink) {
+                g_printerr("kykumar Element creation failed\n");
+                return false;
+            }
+
             bool result = TRUE;
             gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
             result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
+            if (!result) {
+                g_printerr("kykumar Element linking failed\n");
+            }
             return result;
         }));
 
