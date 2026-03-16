@@ -228,7 +228,7 @@ protected:
             g_object_set(*audioSink, "sync", TRUE, NULL);
 
             if (!*pipeline || !*source || !convert || !*audioVolume || !*audioSink) {
-                g_printerr("kykumar Element creation failed\n");
+                printf("kykumar Element creation failed\n");
                 return false;
             }
             else
@@ -240,7 +240,7 @@ protected:
             gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
             result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
             if (!result) {
-                g_printerr("kykumar Element linking failed\n");
+                printf("kykumar Element linking failed\n");
             }
             else{
                 printf("kykumar systemAudioGeneratePipeline linked elements successfully\n");
