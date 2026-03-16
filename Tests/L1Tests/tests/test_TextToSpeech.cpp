@@ -231,12 +231,19 @@ protected:
                 g_printerr("kykumar Element creation failed\n");
                 return false;
             }
+            else
+            {
+                printf("kykumar systemAudioGeneratePipeline created pipeline successfully\n");
+            }
 
             bool result = TRUE;
             gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
             result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
             if (!result) {
                 g_printerr("kykumar Element linking failed\n");
+            }
+            else{
+                printf("kykumar systemAudioGeneratePipeline linked elements successfully\n");
             }
             return result;
         }));
