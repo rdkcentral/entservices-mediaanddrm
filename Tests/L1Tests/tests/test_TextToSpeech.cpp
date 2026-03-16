@@ -220,30 +220,16 @@ protected:
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
             
             printf("kykumar systemAudioGeneratePipeline create pipeline\n");
-            *pipeline = gst_pipeline_new(NULL);
-            *source = gst_element_factory_make("souphttpsrc", NULL);
-            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
-            *audioSink = gst_element_factory_make("fakesink", NULL);
-            
+            *pipeline = gst_pipeline_new("fake_pipeline");
+            *source = gst_element_factory_make("fakesrc", "source");
+            GstElement* convert = gst_element_factory_make("audioconvert", "convert");
+            *audioSink = gst_element_factory_make("fakesink", "sink");
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
 
             bool result = TRUE;
-
-            if (type == MP3) {
-                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
-                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
-                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
-
-                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
-
-                if (!result) 
-                    g_printerr("kykumar Failed to link GStreamer elements\n");
-            } else if (type == PCM) {
-
-            } else {
-            }
-
+            gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
+            result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
             return result;
         }));
 
