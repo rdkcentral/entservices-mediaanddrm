@@ -388,7 +388,7 @@ TTSSpeaker::TTSSpeaker(TTSConfiguration &config) :
     m_pipelineConstructionFailures(0),
     m_maxPipelineConstructionFailures(INT_FROM_ENV("MAX_PIPELINE_FAILURE_THRESHOLD", 1)) {
 
-        setenv("GST_DEBUG", "2", 0);
+        setenv("GST_DEBUG", "5", 0);
         setenv("GST_REGISTRY_UPDATE", "no", 0);
         setenv("GST_REGISTRY_FORK", "no", 0);
 

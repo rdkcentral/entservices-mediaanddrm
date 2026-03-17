@@ -221,9 +221,29 @@ protected:
             
             printf("kykumar systemAudioGeneratePipeline create pipeline\n");
             *pipeline = gst_pipeline_new("fake_pipeline");
+            if (!*pipeline)
+            {
+                printf("kykumar pipeline creation failed\n");
+                return false;
+            }
             *source = gst_element_factory_make("fakesrc", "source");
+            if (!*source)
+            {
+                printf("kykumar source creation failed\n");
+                return false;
+            }
             GstElement* convert = gst_element_factory_make("audioconvert", "convert");
+            if (!convert)
+            {
+                printf("kykumar convert creation failed\n");
+                return false;
+            }
             *audioSink = gst_element_factory_make("fakesink", "sink");
+            if (!*audioSink)
+            {
+                printf("kykumar audioSink creation failed\n");
+                return false;
+            }
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
 
