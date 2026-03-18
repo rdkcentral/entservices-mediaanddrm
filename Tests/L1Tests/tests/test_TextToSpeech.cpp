@@ -29,7 +29,7 @@
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
 #include "RfcApiMock.h"
-#include <interfaces/IAuthService.h>
+#include "WPEFramework/interfaces/IAuthService.h"
 #include "mockauthservices.h"
 #include <iostream>
 #include <fstream>
@@ -215,7 +215,7 @@ protected:
         .WillByDefault(::testing::Return());
 
     ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
-        .WillByDefault(::testing::Invoke( [](GetServiceAccessTokenResult& res) {
+        .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
             printf("kykumar mock token retrieval\n");
             res.token = "mock_token";
             return Core::ERROR_NONE;
