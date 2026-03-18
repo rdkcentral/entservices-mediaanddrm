@@ -214,6 +214,13 @@ protected:
     ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
+    ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
+        .WillByDefault(::testing::Invoke( [](GetServiceAccessTokenResult& res) {
+            printf("kykumar mock token retrieval\n");
+            res.token = "mock_token";
+            return Core::ERROR_NONE;
+        }));
+
     ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
