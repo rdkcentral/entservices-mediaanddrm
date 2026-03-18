@@ -23,7 +23,7 @@
 #include <atomic>
 #include <mutex>
 #ifdef UNIT_TESTING
-#include <interfaces/IAuthService.h>
+#include "WPEFramework/interfaces/IAuthService.h"
 #endif
 
 namespace WPEFramework {
