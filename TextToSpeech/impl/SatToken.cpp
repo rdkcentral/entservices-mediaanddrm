@@ -121,7 +121,7 @@ void SatToken::getServiceAccessToken() {
 #else
         WPEFramework::Exchange::IAuthService* m_authService_test;
         WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult result;
-        m_authService_test->GetServiceAccessToken(result);
+        auto status = m_authService_test->GetServiceAccessToken(result);
         if (status == Core::ERROR_NONE)
             joGetResult["token"] = result.token;
 #endif
