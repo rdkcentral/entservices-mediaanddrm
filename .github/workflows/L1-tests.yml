@@ -390,6 +390,8 @@ jobs:
 
       - name: Build entservices-mediaanddrm
         run: >
+          cat $GITHUB_WORKSPACE/entservices-apis/interfaces/IAuthService.h
+          &&
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
           -B build/entservices-mediaanddrm
