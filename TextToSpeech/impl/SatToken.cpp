@@ -119,8 +119,9 @@ void SatToken::getServiceAccessToken() {
 #ifndef UNIT_TESTING
         auto status = m_authService->Invoke<JsonObject, JsonObject>(1000, "getServiceAccessToken", joGetParams, joGetResult);
 #else
-        WPEFramework::Exchange::GetServiceAccessTokenResult result;
-        m_authService->GetServiceAccessToken(result);
+        WPEFramework::Exchange::IAuthService* m_authService_test;
+        WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult result;
+        m_authService_test->GetServiceAccessToken(result);
         if (status == Core::ERROR_NONE)
             joGetResult["token"] = result.token;
 #endif
@@ -132,6 +133,7 @@ void SatToken::getServiceAccessToken() {
         }
     }
 
+#ifndef UNIT_TESTING
     if (!m_eventRegistered) {
         if (m_authService->Subscribe<JsonObject>(1000, "serviceAccessTokenChanged",
                     &SatToken::serviceAccessTokenChangedEventHandler, this) == Core::ERROR_NONE) {
@@ -141,6 +143,9 @@ void SatToken::getServiceAccessToken() {
             TTSLOG_ERROR("Failed to Subscribe notification handler : serviceAccessTokenChanged");
         }
     }
+#else
+    m_eventRegistered = true;
+#endif
 }
 
 void SatToken::serviceAccessTokenChangedEventHandler(const JsonObject& parameters) {
