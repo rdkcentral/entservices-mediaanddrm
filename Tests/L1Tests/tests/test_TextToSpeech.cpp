@@ -214,57 +214,48 @@ protected:
     ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
-    ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+    ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
+
+            *pipeline = gst_pipeline_new(NULL);
+            *source = gst_element_factory_make("fakesrc", NULL);
+            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            *audioVolume = gst_element_factory_make("volume", "volume");
+            *audioSink = gst_element_factory_make("fakesink", NULL);
             
-            printf("kykumar systemAudioGeneratePipeline create pipeline\n");
-            *pipeline = gst_pipeline_new("fake_pipeline");
-            if (!*pipeline)
-            {
-                printf("kykumar pipeline creation failed\n");
-                return false;
-            }
-            *source = gst_element_factory_make("fakesrc", "source");
-            if (!*source)
-            {
-                printf("kykumar source creation failed\n");
-                return false;
-            }
-            GstElement* convert = gst_element_factory_make("audioconvert", "convert");
-            if (!convert)
-            {
-                printf("kykumar convert creation failed\n");
-                return false;
-            }
-            *audioSink = gst_element_factory_make("fakesink", "sink");
-            if (!*audioSink)
-            {
-                printf("kykumar audioSink creation failed\n");
-                return false;
-            }
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
 
-            if (!*pipeline || !*source || !convert || !*audioVolume || !*audioSink) {
-                printf("kykumar Element creation failed\n");
-                return false;
-            }
-            else
-            {
-                printf("kykumar systemAudioGeneratePipeline created pipeline successfully\n");
-            }
-
             bool result = TRUE;
-            gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
-            result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
-            if (!result) {
-                printf("kykumar Element linking failed\n");
-            }
-            else{
-                printf("kykumar systemAudioGeneratePipeline linked elements successfully\n");
-            }
+                if (!*pipeline) {
+                    printf("kykumar pipeline creation failed\n");
+                }
+                if (!*source) {
+                    printf("kykumar fakesrc creation failed\n");
+                }
+                if (!convert) {
+                    printf("kykumar audioconvert creation failed\n");
+                }
+                if (!*audioVolume) {
+                    printf("kykumar audioVolume creation failed\n");
+                }
+                if (!*audioSink) {
+                    printf("kykumar audioSink creation failed\n");
+                }
+                g_object_set(*audioSink, "sync", TRUE, NULL);
+
+                gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
+
+                result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
+                if(!result) {
+                    printf("kykumar Failed to link elements for  pipeline\n");
+                }
+                else {
+                    printf("kykumar Successfully linked elements for  pipeline\n");
+                }
+
             return result;
         }));
 
