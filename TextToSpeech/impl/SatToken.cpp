@@ -119,7 +119,7 @@ void SatToken::getServiceAccessToken() {
 #ifndef UNIT_TESTING
         auto status = m_authService->Invoke<JsonObject, JsonObject>(1000, "getServiceAccessToken", joGetParams, joGetResult);
 #else
-        GetServiceAccessTokenResult result;
+        WPEFramework::Exchange::GetServiceAccessTokenResult result;
         m_authService->GetServiceAccessToken(result);
         if (status == Core::ERROR_NONE)
             joGetResult["token"] = result.token;
