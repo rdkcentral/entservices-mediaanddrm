@@ -22,6 +22,9 @@
 #include "TTSCommon.h"
 #include <atomic>
 #include <mutex>
+#ifdef UNIT_TESTING
+#include "IAuthService.h"
+#endif
 
 namespace WPEFramework {
 namespace Plugin {
