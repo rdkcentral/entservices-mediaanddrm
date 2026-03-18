@@ -392,9 +392,9 @@ jobs:
         run: >
           ls $GITHUB_WORKSPACE/install/usr/include
           &&
-          ls $GITHUB_WORKSPACE/install/usr/include/interfaces
+          ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework
           &&
-          cat $GITHUB_WORKSPACE/install/usr/include/interfaces/IAuthService.h
+          cat $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/IAuthService.h
           &&
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
