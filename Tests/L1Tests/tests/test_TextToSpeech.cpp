@@ -31,6 +31,7 @@
 #include "RfcApiMock.h"
 #include "WPEFramework/interfaces/IAuthService.h"
 #include "mockauthservices.h"
+#include "NetworkManagerMock.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -221,13 +222,28 @@ protected:
             return Core::ERROR_NONE;
         }));
 
+    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_))
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status) {
+
+            ipversion = "IPv4";
+            interface = "eth0";
+            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET;
+
+            return Core::ERROR_NONE;
+        }));
+
     ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
 
             *pipeline = gst_pipeline_new(NULL);
-            *source = gst_element_factory_make("fakesrc", NULL);
+            *source = gst_element_factory_make("appsrc", NULL);
+            GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
+
+            g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
+
+            gst_caps_unref(caps);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
             *audioVolume = gst_element_factory_make("volume", "volume");
             *audioSink = gst_element_factory_make("fakesink", NULL);
@@ -266,6 +282,29 @@ protected:
             return result;
         }));
 
+    }
+
+    static gboolean push_data(GstElement* appsrc) {
+        const int num_samples = 44100 / 10; // 100ms of audio
+        const int num_bytes = num_samples * 2 * 2; // 16-bit stereo
+
+        GstBuffer* buffer = gst_buffer_new_allocate(NULL, num_bytes, NULL);
+
+        GstMapInfo map;
+        gst_buffer_map(buffer, &map, GST_MAP_WRITE);
+
+        memset(map.data, 0, num_bytes); // silence (or generate waveform)
+
+        gst_buffer_unmap(buffer, &map);
+
+        GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale(num_samples, GST_SECOND, 44100);
+
+        GstFlowReturn ret;
+        g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
+
+        gst_buffer_unref(buffer);
+
+        return ret == GST_FLOW_OK;
     }
 
     virtual ~TTSInitializedTest() override = default;
@@ -1801,7 +1840,13 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     sleep(1);
     printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(5);
+    sleep(2);
+    printf("kykumar push data\n");
+    g_timeout_add(100, (GSourceFunc)push_data, *source); // every 100ms
+    sleep(2);
+    printf("kykumar push EOS\n");
+    g_signal_emit_by_name(*source, "end-of-stream", NULL);
+    sleep(2)
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));

@@ -101,7 +101,18 @@ bool NetworkStatusObserver::isConnected() {
         }
 
         JsonObject joGetParams, joGetResult;
+#ifndef UNIT_TESTING
         auto status = m_networkService->Invoke<JsonObject, JsonObject>(3000, "isConnectedToInternet", joGetParams, joGetResult);
+#else
+        string ipversion;
+        string interface;
+        WPEFramework::Exchange::INetworkManager *m_networkService_mock;
+        auto status = m_networkService_mock->IsConnectedToInternet(ipversion, interface, netStatus);
+
+        if (status == Core::ERROR_NONE) {
+            joGetResult["connectedToInternet"] = true;
+        }
+#endif
         if (status == Core::ERROR_NONE && joGetResult.HasLabel("connectedToInternet")) {
             m_isConnected = joGetResult["connectedToInternet"].Boolean();
         } else {
