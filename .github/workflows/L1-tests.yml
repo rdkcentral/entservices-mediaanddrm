@@ -256,7 +256,7 @@ jobs:
         run: >
           ls $GITHUB_WORKSPACE/install/usr/include/
           &&
-          cat $GITHUB_WORKSPACE/install/usr/include/networkmanager/INetworkManager.h
+          find $GITHUB_WORKSPACE -name "INetworkManager.h"
           &&
           cd $GITHUB_WORKSPACE/entservices-apis
           &&
