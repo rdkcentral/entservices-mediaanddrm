@@ -390,11 +390,9 @@ jobs:
 
       - name: Build entservices-mediaanddrm
         run: >
-          ls $GITHUB_WORKSPACE/install/usr/include
+          ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces
           &&
-          ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework
-          &&
-          cat $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/IAuthService.h
+          cat $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/INetworkManager.h
           &&
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
