@@ -216,52 +216,10 @@ jobs:
           ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
 
-      - name: Apply patches Network manager
-        run: |  
-            cd $GITHUB_WORKSPACE/networkmanager
-            patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/Networkmanager.patch
-            cd -
-      
-      - name: Generate IARM headers
-        run: |
-            touch install/usr/lib/libIARMBus.so 
-            mkdir -p install/usr/include/rdk/iarmbus
-            touch install/usr/include/rdk/iarmbus/libIARM.h
-            cd "${{github.workspace}}/networkmanager/tests/"
-            mkdir -p headers/rdk/iarmbus
-            cd headers
-            touch rdk/iarmbus/libIARM.h rdk/iarmbus/libIBus.h
-
-      - name: Build networkmanager 
-        run: |
-          # Configure networkmanager
-          cmake \
-          -S "$GITHUB_WORKSPACE/networkmanager" \
-          -B build/networkmanager_rdk \
-          -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}" \
-          -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install/usr" \
-          -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install/usr" \
-          -DCMAKE_MODULE_PATH="$GITHUB_WORKSPACE/install/tools/cmake" \
-          -DCMAKE_CXX_FLAGS="-I$GITHUB_WORKSPACE/networkmanager/tests/headers -I$GITHUB_WORKSPACE/networkmanager/tests/headers/rdk/iarmbus --include $GITHUB_WORKSPACE/networkmanager/tests/mocks/Iarm.h --include $GITHUB_WORKSPACE/networkmanager/tests/mocks/secure_wrappermock.h -Wall --coverage" \
-          -DENABLE_UNIT_TESTING=ON \
-          -DENABLE_ROUTER_DISCOVERY_TOOL=OFF
-
-          # Build
-          cmake --build build/networkmanager_rdk -j8
-
-          # Install
-          cmake --install build/networkmanager_rdk
-
       - name: Apply patches entservices-apis
-        run: >
-          find $GITHUB_WORKSPACE -name "INetworkManager.h"
-          &&
-          cat $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h
-          &&
+        run: |
           cd $GITHUB_WORKSPACE/entservices-apis
-          &&
           patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
-          &&
           cd -
 
       - name: Build entservices-apis
@@ -282,6 +240,8 @@ jobs:
         # Empty headers to mute errors
         run: >
           cd "$GITHUB_WORKSPACE/entservices-testframework/Tests/"
+          &&
+          cp $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/
           &&
           mkdir -p
           headers
