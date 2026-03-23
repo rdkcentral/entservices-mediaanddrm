@@ -402,6 +402,8 @@ jobs:
         run: >
           ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces
           &&
+          cat $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/INetworkManager.h
+          &&
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
           -B build/entservices-mediaanddrm
