@@ -254,9 +254,9 @@ jobs:
 
       - name: Apply patches entservices-apis
         run: >
-          ls $GITHUB_WORKSPACE/install/usr/include/
-          &&
           find $GITHUB_WORKSPACE -name "INetworkManager.h"
+          &&
+          cat $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h
           &&
           cd $GITHUB_WORKSPACE/entservices-apis
           &&
@@ -468,6 +468,8 @@ jobs:
           -I $GITHUB_WORKSPACE/install/usr/include/WPEFramework
           -I $GITHUB_WORKSPACE/entservices-apis/interfaces
           -I $GITHUB_WORKSPACE/install/usr/include
+          -I $GITHUB_WORKSPACE/networkmanager/interface
+          -include $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/devicesettings.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Iarm.h
           -include $GITHUB_WORKSPACE/entservices-testframework/Tests/mocks/Rfc.h
