@@ -253,9 +253,15 @@ jobs:
           cmake --install build/networkmanager_rdk
 
       - name: Apply patches entservices-apis
-        run: |
+        run: >
+          ls $GITHUB_WORKSPACE/install/usr/include/
+          &&
+          cat $GITHUB_WORKSPACE/install/usr/include/networkmanager/INetworkManager.h
+          &&
           cd $GITHUB_WORKSPACE/entservices-apis
+          &&
           patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
+          &&
           cd -
 
       - name: Build entservices-apis
@@ -435,10 +441,6 @@ jobs:
       - name: Build entservices-mediaanddrm
         run: >
           ls $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces
-          &&
-          ls $GITHUB_WORKSPACE/install/usr/include/networkmanager
-          &&
-          cat $GITHUB_WORKSPACE/install/usr/include/networkmanager/INetworkManager.h
           &&
           cmake -G Ninja
           -S "$GITHUB_WORKSPACE/entservices-mediaanddrm"
