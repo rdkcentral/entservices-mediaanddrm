@@ -106,7 +106,7 @@ bool NetworkStatusObserver::isConnected() {
 #else
         string ipversion;
         string interface;
-        InternetStatus netStatus;
+        WPEFramework::Exchange::INetworkManager::InternetStatus netStatus;
         WPEFramework::Exchange::INetworkManager *m_networkService_mock;
         auto status = m_networkService_mock->IsConnectedToInternet(ipversion, interface, netStatus);
 
