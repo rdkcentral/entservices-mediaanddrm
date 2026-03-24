@@ -248,6 +248,7 @@ protected:
 
             gst_caps_unref(caps);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            GstElement* resample = gst_element_factory_make("audioresample", NULL);
             *audioVolume = gst_element_factory_make("volume", "volume");
             *audioSink = gst_element_factory_make("fakesink", NULL);
             
@@ -272,9 +273,9 @@ protected:
                 }
                 g_object_set(*audioSink, "sync", TRUE, NULL);
 
-                gst_bin_add_many(GST_BIN(*pipeline), *source, convert, *audioVolume, *audioSink, NULL);
+                gst_bin_add_many(GST_BIN(*pipeline), *source, convert, resample, *audioVolume, *audioSink, NULL);
 
-                result = gst_element_link_many(*source, convert, *audioVolume, *audioSink, NULL);
+                result = gst_element_link_many(*source, convert, resample, *audioVolume, *audioSink, NULL);
                 if(!result) {
                     printf("kykumar Failed to link elements for  pipeline\n");
                 }
