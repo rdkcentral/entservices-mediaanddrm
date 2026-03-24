@@ -65,58 +65,52 @@ protected:
     void mockTTSConfigure()
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
-        if (!file.is_open()) {
-            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        if (file.is_open()) {
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"speechrate\":\"medium\","
+                    "\"language\":\"en-US\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
         }
-
-        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
-                "\"speechrate\":\"medium\","
-                "\"language\":\"en-US\","
-                "\"volume\":100,"
-                "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
-                "}";
-
-        file << json;
-        file.close();
-        printf("TTS config written successfully.\n");
     }
 
     void cleanupTTSConfigFile()
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
-        if (!file.is_open()) {
-            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        if (file.is_open()) {
+            file.close();
         }
-        file.close();
     }
 
     void mockTTSConfigureTTS2()
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
-        if (!file.is_open()) {
-            printf("kykumar open %s fail\n", TTS_CONFIG_FILE_PATH);
+        if (file.is_open()) {
+
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"endpoint_type\":\"TTS2\","
+                    "\"speechrate\":\"medium\","
+                    "\"satplugincallsign\":\"org.rdk.AuthService\","
+                    "\"language\":\"en-US\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
         }
-
-        std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
-                "\"endpoint_type\":\"TTS2\","
-                "\"speechrate\":\"medium\","
-                "\"satplugincallsign\":\"org.rdk.AuthService\","
-                "\"language\":\"en-US\","
-                "\"volume\":100,"
-                "\"rate\":50,"
-                "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
-                "}";
-
-        file << json;
-        file.close();
-        printf("TTS config tts2 written successfully.\n");
     }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
@@ -163,7 +157,6 @@ protected:
 
     virtual ~TTSTest() override
     {
-        printf("kykumar destructor deinitialize\n");
         plugin->Deinitialize(&service);
         sleep(3);
         dispatcher->Deactivate();
@@ -219,7 +212,6 @@ protected:
 
     ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
         .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
-            printf("kykumar mock token retrieval\n");
             res.token = "mock_token";
             return Core::ERROR_NONE;
         }));
@@ -254,35 +246,10 @@ protected:
             
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
-
             bool result = TRUE;
-                if (!*pipeline) {
-                    printf("kykumar pipeline creation failed\n");
-                }
-                if (!*source) {
-                    printf("kykumar fakesrc creation failed\n");
-                }
-                if (!convert) {
-                    printf("kykumar audioconvert creation failed\n");
-                }
-                if (!*audioVolume) {
-                    printf("kykumar audioVolume creation failed\n");
-                }
-                if (!*audioSink) {
-                    printf("kykumar audioSink creation failed\n");
-                }
-                g_object_set(*audioSink, "sync", TRUE, NULL);
-
-                gst_bin_add_many(GST_BIN(*pipeline), *source, convert, resample, *audioVolume, *audioSink, NULL);
-
-                result = gst_element_link_many(*source, convert, resample, *audioVolume, *audioSink, NULL);
-                if(!result) {
-                    printf("kykumar Failed to link elements for  pipeline\n");
-                }
-                else {
-                    printf("kykumar Successfully linked elements for  pipeline\n");
-                }
-
+            g_object_set(*audioSink, "sync", TRUE, NULL);
+            gst_bin_add_many(GST_BIN(*pipeline), *source, convert, resample, *audioVolume, *audioSink, NULL);
+            result = gst_element_link_many(*source, convert, resample, *audioVolume, *audioSink, NULL);
             return result;
         }));
 
@@ -1842,22 +1809,15 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     plugin->Deinitialize(&service);
-    printf("kykumar ttsplugin stopped\n");
-    sleep(5);
+    sleep(2);
     mockTTSConfigureTTS2();
-    printf("kykumar starting ttsplugin\n");
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    printf("kykumar enable tts\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    sleep(1);
-    printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(3);
-    printf("kykumar push data\n");
+    sleep(2);
     g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     sleep(2);
-    printf("kykumar push EOS\n");
     g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
     sleep(2);
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
