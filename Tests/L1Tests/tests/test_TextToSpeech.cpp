@@ -242,7 +242,7 @@ protected:
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("appsrc", NULL);
             this->sourceMock = *source;
-            GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
+            GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "layout", G_TYPE_STRING, "interleaved", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
 
             g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
 
@@ -1853,7 +1853,7 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     sleep(1);
     printf("kykumar speak rfc\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(2);
+    sleep(3);
     printf("kykumar push data\n");
     g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     sleep(2);
