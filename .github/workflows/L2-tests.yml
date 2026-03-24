@@ -175,6 +175,14 @@ jobs:
           &&
           cmake --install build/Thunder
 
+      - name: Checkout networkmanager
+        uses: actions/checkout@v3
+        with:
+          repository: rdkcentral/networkmanager
+          path: networkmanager
+          ref: develop
+          token: ${{ secrets.RDKCM_RDKE }}
+
       - name: Checkout entservices-apis
         uses: actions/checkout@v3
         with:
@@ -207,6 +215,8 @@ jobs:
         # Empty headers to mute errors
         run: >
           cd "$GITHUB_WORKSPACE/entservices-testframework/Tests/"
+          &&
+          cp $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/
           &&
           mkdir -p
           headers

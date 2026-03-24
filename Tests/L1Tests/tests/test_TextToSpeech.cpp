@@ -60,7 +60,7 @@ protected:
     NiceMock<FactoriesImplementation> factoriesImplementation;
     NiceMock<MockAuthService> authserviceMock;
     NiceMock<MockINetworkManager> networkManagerMock;
-    GstElement** sourceMock;
+    GstElement* sourceMock;
 
     void mockTTSConfigure()
     {
@@ -241,7 +241,7 @@ protected:
 
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("appsrc", NULL);
-            this->sourceMock = source;
+            this->sourceMock = *source;
             GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
 
             g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
@@ -288,27 +288,36 @@ protected:
 
     }
 
-    static gboolean push_data(GstElement* appsrc) {
-        const int num_samples = 44100 / 10; // 100ms of audio
+    static gboolean push_data(gpointer data)
+    {
+        GstElement* appsrc = GST_ELEMENT(data);
+
+        const int num_samples = 44100 / 10; // 100ms
         const int num_bytes = num_samples * 2 * 2; // 16-bit stereo
 
         GstBuffer* buffer = gst_buffer_new_allocate(NULL, num_bytes, NULL);
 
         GstMapInfo map;
         gst_buffer_map(buffer, &map, GST_MAP_WRITE);
-
-        memset(map.data, 0, num_bytes); // silence (or generate waveform)
-
+        memset(map.data, 0, num_bytes);
         gst_buffer_unmap(buffer, &map);
 
-        GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale(num_samples, GST_SECOND, 44100);
+        static guint64 timestamp = 0;
+
+        GST_BUFFER_PTS(buffer) = timestamp;
+        GST_BUFFER_DTS(buffer) = timestamp;
+
+        GST_BUFFER_DURATION(buffer) =
+            gst_util_uint64_scale(num_samples, GST_SECOND, 44100);
+
+        timestamp += GST_BUFFER_DURATION(buffer);
 
         GstFlowReturn ret;
         g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
 
         gst_buffer_unref(buffer);
 
-        return ret == GST_FLOW_OK;
+        return ret == GST_FLOW_OK ? TRUE : FALSE;
     }
 
     virtual ~TTSInitializedTest() override = default;
@@ -1846,7 +1855,7 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(2);
     printf("kykumar push data\n");
-    g_timeout_add(100, (GSourceFunc)push_data, *sourceMock); // every 100ms
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     sleep(2);
     printf("kykumar push EOS\n");
     g_signal_emit_by_name(*sourceMock, "end-of-stream", NULL);
@@ -1855,4 +1864,16 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
     cleanupTTSConfigFile();
+}
+
+
+TEST_F(TTSInitializedTest, SetACLEmptyApp) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setACL"),
+        _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":\"\"}]}"),
+        response
+    ));
 }
