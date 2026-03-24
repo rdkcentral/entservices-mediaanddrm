@@ -888,6 +888,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     // PCM Sink seems to be accepting volume change before PLAYING state
     g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
 
+    printf("kykumar pipeline playing \n");
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
 
     systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);
