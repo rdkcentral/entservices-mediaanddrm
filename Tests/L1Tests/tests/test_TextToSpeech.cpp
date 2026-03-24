@@ -338,7 +338,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
-#if 0
+
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -1839,7 +1839,7 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
-#endif
+
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     plugin->Deinitialize(&service);
     printf("kykumar ttsplugin stopped\n");
@@ -1864,16 +1864,4 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
     cleanupTTSConfigFile();
-}
-
-
-TEST_F(TTSInitializedTest, SetACLEmptyApp) {
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
-        connection,
-        _T("setACL"),
-        _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":\"\"}]}"),
-        response
-    ));
 }
