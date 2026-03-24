@@ -60,6 +60,7 @@ protected:
     NiceMock<FactoriesImplementation> factoriesImplementation;
     NiceMock<MockAuthService> authserviceMock;
     NiceMock<MockINetworkManager> networkManagerMock;
+    GstElement** sourceMock;
 
     void mockTTSConfigure()
     {
@@ -228,7 +229,7 @@ protected:
 
             ipversion = "IPv4";
             interface = "eth0";
-            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET;
+            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
 
             return Core::ERROR_NONE;
         }));
@@ -240,6 +241,7 @@ protected:
 
             *pipeline = gst_pipeline_new(NULL);
             *source = gst_element_factory_make("appsrc", NULL);
+            sourceMock = source;
             GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
 
             g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
@@ -1843,11 +1845,11 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(2);
     printf("kykumar push data\n");
-    g_timeout_add(100, (GSourceFunc)push_data, *source); // every 100ms
+    g_timeout_add(100, (GSourceFunc)push_data, *sourceMock); // every 100ms
     sleep(2);
     printf("kykumar push EOS\n");
-    g_signal_emit_by_name(*source, "end-of-stream", NULL);
-    sleep(2)
+    g_signal_emit_by_name(*sourceMock, "end-of-stream", NULL);
+    sleep(2);
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
