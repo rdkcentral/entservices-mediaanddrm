@@ -1858,7 +1858,7 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     sleep(2);
     printf("kykumar push EOS\n");
-    g_signal_emit_by_name(*sourceMock, "end-of-stream", NULL);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
     sleep(2);
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
