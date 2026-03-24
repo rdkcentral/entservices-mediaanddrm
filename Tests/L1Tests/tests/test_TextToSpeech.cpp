@@ -59,6 +59,7 @@ protected:
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
     NiceMock<MockAuthService> authserviceMock;
+    NiceMock<MockINetworkManager> networkManagerMock;
 
     void mockTTSConfigure()
     {
