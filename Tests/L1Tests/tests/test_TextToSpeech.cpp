@@ -315,7 +315,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
-#if 0
+
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -1870,7 +1870,7 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
-#endif
+
 int ExtractSpeechId(const string& response)
 {
     SpeakResponse json;
