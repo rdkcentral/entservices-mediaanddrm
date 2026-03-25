@@ -37,6 +37,15 @@
 #include <string>
 #include <regex>
 
+class SpeakResponse : public Core::JSON::Container {
+public:
+    SpeakResponse() {
+        Add(_T("speechid"), &speechid);
+    }
+
+    Core::JSON::DecUInt32 speechid;
+};
+
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
@@ -1864,12 +1873,11 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
 #endif
 int ExtractSpeechId(const string& response)
 {
-    WPEFramework::Core::JSON::Container json;
+    SpeakResponse json;
     json.FromString(response);
 
-    WPEFramework::Core::JSON::DecUInt32 id;
-    if (json.Get("speechid", id)) {
-        return id.Value();
+    if (json.speechid.IsSet()) {
+        return json.speechid.Value();
     }
     return -1;
 }
