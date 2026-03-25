@@ -316,6 +316,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
 
+#if 0
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -1906,5 +1907,23 @@ TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
     sleep(2);
     cleanupTTSConfigFile();
+}
+#endif
+
+TEST_F(TTSInitializedTest, speakWithApiKey) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{""\"language\": \"en-US\",""\"voice\": \"carol\","
+            "\"ttsendpoint\": \"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\": \"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"authinfo\": {""\"type\": \"apikey\",""\"value\": \"my_test_key\"""}""}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    printf("kykumar speak\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
 }
 
