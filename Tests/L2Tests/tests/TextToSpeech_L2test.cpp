@@ -26,8 +26,12 @@
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
-
+#include "WPEFramework/interfaces/IAuthService.h"
+#include "mockauthservices.h"
+#include "NetworkManagerMock.h"
 #include <interfaces/ITextToSpeech.h>
+
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
 
 #define JSON_TIMEOUT (5000)
 #define TEST_LOG(x, ...)                                                                                                                         \
@@ -73,6 +77,8 @@ TextToSpeechTest::TextToSpeechTest()
     , m_mainLoop(nullptr)
     , m_mainContext(nullptr)
 {
+    NiceMock<MockAuthService> authserviceMock;
+    NiceMock<MockINetworkManager> networkManagerMock;
     gst_init(nullptr, nullptr);
     
     // Create and start a GMainLoop to process GStreamer bus messages
@@ -85,6 +91,57 @@ TextToSpeechTest::TextToSpeechTest()
         g_main_loop_run(m_mainLoop);
         g_main_context_pop_thread_default(m_mainContext);
     });
+
+    void mockTTSConfigure()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"speechrate\":\"medium\","
+                    "\"language\":\"en-US\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
+        }
+    }
+
+    void cleanupTTSConfigFile()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+            file.close();
+        }
+    }
+
+    void mockTTSConfigureTTS2()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"endpoint_type\":\"TTS2\","
+                    "\"speechrate\":\"medium\","
+                    "\"satplugincallsign\":\"org.rdk.AuthService\","
+                    "\"language\":\"en-US\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
+        }
+    }
     
     // Give the main loop time to start
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -116,33 +173,46 @@ TextToSpeechTest::TextToSpeechTest()
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
+    ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
+        .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
+            res.token = "mock_token";
+            return Core::ERROR_NONE;
+        }));
+
+    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_))
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status) {
+
+            ipversion = "IPv4";
+            interface = "eth0";
+            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+
+            return Core::ERROR_NONE;
+        }));
+
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+        .WillByDefault(::testing::Invoke([this](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
 
             *pipeline = gst_pipeline_new(NULL);
-            *source = gst_element_factory_make("souphttpsrc", NULL);
+            *source = gst_element_factory_make("appsrc", NULL);
+            this->sourceMock = *source;
+            GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "layout", G_TYPE_STRING, "interleaved", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
+
+            g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
+
+            gst_caps_unref(caps);
             GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            GstElement* resample = gst_element_factory_make("audioresample", NULL);
+            *audioVolume = gst_element_factory_make("volume", "volume");
             *audioSink = gst_element_factory_make("fakesink", NULL);
             
             // Set sync=true to make fakesink respect audio timing instead of consuming instantly
             g_object_set(*audioSink, "sync", TRUE, NULL);
-
             bool result = TRUE;
-
-            if (type == MP3) {
-                GstElement* parser = gst_element_factory_make("mpegaudioparse", NULL);
-                GstElement* decodebin = gst_element_factory_make("avdec_mp3", NULL);
-                gst_bin_add_many(GST_BIN(*pipeline), *source, parser, convert, decodebin, *audioSink, NULL);
-
-                result = gst_element_link_many(*source, parser, decodebin, convert, *audioSink, NULL);
-
-            } else if (type == PCM) {
-
-            } else {
-            }
-
+            g_object_set(*audioSink, "sync", TRUE, NULL);
+            gst_bin_add_many(GST_BIN(*pipeline), *source, convert, resample, *audioVolume, *audioSink, NULL);
+            result = gst_element_link_many(*source, convert, resample, *audioVolume, *audioSink, NULL);
             return result;
         }));
 
@@ -150,14 +220,48 @@ TextToSpeechTest::TextToSpeechTest()
     string response;
     uint32_t status = Core::ERROR_GENERAL;
     m_event_signalled = 0;
+    mockTTSConfigure();
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
+static gboolean push_data(gpointer data)
+{
+    GstElement* appsrc = GST_ELEMENT(data);
+
+    const int num_samples = 44100 / 10; // 100ms
+    const int num_bytes = num_samples * 2 * 2; // 16-bit stereo
+
+    GstBuffer* buffer = gst_buffer_new_allocate(NULL, num_bytes, NULL);
+
+    GstMapInfo map;
+    gst_buffer_map(buffer, &map, GST_MAP_WRITE);
+    memset(map.data, 0, num_bytes);
+    gst_buffer_unmap(buffer, &map);
+
+    static guint64 timestamp = 0;
+
+    GST_BUFFER_PTS(buffer) = timestamp;
+    GST_BUFFER_DTS(buffer) = timestamp;
+
+    GST_BUFFER_DURATION(buffer) =
+        gst_util_uint64_scale(num_samples, GST_SECOND, 44100);
+
+    timestamp += GST_BUFFER_DURATION(buffer);
+
+    GstFlowReturn ret;
+    g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
+
+    gst_buffer_unref(buffer);
+
+    return ret == GST_FLOW_OK ? TRUE : FALSE;
 }
 
 TextToSpeechTest::~TextToSpeechTest()
 {
     uint32_t status = Core::ERROR_GENERAL;
 
+    cleanupTTSConfigFile();
     status = DeactivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
     
@@ -229,10 +333,10 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     JsonObject configurationParameter;
     JsonObject configurationResponse;
 
-    configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
-    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["language"] = "US";
+    configurationParameter["voice"] = "us";
+    configurationParameter["ttsendpointsecured"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
+    configurationParameter["ttsendpoint"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -646,10 +750,10 @@ void TextToSpeechTest::setTTSConfiguration()
     JsonObject configurationParameter;
     JsonObject configurationResponse;
 
-    configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "carol";
-    configurationParameter["ttsendpointsecured"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
-    configurationParameter["ttsendpoint"] = "https://ccr.voice-guidance-tts.xcr.comcast.net/tts?";
+    configurationParameter["language"] = "US";
+    configurationParameter["voice"] = "us";
+    configurationParameter["ttsendpointsecured"] = "https://example-tts-dummy.net/tts/v1/cdn/location?";
+    configurationParameter["ttsendpoint"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);

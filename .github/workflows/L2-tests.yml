@@ -490,11 +490,13 @@ jobs:
       - name: Set up files
         run: >
           sudo mkdir -p -m 777
+          /etc/entservices
           /opt/persistent
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
           /opt/secure/persistent/System
+          /opt/www
           /tmp/secure/persistent
           /tmp/persistent
           /tmp/persistent/rdkservicestore
@@ -521,6 +523,9 @@ jobs:
           &&
           sudo touch
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
+          /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -550,6 +555,9 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /opt/www/TTS_fallback.mp3
+          /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/standbyReason.txt
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
