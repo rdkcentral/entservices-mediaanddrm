@@ -36,6 +36,7 @@
 #include <fstream>
 #include <string>
 #include <regex>
+#include <core/JSON.h>
 
 using namespace WPEFramework;
 using ::testing::Test;
