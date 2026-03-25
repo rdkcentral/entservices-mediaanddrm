@@ -43,7 +43,7 @@ public:
         Add(_T("speechid"), &speechid);
     }
 
-    Core::JSON::DecUInt32 speechid;
+    WPEFramework::Core::JSON::DecUInt32 speechid;
 };
 
 using namespace WPEFramework;
