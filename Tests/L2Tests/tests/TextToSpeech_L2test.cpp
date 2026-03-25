@@ -56,42 +56,6 @@ public:
     void enableTTS(bool);
     void setACL();
     uint32_t WaitForRequestStatus(uint32_t);
-
-public:
-    std::mutex m_mutex;
-    std::condition_variable m_condition_variable;
-    uint32_t m_event_signalled;
-
-    std::mutex mtx;
-    std::condition_variable cv;
-    bool ready = false;
-    uint32_t speechID;
-    
-    GMainLoop* m_mainLoop;
-    GMainContext* m_mainContext;
-    std::thread m_mainLoopThread;
-};
-
-TextToSpeechTest::TextToSpeechTest()
-    : L2TestMocks()
-    , m_mainLoop(nullptr)
-    , m_mainContext(nullptr)
-{
-    NiceMock<MockAuthService> authserviceMock;
-    NiceMock<MockINetworkManager> networkManagerMock;
-    gst_init(nullptr, nullptr);
-    
-    // Create and start a GMainLoop to process GStreamer bus messages
-    // This is essential for proper pipeline state transitions
-    m_mainContext = g_main_context_new();
-    m_mainLoop = g_main_loop_new(m_mainContext, FALSE);
-    
-    m_mainLoopThread = std::thread([this]() {
-        g_main_context_push_thread_default(m_mainContext);
-        g_main_loop_run(m_mainLoop);
-        g_main_context_pop_thread_default(m_mainContext);
-    });
-
     void mockTTSConfigure()
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
@@ -142,6 +106,41 @@ TextToSpeechTest::TextToSpeechTest()
             file.close();
         }
     }
+
+public:
+    std::mutex m_mutex;
+    std::condition_variable m_condition_variable;
+    uint32_t m_event_signalled;
+
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool ready = false;
+    uint32_t speechID;
+    
+    GMainLoop* m_mainLoop;
+    GMainContext* m_mainContext;
+    std::thread m_mainLoopThread;
+};
+
+TextToSpeechTest::TextToSpeechTest()
+    : L2TestMocks()
+    , m_mainLoop(nullptr)
+    , m_mainContext(nullptr)
+{
+    NiceMock<MockAuthService> authserviceMock;
+    NiceMock<MockINetworkManager> networkManagerMock;
+    gst_init(nullptr, nullptr);
+    
+    // Create and start a GMainLoop to process GStreamer bus messages
+    // This is essential for proper pipeline state transitions
+    m_mainContext = g_main_context_new();
+    m_mainLoop = g_main_loop_new(m_mainContext, FALSE);
+    
+    m_mainLoopThread = std::thread([this]() {
+        g_main_context_push_thread_default(m_mainContext);
+        g_main_loop_run(m_mainLoop);
+        g_main_context_pop_thread_default(m_mainContext);
+    });
     
     // Give the main loop time to start
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
