@@ -324,7 +324,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
  * @param[in]   :  enabletts
  * @return      :  TTS_Status = 0 and success = true
  */
-#if 0
+
 TEST_F(TTSInitializedTest,EnableTTSDefault) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": \"true\"}"), response));
@@ -1861,17 +1861,6 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
-
-std::string ExtractSpeechId(const std::string& response)
-{
-    std::smatch match;
-    std::regex rgx("\"speechid\"\\s*:\\s*\"([^\"]+)\"");
-    if (std::regex_search(response, match, rgx)) {
-        return match[1].str();
-    }
-    return "";
-}
-#endif
 
 TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
