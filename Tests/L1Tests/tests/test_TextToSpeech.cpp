@@ -36,7 +36,6 @@
 #include <fstream>
 #include <string>
 #include <regex>
-#include <core/JSON.h>
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -1865,10 +1864,10 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
 #endif
 int ExtractSpeechId(const string& response)
 {
-    Core::JSON::Object json;
+    WPEFramework::Core::JSON::Container json;
     json.FromString(response);
 
-    Core::JSON::DecUInt32 id;
+    WPEFramework::Core::JSON::DecUInt32 id;
     if (json.Get("speechid", id)) {
         return id.Value();
     }
