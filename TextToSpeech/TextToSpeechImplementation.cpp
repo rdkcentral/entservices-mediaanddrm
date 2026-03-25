@@ -363,6 +363,7 @@ namespace Plugin {
 
     Core::hresult TextToSpeechImplementation::SetAPIKey(const string apikey)
     {
+        printf("kykumar updating apikey\n");
         _adminLock.Lock();
         _ttsManager->setAPIKey(apikey);
         _adminLock.Unlock();

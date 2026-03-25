@@ -1925,5 +1925,15 @@ TEST_F(TTSInitializedTest, speakWithApiKey) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     printf("kykumar speak\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    sleep(2);
 }
 
+TEST_F(TTSInitializedTest,SetACLWromgApp) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
+        connection,
+        _T("setACL"),
+        _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":[\"WebAPP1\"]}]}"),
+        response
+    ));
+}

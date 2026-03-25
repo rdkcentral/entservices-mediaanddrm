@@ -212,6 +212,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             }
 
             if(parameters.HasLabel("authinfo")) {
+                printf("kykumar authinfo\n");
                 JsonObject auth = parameters["authinfo"].Object();
                 if(auth["type"].String().compare("apikey") == 0) {
                     _tts->SetAPIKey(GET_STR(auth, "value", ""));
@@ -219,6 +220,8 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
                     goto config_failure;
                 }
             }
+            else
+             printf("kykumar authinfo not provided\n");
 
             if(parameters.HasLabel("fallbacktext")) {
                 JsonObject fallback = parameters["fallbacktext"].Object();
