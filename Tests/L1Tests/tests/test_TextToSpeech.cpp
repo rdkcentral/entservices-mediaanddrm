@@ -37,7 +37,7 @@
 #include <string>
 #include <regex>
 
-class SpeakResponse : public Core::JSON::Container {
+class SpeakResponse : public WPEFramework::Core::JSON::Container {
 public:
     SpeakResponse() {
         Add(_T("speechid"), &speechid);
