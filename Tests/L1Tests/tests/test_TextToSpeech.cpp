@@ -1863,12 +1863,8 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
         response
     ));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"),
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"),
         _T("{\"text\": \"speech_123\",\"callsign\":\"WebAPP1\"}"), response));
-    sleep(1);
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
 int ExtractSpeechId(const string& response)
