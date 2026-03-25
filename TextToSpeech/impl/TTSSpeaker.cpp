@@ -624,6 +624,7 @@ void TTSSpeaker::createPipeline(PipelineType type) {
     GstCaps *audiocaps = NULL;
     GstElement *capsfilter = NULL;
     m_pcmAudioEnabled = false;
+
     if(!m_ensurePipeline || m_pipeline) {
         TTSLOG_WARNING("Skipping Pipeline creation");
         return;
@@ -933,6 +934,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
 
     if(!gst_is_initialized())
         gst_init(NULL,NULL);
+
     while(speaker && speaker->m_runThread) {
         if(speaker->needsPipelineUpdate()) {
             if(speaker->m_ensurePipeline) {
@@ -980,6 +982,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // Inform the client before speaking
         if(!speaker->m_flushed)
             data.client->willSpeak(data.id, data.callsign, data.text);
+
         // Push it to gstreamer for speaking
         if(!speaker->m_flushed) {
             speaker->speakText(*data.client->configuration(), data);
@@ -1011,6 +1014,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // stop the pipeline until the next tts string...
         speaker->resetPipeline();
     }
+
     speaker->destroyPipeline();
 }
 
