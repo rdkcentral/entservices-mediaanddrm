@@ -624,7 +624,7 @@ void TTSSpeaker::createPipeline(PipelineType type) {
     GstCaps *audiocaps = NULL;
     GstElement *capsfilter = NULL;
     m_pcmAudioEnabled = false;
-
+    
     if(!m_ensurePipeline || m_pipeline) {
         TTSLOG_WARNING("Skipping Pipeline creation");
         return;

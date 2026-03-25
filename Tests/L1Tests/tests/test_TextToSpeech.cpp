@@ -1827,40 +1827,6 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     cleanupTTSConfigFile();
 }
 
-std::string ExtractSpeechId(const std::string& response)
-{
-    std::smatch match;
-    std::regex rgx("\"speechid\"\\s*:\\s*\"([^\"]+)\"");
-    if (std::regex_search(response, match, rgx)) {
-        return match[1].str();
-    }
-    return "";
-}
-#endif
-
-TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
-        connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(2);
-    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
-    sleep(2);
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"speechid\": 1}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"speechid\": 1}"), response));
-    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
-    sleep(2);
-    cleanupTTSConfigFile();
-}
-
 TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
@@ -1895,3 +1861,42 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
+
+std::string ExtractSpeechId(const std::string& response)
+{
+    std::smatch match;
+    std::regex rgx("\"speechid\"\\s*:\\s*\"([^\"]+)\"");
+    if (std::regex_search(response, match, rgx)) {
+        return match[1].str();
+    }
+    return "";
+}
+#endif
+
+TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    printf("kykumar speak\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    printf("kykumar pause\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("pause"), _T("{\"speechid\": 1}"), response));
+    sleep(1);
+    printf("kykumar resume\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), _T("{\"speechid\": 1}"), response));
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    cleanupTTSConfigFile();
+}
+
