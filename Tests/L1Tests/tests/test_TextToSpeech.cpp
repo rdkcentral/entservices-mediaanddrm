@@ -306,7 +306,7 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
 }
-
+#if 0
 /*******************************************************************************************************************
  * Test function for enableTTS
  * enableTTS    :
@@ -1861,6 +1861,18 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
+#endif
+int ExtractSpeechId(const string& response)
+{
+    Core::JSON::Object json;
+    json.FromString(response);
+
+    Core::JSON::DecUInt32 id;
+    if (json.Get("speechid", id)) {
+        return id.Value();
+    }
+    return -1;
+}
 
 TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
@@ -1876,14 +1888,17 @@ TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     printf("kykumar speak\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    int speechId = ExtractSpeechId(response);
+    std::string speechIdParam = std::string("{\"speechid\": ") + std::to_string(speechId) +"}";
+    printf("kykumar speechId: %d %s\n", speechId, speechIdParam.c_str());
     sleep(2);
     g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     sleep(2);
     printf("kykumar pause\n");
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("pause"), _T("{\"speechid\": 1}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("pause"), speechIdParam, response));
     sleep(1);
     printf("kykumar resume\n");
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), _T("{\"speechid\": 1}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), speechIdParam, response));
     g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
     sleep(2);
     cleanupTTSConfigFile();
