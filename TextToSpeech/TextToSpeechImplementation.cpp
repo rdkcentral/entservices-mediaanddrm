@@ -147,6 +147,10 @@ printf("kykumar lan valuidator\n");
 printf("kykumar voice valuidator\n");
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
 
+        printf("kykumar Number of languages: %zu\n", expectedLanguageSet.size());
+        for (const auto& lang : expectedLanguageSet) {
+            printf("kykumar list Language: %s\n", lang.c_str());
+        }
         ttsConfig->loadFromConfigStore();
         TTSLOG_INFO("TTSEndPoint : %s", ttsConfig->endPoint().c_str());
         TTSLOG_INFO("SecureTTSEndPoint : %s", ttsConfig->secureEndPoint().c_str());
@@ -278,10 +282,7 @@ printf("kykumar voice valuidator\n");
         std::vector<std::string> voice;
         auto status = TTS::TTS_FAIL;
 
-        printf("kykumar Number of languages: %zu\n", expectedLanguageSet.size());
-        for (const auto& lang : expectedLanguageSet) {
-            printf("kykumar list Language: %s\n", lang.c_str());
-        }
+        
         if(InputValidation::Instance().validate("language", toLower(language))) {
             printf("kykumar inside listvoices\n");
             _adminLock.Lock();
