@@ -140,8 +140,9 @@ namespace Plugin {
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-
+printf("kykumar lan valuidator\n");
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
+printf("kykumar voice valuidator\n");
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
 
         ttsConfig->loadFromConfigStore();
