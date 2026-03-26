@@ -95,13 +95,13 @@ protected:
 
     void cleanupTTSConfigFile()
     {
-        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
-        if (file.is_open()) {
-            file.close();
+        std::ofstream configFile(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (configFile.is_open()) {
+            configFile.close();
         }
-        std::ofstream file(TTS_STORE_PATH, std::ios::out | std::ios::trunc);
-        if (file.is_open()) {
-            file.close();
+        std::ofstream storeFile(TTS_STORE_PATH, std::ios::out | std::ios::trunc);
+        if (storeFile.is_open()) {
+            storeFile.close();
         }
     }
 
