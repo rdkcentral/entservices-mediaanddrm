@@ -278,7 +278,12 @@ printf("kykumar voice valuidator\n");
         std::vector<std::string> voice;
         auto status = TTS::TTS_FAIL;
 
+        printf("kykumar Number of languages: %zu\n", expectedLanguageSet.size());
+        for (const auto& lang : expectedLanguageSet) {
+            printf("kykumar list Language: %s\n", lang.c_str());
+        }
         if(InputValidation::Instance().validate("language", toLower(language))) {
+            printf("kykumar inside listvoices\n");
             _adminLock.Lock();
             status = _ttsManager->listVoices(language, voice);
             _adminLock.Unlock();
