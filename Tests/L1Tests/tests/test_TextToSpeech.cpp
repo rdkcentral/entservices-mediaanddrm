@@ -51,6 +51,7 @@ using ::testing::Test;
 using ::testing::NiceMock;
 
 #define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
+#define TTS_STORE_PATH "/opt/persistent/tts.setting.ini"
 
 class TTSTest : public Test{
 protected:
@@ -95,6 +96,10 @@ protected:
     void cleanupTTSConfigFile()
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+            file.close();
+        }
+        std::ofstream file(TTS_STORE_PATH, std::ios::out | std::ios::trunc);
         if (file.is_open()) {
             file.close();
         }
@@ -167,6 +172,7 @@ protected:
 
     virtual ~TTSTest() override
     {
+        cleanupTTSConfigFile();
         plugin->Deinitialize(&service);
         sleep(3);
         dispatcher->Deactivate();
@@ -524,7 +530,6 @@ TEST_F(TTSInitializedTest,Speak) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-    cleanupTTSConfigFile();
 }
 
 /*******************************************************************************************************************
@@ -1833,7 +1838,6 @@ TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
-    cleanupTTSConfigFile();
 }
 
 TEST_F(TTSInitializedTest,SetACLWromgApp) {
@@ -1901,7 +1905,6 @@ TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), speechIdParam, response));
     g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
     sleep(2);
-    cleanupTTSConfigFile();
 }
 
 TEST_F(TTSInitializedTest, speakWithApiKey) {
