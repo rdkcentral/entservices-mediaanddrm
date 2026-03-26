@@ -83,8 +83,8 @@ protected:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-US\":\"US\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"US\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
@@ -114,8 +114,8 @@ protected:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-US\":\"en\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-US\":\"US\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"US\",\"es-MX\":\"es\",\"fr-CA\":\"fr\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
@@ -799,7 +799,7 @@ TEST_F(TTSInitializedTest, SetTTSConfiguration) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -823,7 +823,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
@@ -836,7 +836,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
     EXPECT_EQ(response,
         _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
             "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
-            "\"language\":\"US\",\"voice\":\"us\",\"speechrate\":\"medium\",\"rate\":40,\"volume\":\"95\","
+            "\"language\":\"en-US\",\"voice\":\"US\",\"speechrate\":\"medium\",\"rate\":40,\"volume\":\"95\","
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
@@ -853,7 +853,7 @@ TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\",\"ttsendpoint\":\"invalid1@#\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\",\"ttsendpoint\":\"invalid1@#\","
            "\"ttsendpointsecured\":\"https://localhost:50050/nuanceEve/tts?\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
@@ -880,7 +880,7 @@ TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
            "\"ttsendpoint\":\"http://localhost:50050/nuanceEve/tts?\",\"ttsendpointsecured\":\"invalid1@#\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t ttsendpointsecuredPos = response.find("\"ttsendpointsecured\"");
@@ -1621,7 +1621,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeNull) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1659,7 +1659,7 @@ TEST_F(TTSInitializedTest, SetACLInvalidAccess) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1812,7 +1812,7 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
 TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
-        _T("{\"language\":\"US\", \"voice\":\"us\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
+        _T("{\"language\":\"en-US\", \"voice\":\"US\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
@@ -1856,7 +1856,7 @@ TEST_F(TTSInitializedTest,SetACLWromgApp) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1882,7 +1882,7 @@ TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"US\",\"voice\": \"us\","
+        _T("{\"language\": \"en-US\",\"voice\": \"US\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1908,7 +1908,7 @@ TEST_F(TTSInitializedTest, speakWithApiKey) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{""\"language\": \"US\",""\"voice\": \"us\","
+        _T("{""\"language\": \"en-US\",""\"voice\": \"US\","
             "\"ttsendpoint\": \"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\": \"https://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"authinfo\": {""\"type\": \"apikey\",""\"value\": \"my_test_key\"""}""}"
