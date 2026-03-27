@@ -281,7 +281,7 @@ printf("kykumar voice valuidator\n");
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
         auto status = TTS::TTS_FAIL;
-
+        printf("kykumar check listvoices %s\n", language.c_str());
         
         if(InputValidation::Instance().validate("language", toLower(language))) {
             printf("kykumar inside listvoices\n");
