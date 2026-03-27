@@ -122,6 +122,10 @@ namespace Plugin {
             JsonObject voices = config["voices"].Object();
             for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                 ttsConfig->m_others["voice_for_" + string(it.Label())] = it.Current().String();
+                for (char c : string(it.Label())) {
+                    printf("%02X ", (unsigned char)c);
+                }
+                printf("\n");
                 printf("kykumar inserting lan and voice %s and %s\n", it.Label(), it.Current().String().c_str());
                 expectedLanguageSet.insert(toLower(string(it.Label())));
                 expectedVoicesSet.insert(toLower(it.Current().String()));
@@ -137,6 +141,10 @@ namespace Plugin {
             JsonObject voices = config["local_voices"].Object();
             for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                 ttsConfig->m_others["voice_for_local_" + string(it.Label())] = it.Current().String();
+                for (char c : string(it.Label())) {
+                    printf("%02X ", (unsigned char)c);
+                }
+                printf("\n");
                 printf("kykumar inserting local lan and voice %s and %s\n", it.Label(), it.Current().String().c_str());
                 expectedLanguageSet.insert(toLower(string(it.Label())));
                 expectedVoicesSet.insert(toLower(it.Current().String()));
@@ -283,6 +291,10 @@ printf("kykumar voice valuidator\n");
         auto status = TTS::TTS_FAIL;
         printf("kykumar check listvoices %s \n", language.c_str());
         
+        for (char c : language) {
+            printf("%02X ", (unsigned char)c);
+        }
+        printf("\n");
         if(InputValidation::Instance().validate("language", toLower(language))) {
             printf("kykumar inside listvoices\n");
             _adminLock.Lock();
