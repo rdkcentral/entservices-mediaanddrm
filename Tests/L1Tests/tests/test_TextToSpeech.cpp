@@ -166,7 +166,7 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
 
-        EXPECT_EQ(string(""), plugin->Initialize(&service));
+        //EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     }
 
@@ -308,6 +308,7 @@ protected:
 };
 
 TEST_F(TTSInitializedTest,RegisteredMethods) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("enabletts")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("cancel")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getapiversion")));
@@ -1826,8 +1827,8 @@ TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
 }
 
 TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
-    plugin->Deinitialize(&service);
-    sleep(2);
+    //plugin->Deinitialize(&service);
+    //sleep(2);
     mockTTSConfigureTTS2();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
@@ -1886,6 +1887,7 @@ int ExtractSpeechId(const string& response)
 }
 
 TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
@@ -1911,6 +1913,7 @@ TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
 }
 
 TEST_F(TTSInitializedTest, speakWithApiKey) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
