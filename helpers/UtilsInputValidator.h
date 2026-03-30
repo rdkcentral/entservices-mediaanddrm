@@ -140,10 +140,12 @@ public:
         {
         case Type::Discrete:
             {   
-                printf("kykumar Input value: '%s'\n", value.c_str());
+                if constexpr (std::is_same<T, std::string>::value)
+                    printf("kykumar Input value: '%s'\n", value.c_str());
                 printf("kykumar Stored values (%zu):\n", m_values.size());
                 for (const auto& v : m_values) {
-                printf(" kykumar validator '%s'\n", v.c_str());
+                    if constexpr (std::is_same<T, std::string>::value) 
+                        printf(" kykumar validator '%s'\n", v.c_str());
                 }
             }
             return std::find(m_values.begin(), m_values.end(), value) != m_values.end();
