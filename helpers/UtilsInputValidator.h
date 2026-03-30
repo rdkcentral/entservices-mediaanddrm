@@ -139,6 +139,13 @@ public:
         switch (m_type)
         {
         case Type::Discrete:
+            {   
+                printf("kykumar Input value: '%s'\n", value.c_str());
+                printf("kykumar Stored values (%zu):\n", m_values.size());
+                for (const auto& v : m_values) {
+                printf(" kykumar validator '%s'\n", v.c_str());
+                }
+            }
             return std::find(m_values.begin(), m_values.end(), value) != m_values.end();
         case Type::Range:
             return value >= m_range.m_min && value <= m_range.m_max;
