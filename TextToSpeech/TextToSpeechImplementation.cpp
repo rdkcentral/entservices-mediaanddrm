@@ -122,11 +122,6 @@ namespace Plugin {
             JsonObject voices = config["voices"].Object();
             for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                 ttsConfig->m_others["voice_for_" + string(it.Label())] = it.Current().String();
-                for (char c : string(it.Label())) {
-                    printf("%02X ", (unsigned char)c);
-                }
-                printf("\n");
-                printf("kykumar inserting lan and voice %s and %s\n", it.Label(), it.Current().String().c_str());
                 expectedLanguageSet.insert(toLower(string(it.Label())));
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
@@ -141,24 +136,19 @@ namespace Plugin {
             JsonObject voices = config["local_voices"].Object();
             for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                 ttsConfig->m_others["voice_for_local_" + string(it.Label())] = it.Current().String();
-                for (char c : string(it.Label())) {
-                    printf("%02X ", (unsigned char)c);
-                }
-                printf("\n");
-                printf("kykumar inserting local lan and voice %s and %s\n", it.Label(), it.Current().String().c_str());
                 expectedLanguageSet.insert(toLower(string(it.Label())));
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-printf("kykumar lan valuidator\n");
-        InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
-printf("kykumar voice valuidator\n");
-        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
 
-        printf("kykumar Number of languages: %zu\n", expectedLanguageSet.size());
-        for (const auto& lang : expectedLanguageSet) {
-            printf("kykumar list Language: %s\n", lang.c_str());
-        }
+#ifndef UNIT_TESTING
+        InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
+        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
+#else
+        InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSetCollection));
+        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSetCollection));
+#endif
+
         ttsConfig->loadFromConfigStore();
         TTSLOG_INFO("TTSEndPoint : %s", ttsConfig->endPoint().c_str());
         TTSLOG_INFO("SecureTTSEndPoint : %s", ttsConfig->secureEndPoint().c_str());
@@ -289,14 +279,8 @@ printf("kykumar voice valuidator\n");
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
         auto status = TTS::TTS_FAIL;
-        printf("kykumar check listvoices %s \n", language.c_str());
-        
-        for (char c : language) {
-            printf("%02X ", (unsigned char)c);
-        }
-        printf("\n");
+
         if(InputValidation::Instance().validate("language", toLower(language))) {
-            printf("kykumar inside listvoices\n");
             _adminLock.Lock();
             status = _ttsManager->listVoices(language, voice);
             _adminLock.Unlock();
