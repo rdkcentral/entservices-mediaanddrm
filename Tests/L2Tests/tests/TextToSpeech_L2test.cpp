@@ -219,7 +219,6 @@ TextToSpeechTest::TextToSpeechTest()
     string response;
     uint32_t status = Core::ERROR_GENERAL;
     m_event_signalled = 0;
-    mockTTSConfigure();
     status = ActivateService("org.rdk.TextToSpeech.1");
     EXPECT_EQ(Core::ERROR_NONE, status);
 }

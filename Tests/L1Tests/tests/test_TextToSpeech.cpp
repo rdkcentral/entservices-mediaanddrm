@@ -446,6 +446,7 @@ TEST_F(TTSInitializedTest,IsTTSEnabledDefault) {
  */
 
 TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     printf("kykumar listvoices\n");
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
