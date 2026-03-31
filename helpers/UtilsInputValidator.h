@@ -139,7 +139,7 @@ public:
         switch (m_type)
         {
         case Type::Discrete:
-#if 0
+//#if 0
             {   
 
                 if constexpr (std::is_same<T, std::string>::value)
@@ -150,7 +150,7 @@ public:
                         printf(" kykumar validator '%s'\n", v.c_str());
                 }
             }
-#endif
+//#endif
             return std::find(m_values.begin(), m_values.end(), value) != m_values.end();
         case Type::Range:
             return value >= m_range.m_min && value <= m_range.m_max;
