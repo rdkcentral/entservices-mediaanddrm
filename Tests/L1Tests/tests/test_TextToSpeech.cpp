@@ -206,7 +206,6 @@ protected:
 
     gst_init(nullptr, nullptr);
 
-    mockTTSConfigure();
     ON_CALL(*p_systemAudioPlatformMock, systemAudioInitialize())
         .WillByDefault(::testing::Return());
     ON_CALL(*p_systemAudioPlatformMock, systemAudioDeinitialize())
