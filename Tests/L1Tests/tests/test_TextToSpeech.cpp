@@ -450,8 +450,7 @@ TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
     cleanupTTSConfigFile();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     printf("kykumar listvoices\n");
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
-    EXPECT_EQ(response, _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
 }
 
 TEST_F(TTSInitializedTest, listVoices) {

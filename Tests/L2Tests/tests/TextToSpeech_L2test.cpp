@@ -51,6 +51,7 @@ protected:
 
 public:
     TextToSpeechTest();
+    GstElement* sourceMock;
     void eventHandler();
     void setTTSConfiguration();
     void enableTTS(bool);
