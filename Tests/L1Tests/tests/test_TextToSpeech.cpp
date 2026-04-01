@@ -134,6 +134,7 @@ protected:
         , workerPool(Core::ProxyType<WorkerPoolImplementation>::Create(
             2, Core::Thread::DefaultStackSize(), 16))
     {
+    mockTTSConfigure();
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
     p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
