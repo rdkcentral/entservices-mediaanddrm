@@ -140,7 +140,15 @@ namespace Plugin {
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-        
+        printf("kykumar Languages:\n");
+        for (const auto& lang : expectedLanguageSet){
+            printf("  %s\n", lang.c_str());
+        }
+
+        printf("Voices:\n");
+        for (const auto& voice : expectedVoicesSet) {
+            printf("  %s\n", voice.c_str());
+        }
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
 

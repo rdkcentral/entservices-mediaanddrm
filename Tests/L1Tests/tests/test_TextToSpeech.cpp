@@ -427,6 +427,31 @@ TEST_F(TTSInitializedTest,IsTTSEnabledDefault) {
     EXPECT_EQ(response, _T("{\"isenabled\":false,\"TTS_Status\":0,\"success\":true}"));
 }
 
+/*******************************************************************************************************************
+ * Test function for listVoices
+ * SpeechState          :
+ *                Returns voice based on language
+ *
+ *                @return Response object contains speaking and success
+ * Use case coverage:
+ *                @Success : 1
+ *                @Failure : 4
+ ********************************************************************************************************************/
+/**
+ * @name  : IsListVoicesEmpty
+ * @brief : Returns speaking(true,false) of the given speechid
+ *
+ * @param[in]   :  language
+ * @return      :  ERROR_NONE
+ */
+
+TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
+    cleanupTTSConfigFile();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    printf("kykumar listvoices\n");
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
+}
+
 TEST_F(TTSInitializedTest, listVoices) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
@@ -1711,29 +1736,4 @@ TEST_F(TTSInitializedTest, speakWithApiKey) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(2);
-}
-
-/*******************************************************************************************************************
- * Test function for listVoices
- * SpeechState          :
- *                Returns voice based on language
- *
- *                @return Response object contains speaking and success
- * Use case coverage:
- *                @Success : 1
- *                @Failure : 4
- ********************************************************************************************************************/
-/**
- * @name  : IsListVoicesEmpty
- * @brief : Returns speaking(true,false) of the given speechid
- *
- * @param[in]   :  language
- * @return      :  ERROR_NONE
- */
-
-TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
-    cleanupTTSConfigFile();
-    EXPECT_EQ(string(""), plugin->Initialize(&service));
-    printf("kykumar listvoices\n");
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
 }
