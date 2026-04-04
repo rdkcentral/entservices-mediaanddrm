@@ -140,17 +140,14 @@ namespace Plugin {
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-        printf("kykumar Languages:\n");
-        for (const auto& lang : expectedLanguageSet){
-            printf("  %s\n", lang.c_str());
-        }
-
-        printf("Voices:\n");
-        for (const auto& voice : expectedVoicesSet) {
-            printf("  %s\n", voice.c_str());
-        }
+        
+#ifndef UNIT_TESTING
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
+#else
+        InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSetCollection));
+        InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSetCollection));
+#endif
 
         ttsConfig->loadFromConfigStore();
         TTSLOG_INFO("TTSEndPoint : %s", ttsConfig->endPoint().c_str());

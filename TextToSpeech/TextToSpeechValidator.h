@@ -60,7 +60,7 @@ static const std::set<std::string> expectedLanguageSetCollection = {
     "xh", "xh-ZA",
     "zh", "zh-CN", "zh-HK", "zh-MO", "zh-SG", "zh-TW", "zu", "zu-ZA",""};
 
-static const std::set<std::string> expectedVoicesSetCollection = {"en-US", "es-MX", "fr-CA", "en-GB", "de-DE", "it-IT", ""};
+static const std::set<std::string> expectedVoicesSetCollection = {"carol","amelie","Angelica","ava",""};
 
 inline std::string toLower(std::string s) {
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
