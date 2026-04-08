@@ -24,17 +24,15 @@
 #include <png.h>
 #include <curl/curl.h>
 
-#ifdef HAS_SCREENCAPTURE_PLATFORM
-#include "screencaptureplatform.h"
-#elif USE_DRM_SCREENCAPTURE
+#ifdef USE_DRM_SCREENCAPTURE
 #include "Implementation/drm/drmsc.h"
-#else
-#error "Can't build without drm or platform getter !"
 #endif
 
 #define API_VERSION_NUMBER_MAJOR 1
 #define API_VERSION_NUMBER_MINOR 0
 #define API_VERSION_NUMBER_PATCH 0
+
+#define VNC_SCREENSHOT_URL "http://127.0.0.1:5800/screenshot.png"
 
 namespace WPEFramework
 {
@@ -274,6 +272,64 @@ namespace WPEFramework
             return (r == 0);
         }
 
+        static size_t curlWriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+        {
+            std::vector<unsigned char> *response = static_cast<std::vector<unsigned char> *>(userdata);
+            size_t totalSize = size * nmemb;
+            response->insert(response->end(), ptr, ptr + totalSize);
+            return totalSize;
+        }
+
+        static bool getScreenContentVNC(std::vector<unsigned char> &png_out_data)
+        {
+            CURL *curlHandle = curl_easy_init();
+            if (!curlHandle)
+            {
+                LOGERR("could not init curl");
+                return false;
+            }
+
+            png_out_data.clear();
+
+            CURLcode res;
+
+            if ((res = curl_easy_setopt(curlHandle, CURLOPT_URL, VNC_SCREENSHOT_URL)) != CURLE_OK ||
+                (res = curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1L)) != CURLE_OK ||
+                (res = curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L)) != CURLE_OK ||
+                (res = curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, curlWriteCallback)) != CURLE_OK ||
+                (res = curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, &png_out_data)) != CURLE_OK ||
+                (res = curl_easy_setopt(curlHandle, CURLOPT_TIMEOUT, 5L)) != CURLE_OK)
+            {
+                LOGERR("Failed to set curl options: %s", curl_easy_strerror(res));
+                curl_easy_cleanup(curlHandle);
+                return false;
+            }
+
+            res = curl_easy_perform(curlHandle);
+
+            long http_code = 0;
+            curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &http_code);
+
+            if (res != CURLE_OK || http_code != 200)
+            {
+                LOGERR("Failed to get screen content from VNC, http code: %ld, error: %s", http_code, curl_easy_strerror(res));
+                curl_easy_cleanup(curlHandle);
+                return false;
+            }
+
+            curl_easy_cleanup(curlHandle);
+
+            LOGINFO("Got %zu bytes of data from VNC endpoint", png_out_data.size());
+
+            if (png_out_data.size() < 8 || png_sig_cmp(png_out_data.data(), 0, 8) != 0)
+            {
+                LOGERR("Data received from VNC is not a valid PNG");
+                return false;
+            }
+
+            return true;
+        }
+
 #ifdef USE_DRM_SCREENCAPTURE
         static bool getScreenContent(std::vector<unsigned char> &png_out_data)
         {
@@ -364,7 +420,14 @@ namespace WPEFramework
             std::vector<unsigned char> png_data;
             bool got_screenshot = false;
 
-            got_screenshot = getScreenContent(png_data);
+            got_screenshot = getScreenContentVNC(png_data);
+            if (!got_screenshot)
+            {
+#ifdef USE_DRM_SCREENCAPTURE                
+                LOGWARN("Calling drm getter");
+                got_screenshot = getScreenContent(png_data);
+#endif                
+            }
 
             m_screenCapture->doUploadScreenCapture(png_data, got_screenshot);
 
@@ -432,7 +495,6 @@ namespace WPEFramework
             LOGWARN("uploading png data of size %u to '%s'", (uint32_t)data.size(), url);
 
             // init curl
-            curl_global_init(CURL_GLOBAL_ALL);
             curl = curl_easy_init();
 
             if (!curl)
