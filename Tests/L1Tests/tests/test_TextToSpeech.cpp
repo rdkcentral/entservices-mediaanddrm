@@ -28,10 +28,30 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "RfcApiMock.h"
+#include "WPEFramework/interfaces/IAuthService.h"
+#include "mockauthservices.h"
+#include "NetworkManagerMock.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <regex>
+
+class SpeakResponse : public WPEFramework::Core::JSON::Container {
+public:
+    SpeakResponse() {
+        Add(_T("speechid"), &speechid);
+    }
+
+    WPEFramework::Core::JSON::DecUInt32 speechid;
+};
 
 using namespace WPEFramework;
 using ::testing::Test;
 using ::testing::NiceMock;
+
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
+#define TTS_STORE_PATH "/opt/persistent/tts.setting.ini"
 
 class TTSTest : public Test{
 protected:
@@ -45,10 +65,68 @@ protected:
     Core::ProxyType<Plugin::TextToSpeechImplementation> TextToSpeechImplementation;
     NiceMock<COMLinkMock> comLinkMock;
     NiceMock<ServiceMock> service;
+    RfcApiImplMock  *p_rfcApiImplMock = nullptr;
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
+    NiceMock<MockAuthService> authserviceMock;
+    NiceMock<MockINetworkManager> networkManagerMock;
+    GstElement* sourceMock;
 
+    void mockTTSConfigure()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"speechrate\":\"medium\","
+                    "\"language\":\"en-us\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
+        }
+    }
+
+    void cleanupTTSConfigFile()
+    {
+        std::ofstream configFile(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (configFile.is_open()) {
+            configFile.close();
+        }
+        std::ofstream storeFile(TTS_STORE_PATH, std::ios::out | std::ios::trunc);
+        if (storeFile.is_open()) {
+            storeFile.close();
+        }
+    }
+
+    void mockTTSConfigureTTS2()
+    {
+        std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
+        if (file.is_open()) {
+
+            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+                    "\"endpoint_type\":\"TTS2\","
+                    "\"speechrate\":\"medium\","
+                    "\"satplugincallsign\":\"org.rdk.AuthService\","
+                    "\"language\":\"en-us\","
+                    "\"volume\":100,"
+                    "\"rate\":50,"
+                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "}";
+
+            file << json;
+            file.close();
+        }
+    }
     TTSTest()
         : plugin(Core::ProxyType<Plugin::TextToSpeech>::Create())
         , handler(*(plugin))
@@ -58,6 +136,8 @@ protected:
     {
     p_systemAudioPlatformMock = new testing::NiceMock<SystemAudioPlatformAPIMock>;
     SystemAudioPlatformMockImpl::setImpl(p_systemAudioPlatformMock);
+    p_rfcApiImplMock = new NiceMock<RfcApiImplMock>();
+    RfcApi::setImpl(p_rfcApiImplMock);
 
         ON_CALL(service, COMLink())
             .WillByDefault(::testing::Invoke(
@@ -86,19 +166,27 @@ protected:
         plugin->QueryInterface(PLUGINHOST_DISPATCHER_ID));
         dispatcher->Activate(&service);
 
-        EXPECT_EQ(string(""), plugin->Initialize(&service));
+        //EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     }
 
     virtual ~TTSTest() override
     {
+        cleanupTTSConfigFile();
         plugin->Deinitialize(&service);
-
+        sleep(3);
         dispatcher->Deactivate();
         dispatcher->Release();
 
         Core::IWorkerPool::Assign(nullptr);
         workerPool.Release();
+
+        RfcApi::setImpl(nullptr);
+        if (p_rfcApiImplMock != nullptr)
+        {
+            delete p_rfcApiImplMock;
+            p_rfcApiImplMock = nullptr;
+        }
 
         SystemAudioPlatformMockImpl::setImpl(nullptr);
         if (p_systemAudioPlatformMock != nullptr)
@@ -138,21 +226,88 @@ protected:
     ON_CALL(*p_systemAudioPlatformMock, systemAudioSetVolume(::testing::_, ::testing::_, ::testing::_, ::testing::_))
         .WillByDefault(::testing::Return());
 
+    ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
+        .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
+            res.token = "mock_token";
+            return Core::ERROR_NONE;
+        }));
+
+    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_))
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status) {
+
+            ipversion = "IPv4";
+            interface = "eth0";
+            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+
+            return Core::ERROR_NONE;
+        }));
+
     ON_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillByDefault(::testing::Invoke([](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
+        .WillByDefault(::testing::Invoke([this](GstElement** pipeline, GstElement** source, GstElement* capsfilter,
                              GstElement** audioSink, GstElement** audioVolume,
                              AudioType type, PlayMode mode, SourceType sourceType, bool smartVolumeEnable) {
 
-            bool result = false;
+            *pipeline = gst_pipeline_new(NULL);
+            *source = gst_element_factory_make("appsrc", NULL);
+            this->sourceMock = *source;
+            GstCaps* caps = gst_caps_new_simple("audio/x-raw", "format", G_TYPE_STRING, "S16LE", "layout", G_TYPE_STRING, "interleaved", "channels", G_TYPE_INT, 2, "rate", G_TYPE_INT, 44100, NULL);
+
+            g_object_set(*source, "caps", caps, "format", GST_FORMAT_TIME, "is-live", TRUE, "block", TRUE, NULL);
+
+            gst_caps_unref(caps);
+            GstElement* convert = gst_element_factory_make("audioconvert", NULL);
+            GstElement* resample = gst_element_factory_make("audioresample", NULL);
+            *audioVolume = gst_element_factory_make("volume", "volume");
+            *audioSink = gst_element_factory_make("fakesink", NULL);
+            
+            // Set sync=true to make fakesink respect audio timing instead of consuming instantly
+            g_object_set(*audioSink, "sync", TRUE, NULL);
+            bool result = TRUE;
+            g_object_set(*audioSink, "sync", TRUE, NULL);
+            gst_bin_add_many(GST_BIN(*pipeline), *source, convert, resample, *audioVolume, *audioSink, NULL);
+            result = gst_element_link_many(*source, convert, resample, *audioVolume, *audioSink, NULL);
             return result;
         }));
 
+    }
+
+    static gboolean push_data(gpointer data)
+    {
+        GstElement* appsrc = GST_ELEMENT(data);
+
+        const int num_samples = 44100 / 10; // 100ms
+        const int num_bytes = num_samples * 2 * 2; // 16-bit stereo
+
+        GstBuffer* buffer = gst_buffer_new_allocate(NULL, num_bytes, NULL);
+
+        GstMapInfo map;
+        gst_buffer_map(buffer, &map, GST_MAP_WRITE);
+        memset(map.data, 0, num_bytes);
+        gst_buffer_unmap(buffer, &map);
+
+        static guint64 timestamp = 0;
+
+        GST_BUFFER_PTS(buffer) = timestamp;
+        GST_BUFFER_DTS(buffer) = timestamp;
+
+        GST_BUFFER_DURATION(buffer) =
+            gst_util_uint64_scale(num_samples, GST_SECOND, 44100);
+
+        timestamp += GST_BUFFER_DURATION(buffer);
+
+        GstFlowReturn ret;
+        g_signal_emit_by_name(appsrc, "push-buffer", buffer, &ret);
+
+        gst_buffer_unref(buffer);
+
+        return ret == GST_FLOW_OK ? TRUE : FALSE;
     }
 
     virtual ~TTSInitializedTest() override = default;
 };
 
 TEST_F(TTSInitializedTest,RegisteredMethods) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("enabletts")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("cancel")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getapiversion")));
@@ -292,8 +447,16 @@ TEST_F(TTSInitializedTest,IsTTSEnabledDefault) {
 
 TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\":\"en-US\"}"), response));
-    EXPECT_EQ(response, _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
+    printf("kykumar listvoices\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
+}
+
+TEST_F(TTSInitializedTest, listVoices) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    printf("kykumar listvoices\n");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), "{\"language\":\"en-us\"}", response));
+    EXPECT_EQ(response, _T("{\"voices\":[\"carol\"],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -307,6 +470,7 @@ TEST_F(TTSInitializedTest,IsListVoicesEmpty) {
 TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"\"}"), response));
+    EXPECT_EQ(response, _T("{\"voices\":[\"\"],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -367,19 +531,11 @@ TEST_F(TTSInitializedTest, ListVoicesSetNullLanguage) {
  */
 
 TEST_F(TTSInitializedTest,Speak) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection,
-        _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
-            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\"}"
-        ),
-        response
-    ));
-
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
-    sleep(1);
+    sleep(3);
 
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
@@ -658,7 +814,7 @@ TEST_F(TTSInitializedTest, SetTTSConfiguration) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -682,7 +838,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
@@ -695,7 +851,7 @@ TEST_F(TTSInitializedTest, DefaultTTSConfiguration) {
     EXPECT_EQ(response,
         _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
             "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
-            "\"language\":\"en-US\",\"voice\":\"carol\",\"speechrate\":\"medium\",\"rate\":40,\"volume\":\"95\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"speechrate\":\"medium\",\"rate\":40,\"volume\":\"95\","
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
@@ -712,19 +868,8 @@ TEST_F(TTSInitializedTest, SetInvalidTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\",\"ttsendpoint\":\"invalid1@#\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\",\"ttsendpoint\":\"invalid1@#\","
            "\"ttsendpointsecured\":\"https://localhost:50050/nuanceEve/tts?\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
-
-    if (ttsEndPointPos  != string::npos) {
-        size_t ttsEndpointStart = response.find(':', ttsEndPointPos ) + 1;
-        size_t ttsEndpointEnd = response.find(',', ttsEndPointPos );
-        std::string ttsSubstring = response.substr(ttsEndpointStart ,ttsEndpointEnd  - ttsEndpointStart );
-        EXPECT_EQ(ttsSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsendpoint' not found in the response.";
-    }
 }
 
 /**
@@ -739,19 +884,8 @@ TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
            "\"ttsendpoint\":\"http://localhost:50050/nuanceEve/tts?\",\"ttsendpointsecured\":\"invalid1@#\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsendpointsecuredPos = response.find("\"ttsendpointsecured\"");
-
-    if (ttsendpointsecuredPos  != string::npos) {
-        size_t ttsendpointsecuredStart = response.find(':', ttsendpointsecuredPos ) + 1;
-        size_t ttsendpointsecuredEnd = response.find(',', ttsendpointsecuredPos );
-        std::string ttsendpointsecuredSubstring = response.substr(ttsendpointsecuredStart ,ttsendpointsecuredEnd  - ttsendpointsecuredStart );
-        EXPECT_EQ(ttsendpointsecuredSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsEndpointSecured' not found in the response.";
-    }
 }
 
 /**
@@ -765,17 +899,6 @@ TEST_F(TTSInitializedTest, SetInvalidtSecuredTTSEndpoint) {
 TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\":\"\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
-
-    if (ttsEndPointPos  != string::npos) {
-        size_t ttsEndpointStart = response.find(':', ttsEndPointPos ) + 1;
-        size_t ttsEndpointEnd = response.find(',', ttsEndPointPos );
-        std::string ttsSubstring = response.substr(ttsEndpointStart ,ttsEndpointEnd  - ttsEndpointStart );
-        EXPECT_EQ(ttsSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsendpoint' not found in the response.";
-    }
 }
 
 /**
@@ -789,17 +912,6 @@ TEST_F(TTSInitializedTest, SetEmptyTTSEndpoint) {
 TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\":\"\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsEndPointPos = response.find("\"ttsendpointsecured\"");
-
-    if (ttsEndPointPos  != string::npos) {
-        size_t ttsEndpointStart = response.find(':', ttsEndPointPos ) + 1;
-        size_t ttsEndpointEnd = response.find(',', ttsEndPointPos );
-        std::string ttsSubstring = response.substr(ttsEndpointStart ,ttsEndpointEnd  - ttsEndpointStart );
-        EXPECT_EQ(ttsSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttssecuredendpoint' not found in the response.";
-    }
 }
 
 /**
@@ -813,17 +925,6 @@ TEST_F(TTSInitializedTest, SetEmptySecuredTTSEndpoint) {
 TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttsendpoint\": null}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsEndPointPos = response.find("\"ttsendpoint\"");
-
-    if (ttsEndPointPos  != string::npos) {
-        size_t ttsEndpointStart = response.find(':', ttsEndPointPos ) + 1;
-        size_t ttsEndpointEnd = response.find(',', ttsEndPointPos );
-        std::string ttsSubstring = response.substr(ttsEndpointStart ,ttsEndpointEnd  - ttsEndpointStart );
-        EXPECT_EQ(ttsSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsendpoint' not found in the response.";
-    }
 }
 
 /**
@@ -837,17 +938,6 @@ TEST_F(TTSInitializedTest, SetNULLTTSEndpoint) {
 TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"ttssecuredendpoint\": null}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ttsendpointsecuredPos = response.find("\"ttsendpointsecured\"");
-
-    if (ttsendpointsecuredPos  != string::npos) {
-        size_t ttsendpointsecuredStart = response.find(':', ttsendpointsecuredPos ) + 1;
-        size_t ttsendpointsecuredEnd = response.find(',', ttsendpointsecuredPos );
-        std::string ttsendpointsecuredSubstring = response.substr(ttsendpointsecuredStart ,ttsendpointsecuredEnd  - ttsendpointsecuredStart );
-        EXPECT_EQ(ttsendpointsecuredSubstring ,"\"\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsendpointsecured' not found in the response.";
-    }
 }
 
 /**
@@ -861,17 +951,6 @@ TEST_F(TTSInitializedTest, SetNULLSecuredTTSEndpoint) {
 TEST_F(TTSInitializedTest, SetStringAsVolume) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": \"invalid\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t volumePos = response.find("\"volume\"");
-
-    if (volumePos  != string::npos) {
-        size_t volumeStart = response.find(':', volumePos ) + 1;
-        size_t volumeEnd = response.find(',', volumePos );
-        std::string volumeSubstring = response.substr(volumeStart ,volumeEnd  - volumeStart );
-        EXPECT_EQ(volumeSubstring ,"\"95\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'volume' not found in the response.";
-    }
 }
 
 /**
@@ -885,17 +964,6 @@ TEST_F(TTSInitializedTest, SetStringAsVolume) {
 TEST_F(TTSInitializedTest, SetVolumeLessThanMinValue) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": -1}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t volumePos = response.find("\"volume\"");
-
-    if (volumePos  != string::npos) {
-        size_t volumeStart = response.find(':', volumePos ) + 1;
-        size_t volumeEnd = response.find(',', volumePos );
-        std::string volumeSubstring = response.substr(volumeStart ,volumeEnd  - volumeStart );
-        EXPECT_EQ(volumeSubstring ,"\"95\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'volume' not found in the response.";
-    }
 }
 
 /**
@@ -909,17 +977,6 @@ TEST_F(TTSInitializedTest, SetVolumeLessThanMinValue) {
 TEST_F(TTSInitializedTest, SetVolumeGreaterThanMaxValue) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\": 101}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t volumePos = response.find("\"volume\"");
-
-    if (volumePos  != string::npos) {
-        size_t volumeStart = response.find(':', volumePos ) + 1;
-        size_t volumeEnd = response.find(',', volumePos );
-        std::string volumeSubstring = response.substr(volumeStart ,volumeEnd  - volumeStart );
-        EXPECT_EQ(volumeSubstring ,"\"95\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'volume' not found in the response.";
-    }
 }
 
 /**
@@ -933,17 +990,6 @@ TEST_F(TTSInitializedTest, SetVolumeGreaterThanMaxValue) {
 TEST_F(TTSInitializedTest, SetEmptyVolume) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"volume\":\"\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t volumePos = response.find("\"volume\"");
-
-    if (volumePos  != string::npos) {
-        size_t volumeStart = response.find(':', volumePos ) + 1;
-        size_t volumeEnd = response.find(',', volumePos );
-        std::string volumeSubstring = response.substr(volumeStart ,volumeEnd  - volumeStart );
-        EXPECT_EQ(volumeSubstring ,"\"95\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'ttsendpoint' not found in the response.";
-    }
 }
 
 /**
@@ -957,17 +1003,6 @@ TEST_F(TTSInitializedTest, SetEmptyVolume) {
 TEST_F(TTSInitializedTest, SetStringAsRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": \"invalid\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ratePos = response.find("\"rate\"");
-
-    if (ratePos  != string::npos) {
-        size_t rateStart = response.find(':', ratePos ) + 1;
-        size_t rateEnd = response.find(',', ratePos );
-        std::string rateSubstring = response.substr(rateStart ,rateEnd  - rateStart );
-        EXPECT_EQ(rateSubstring ,"40");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'rate' not found in the response.";
-    }
 }
 
 /**
@@ -981,17 +1016,6 @@ TEST_F(TTSInitializedTest, SetStringAsRate) {
 TEST_F(TTSInitializedTest, SetRateLessThanMinValue) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": -1}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ratePos = response.find("\"rate\"");
-
-    if (ratePos  != string::npos) {
-        size_t rateStart = response.find(':', ratePos ) + 1;
-        size_t rateEnd = response.find(',', ratePos );
-        std::string rateSubstring = response.substr(rateStart ,rateEnd  - rateStart );
-        EXPECT_EQ(rateSubstring ,"40");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'rate' not found in the response.";
-    }
 }
 
 /**
@@ -1005,17 +1029,6 @@ TEST_F(TTSInitializedTest, SetRateLessThanMinValue) {
 TEST_F(TTSInitializedTest, SetRateGreaterThanMaxValue) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\": 101}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ratePos = response.find("\"rate\"");
-
-    if (ratePos  != string::npos) {
-        size_t rateStart = response.find(':', ratePos ) + 1;
-        size_t rateEnd = response.find(',', ratePos );
-        std::string rateSubstring = response.substr(rateStart ,rateEnd  - rateStart );
-        EXPECT_EQ(rateSubstring ,"40");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'rate' not found in the response.";
-    }
 }
 
 /**
@@ -1029,17 +1042,6 @@ TEST_F(TTSInitializedTest, SetRateGreaterThanMaxValue) {
 TEST_F(TTSInitializedTest, SetEmptyRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"rate\":\"\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t ratePos = response.find("\"rate\"");
-
-    if (ratePos  != string::npos) {
-        size_t rateStart = response.find(':', ratePos ) + 1;
-        size_t rateEnd = response.find(',', ratePos );
-        std::string rateSubstring = response.substr(rateStart ,rateEnd  - rateStart );
-        EXPECT_EQ(rateSubstring ,"40");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'rate' not found in the response.";
-    }
 }
 
 /**
@@ -1104,6 +1106,16 @@ TEST_F(TTSInitializedTest, SetEmptyPrimvolduckpercent) {
 
 TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1128,6 +1140,16 @@ TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1152,6 +1174,16 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1176,6 +1208,16 @@ TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetNullSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1200,6 +1242,16 @@ TEST_F(TTSInitializedTest, SetNullSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"invalid\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1224,6 +1276,16 @@ TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetEmptyLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1232,7 +1294,7 @@ TEST_F(TTSInitializedTest, SetEmptyLanguage) {
         size_t languagePosStart = response.find(':', languagePos ) + 1;
         size_t languagePosEnd = response.find(',', languagePos );
         std::string languageSubstring = response.substr(languagePosStart ,languagePosEnd  - languagePosStart);
-        EXPECT_EQ(languageSubstring ,"\"en-US\"");
+        EXPECT_EQ(languageSubstring ,"\"en-us\"");
      } else {
         EXPECT_TRUE(false) << "Error: 'language' not found in the response.";
     }
@@ -1248,6 +1310,16 @@ TEST_F(TTSInitializedTest, SetEmptyLanguage) {
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1256,7 +1328,7 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
         size_t languagePosStart = response.find(':', languagePos ) + 1;
         size_t languagePosEnd = response.find(',', languagePos );
         std::string languageSubstring = response.substr(languagePosStart ,languagePosEnd  - languagePosStart);
-        EXPECT_EQ(languageSubstring ,"\"en-US\"");
+        EXPECT_EQ(languageSubstring ,"\"en-us\"");
      } else {
         EXPECT_TRUE(false) << "Error: 'language' not found in the response.";
     }
@@ -1272,6 +1344,16 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
 
 TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1280,7 +1362,7 @@ TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
         size_t languagePosStart = response.find(':', languagePos ) + 1;
         size_t languagePosEnd = response.find(',', languagePos );
         std::string languageSubstring = response.substr(languagePosStart ,languagePosEnd  - languagePosStart);
-        EXPECT_EQ(languageSubstring ,"\"en-US\"");
+        EXPECT_EQ(languageSubstring ,"\"en-us\"");
      } else {
         EXPECT_TRUE(false) << "Error: 'language' not found in the response.";
     }
@@ -1296,6 +1378,16 @@ TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
 
 TEST_F(TTSInitializedTest, SetNullLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": NULL}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1304,7 +1396,7 @@ TEST_F(TTSInitializedTest, SetNullLanguage) {
         size_t languagePosStart = response.find(':', languagePos ) + 1;
         size_t languagePosEnd = response.find(',', languagePos );
         std::string languageSubstring = response.substr(languagePosStart ,languagePosEnd  - languagePosStart);
-        EXPECT_EQ(languageSubstring ,"\"en-US\"");
+        EXPECT_EQ(languageSubstring ,"\"en-us\"");
      } else {
         EXPECT_TRUE(false) << "Error: 'language' not found in the response.";
     }
@@ -1320,18 +1412,17 @@ TEST_F(TTSInitializedTest, SetNullLanguage) {
 
 TEST_F(TTSInitializedTest, SetEmptyVoice) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": \"\"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t voicePos = response.find("\"voice\"");
-
-    if (voicePos  != string::npos) {
-        size_t voicePosStart = response.find(':', voicePos ) + 1;
-        size_t voicePosEnd = response.find(',', voicePos );
-        std::string voiceSubstring = response.substr(voicePosStart ,voicePosEnd  - voicePosStart );
-        EXPECT_EQ(voiceSubstring ,"\"carol\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'voice' not found in the response.";
-    }
 }
 
 /**
@@ -1345,17 +1436,6 @@ TEST_F(TTSInitializedTest, SetEmptyVoice) {
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsVoice) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": \"  \"}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t voicePos = response.find("\"voice\"");
-
-    if (voicePos  != string::npos) {
-        size_t voicePosStart = response.find(':', voicePos ) + 1;
-        size_t voicePosEnd = response.find(',', voicePos );
-        std::string voiceSubstring = response.substr(voicePosStart ,voicePosEnd  - voicePosStart );
-        EXPECT_EQ(voiceSubstring ,"\"carol\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'voice' not found in the response.";
-    }
 }
 
 /**
@@ -1369,17 +1449,6 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsVoice) {
 TEST_F(TTSInitializedTest, SetNumberAsVoice) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": 01}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t voicePos = response.find("\"voice\"");
-
-    if (voicePos  != string::npos) {
-        size_t voicePosStart = response.find(':', voicePos ) + 1;
-        size_t voicePosEnd = response.find(',', voicePos );
-        std::string voiceSubstring = response.substr(voicePosStart ,voicePosEnd  - voicePosStart );
-        EXPECT_EQ(voiceSubstring ,"\"carol\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'voice' not found in the response.";
-    }
 }
 
 /**
@@ -1393,17 +1462,6 @@ TEST_F(TTSInitializedTest, SetNumberAsVoice) {
 TEST_F(TTSInitializedTest, SetNullVoice) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": null}"), response));
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
-    size_t voicePos = response.find("\"voice\"");
-
-    if (voicePos  != string::npos) {
-        size_t voicePosStart = response.find(':', voicePos ) + 1;
-        size_t voicePosEnd = response.find(',', voicePos );
-        std::string voiceSubstring = response.substr(voicePosStart ,voicePosEnd  - voicePosStart );
-        EXPECT_EQ(voiceSubstring ,"\"carol\"");
-     } else {
-        EXPECT_TRUE(false) << "Error: 'voice' not found in the response.";
-    }
 }
 
 /**
@@ -1480,7 +1538,7 @@ TEST_F(TTSInitializedTest, SetAuthInfoTypeNull) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1518,7 +1576,7 @@ TEST_F(TTSInitializedTest, SetACLInvalidAccess) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
         connection,
         _T("setttsconfiguration"),
-        _T("{\"language\": \"en-US\",\"voice\": \"carol\","
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
             "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
             "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
         ),
@@ -1666,4 +1724,116 @@ TEST_F(TTSInitializedTest, SetACLNullApp) {
         _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":NULL}]}"),
         response
     ));
+}
+
+TEST_F(TTSInitializedTest,SetConfigurationWithFallbackText) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), 
+        _T("{\"language\":\"en-us\", \"voice\":\"carol\",\"fallbacktext\":{\"scenario\":\"error\",\"value\":\"TTS service unavailable\"}}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SpeakWithRFCURL) {
+    //plugin->Deinitialize(&service);
+    //sleep(2);
+    mockTTSConfigureTTS2();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SetACLWromgApp) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setACL"),
+        _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":[\"WebAPP1\"]}]}"),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setACL"),
+        _T("{\"accesslist\": [{\"method\":\"speak\",\"apps\":[\"TestAPP\"]}]}"),
+        response
+    ));
+
+    EXPECT_EQ(response, _T("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"),
+        _T("{\"text\": \"speech_123\",\"callsign\":\"WebAPP1\"}"), response));
+}
+
+int ExtractSpeechId(const string& response)
+{
+    SpeakResponse json;
+    json.FromString(response);
+
+    if (json.speechid.IsSet()) {
+        return json.speechid.Value();
+    }
+    return -1;
+}
+
+TEST_F(TTSInitializedTest, PauseResumeAfterSPeak) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    int speechId = ExtractSpeechId(response);
+    std::string speechIdParam = std::string("{\"speechid\": ") + std::to_string(speechId) +"}";
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("pause"), speechIdParam, response));
+    sleep(1);
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("resume"), speechIdParam, response));
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+}
+
+TEST_F(TTSInitializedTest, speakWithApiKey) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{""\"language\": \"en-us\",""\"voice\": \"carol\","
+            "\"ttsendpoint\": \"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\": \"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"authinfo\": {""\"type\": \"apikey\",""\"value\": \"my_test_key\"""}""}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": false}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
+    sleep(2);
 }

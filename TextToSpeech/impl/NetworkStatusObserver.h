@@ -18,7 +18,9 @@
 **/
 
 #include "TTSCommon.h"
-
+#ifdef UNIT_TESTING
+#include "WPEFramework/interfaces/INetworkManager.h"
+#endif
 namespace WPEFramework {
 namespace Plugin {
 namespace TTS {
