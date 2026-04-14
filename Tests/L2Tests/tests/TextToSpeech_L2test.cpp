@@ -61,9 +61,9 @@ public:
     {
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
         if (file.is_open()) {
-            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+            std::string json ="{\"endpoint\":\"http://testurl.net/tts/location?\","
+                    "\"secureendpoint\":\"https://testurl.net/tts/location?\","
+                    "\"localendpoint\":\"http://testurl.net/nuanceEvetest/tts?\","
                     "\"speechrate\":\"medium\","
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
@@ -90,9 +90,9 @@ public:
         std::ofstream file(TTS_CONFIG_FILE_PATH, std::ios::out | std::ios::trunc);
         if (file.is_open()) {
 
-            std::string json ="{\"endpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
-                    "\"secureendpoint\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
-                    "\"localendpoint\":\"http://example-tts-dummy.net/nuanceEvetest/tts?\","
+            std::string json ="{\"endpoint\":\"http://testurl.net/tts/location?\","
+                    "\"secureendpoint\":\"https://testurl.net/tts/location?\","
+                    "\"localendpoint\":\"http://testurl.net/nuanceEvetest/tts?\","
                     "\"endpoint_type\":\"TTS2\","
                     "\"speechrate\":\"medium\","
                     "\"satplugincallsign\":\"org.rdk.AuthService\","
@@ -334,8 +334,8 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "en-US";
-    configurationParameter["ttsendpointsecured"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
-    configurationParameter["ttsendpoint"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
+    configurationParameter["ttsendpointsecured"] = "http://testurl.net/tts/location?";
+    configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
@@ -751,8 +751,8 @@ void TextToSpeechTest::setTTSConfiguration()
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "en-US";
-    configurationParameter["ttsendpointsecured"] = "https://example-tts-dummy.net/tts/v1/cdn/location?";
-    configurationParameter["ttsendpoint"] = "http://example-tts-dummy.net/tts/v1/cdn/location?";
+    configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
+    configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
