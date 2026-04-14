@@ -68,8 +68,8 @@ public:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-US\":\"en-US\",\"es-MX\":\"es-MX\",\"fr-CA\":\"fr-CA\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-US\":\"en-US\",\"es-MX\":\"es-MX\",\"fr-CA\":\"fr-CA\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
@@ -99,8 +99,8 @@ public:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-US\":\"en-US\",\"es-MX\":\"es-MX\",\"fr-CA\":\"fr-CA\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-US\":\"en-US\",\"es-MX\":\"es-MX\",\"fr-CA\":\"fr-CA\",\"en-GB\":\"en-GB\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
@@ -333,7 +333,7 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
     JsonObject configurationResponse;
 
     configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "en-US";
+    configurationParameter["voice"] = "carol";
     configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
     configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
 
@@ -750,7 +750,7 @@ void TextToSpeechTest::setTTSConfiguration()
     JsonObject configurationResponse;
 
     configurationParameter["language"] = "en-US";
-    configurationParameter["voice"] = "en-US";
+    configurationParameter["voice"] = "carol";
     configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
     configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
 
