@@ -21,12 +21,15 @@
 #include <sys/prctl.h>
 #include "UtilsJsonRpc.h"
 #include <mutex>
+#include <fstream>
+#include <sstream>
 
 #include "TextToSpeechValidator.h"
 #include "impl/RFCURLObserver.h"
 
 #define TTS_MAJOR_VERSION 1
 #define TTS_MINOR_VERSION 0
+#define TTS_CONFIG_FILE_PATH "/etc/entservices/ttsConfig.json"
 
 #define GET_STR(map, key, def) ((map.HasLabel(key) && !map[key].String().empty() && map[key].String() != "null") ? map[key].String() : def)
 
@@ -59,6 +62,18 @@ namespace Plugin {
         }
     }
 
+    static bool readTTSConfigFile(const std::string& path, std::string& out)
+    {
+        std::ifstream file(path, std::ios::in | std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+        std::ostringstream ss;
+        ss << file.rdbuf();   // read entire file
+        out = ss.str();
+        return !out.empty();
+    }
+
     uint32_t TextToSpeechImplementation::Configure(PluginHost::IShell* service)
     {
         if(!_ttsManager)
@@ -75,14 +90,20 @@ namespace Plugin {
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
 
-        JsonObject config;
-        config.FromString(service->ConfigLine());
-
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
 #ifndef UNIT_TESTING
         // To-do: DELIA-68409
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
 #endif
+
+        JsonObject config;
+        std::string jsonText;
+        if (!readTTSConfigFile(TTS_CONFIG_FILE_PATH, jsonText)) {
+            TTSLOG_ERROR("Failed to read ttsconfig JSON file %s", TTS_CONFIG_FILE_PATH);
+        }
+        TTSLOG_INFO("tts config %s\n", jsonText.c_str());
+        config.FromString(jsonText);
+        
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));
@@ -175,7 +196,7 @@ namespace Plugin {
         return 0;
     }
 
-    void TextToSpeechImplementation::Register(Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::Register(Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -188,9 +209,11 @@ namespace Plugin {
         _adminLock.Unlock();
 
         TRACE_L1("Registered a sink on the browser %p", sink);
+
+        return Core::ERROR_NONE;
     }
 
-    void TextToSpeechImplementation::Unregister(Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::Unregister(Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
 
@@ -215,9 +238,11 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+
+        return Core::ERROR_NONE;
     }
 
-    void TextToSpeechImplementation::RegisterWithCallsign(const string callsign,Exchange::ITextToSpeech::INotification* sink)
+    Core::hresult TextToSpeechImplementation::RegisterWithCallsign(const string callsign, Exchange::ITextToSpeech::INotification* sink)
     {
         _adminLock.Lock();
         TTSLOG_INFO("TTS thunder RegisterWithCallsign %s\n",callsign);
@@ -229,6 +254,8 @@ namespace Plugin {
         _adminLock.Unlock();
 
         TRACE_L1("Registered a sink on the browser %p", sink);
+
+        return Core::ERROR_NONE;
     }
 
     uint32_t TextToSpeechImplementation::Request(PluginHost::IStateControl::command command)
@@ -237,7 +264,7 @@ namespace Plugin {
         return Core::ERROR_GENERAL;
     }
 
-    uint32_t TextToSpeechImplementation::Enable(const bool enable)
+    Core::hresult TextToSpeechImplementation::Enable(const bool enable)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -250,7 +277,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::ListVoices(const string language,RPC::IStringIterator*& voices) const
+    Core::hresult TextToSpeechImplementation::ListVoices(const string language, RPC::IStringIterator*& voices) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
@@ -267,7 +294,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::SetConfiguration(const Exchange::ITextToSpeech::Configuration &object, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) Exchange::ITextToSpeech::TTS_INVALID_CONFIGURATION;
 
@@ -309,7 +336,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::SetFallbackText(const string scenario,const string value)
+    Core::hresult TextToSpeechImplementation::SetFallbackText(const string scenario, const string value)
     {
         FallbackData data;
         data.scenario = scenario;
@@ -324,7 +351,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetPrimaryVolDuck(const uint8_t prim)
+    Core::hresult TextToSpeechImplementation::SetPrimaryVolDuck(const uint8_t prim)
     {
         if(!InputValidation::Instance().validate("setPrimaryVolDuck", prim))
             return Core::ERROR_GENERAL;
@@ -337,7 +364,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetAPIKey(const string apikey)
+    Core::hresult TextToSpeechImplementation::SetAPIKey(const string apikey)
     {
         _adminLock.Lock();
         _ttsManager->setAPIKey(apikey);
@@ -347,7 +374,7 @@ namespace Plugin {
         return (Core::ERROR_NONE);
     }
 
-    uint32_t TextToSpeechImplementation::SetACL(const string method,const string apps)
+    Core::hresult TextToSpeechImplementation::SetACL(const string method, const string apps)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -366,7 +393,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
     
-    uint32_t TextToSpeechImplementation::GetConfiguration(Exchange::ITextToSpeech::Configuration &exchangeConfig) const
+    Core::hresult TextToSpeechImplementation::GetConfiguration(Exchange::ITextToSpeech::Configuration &exchangeConfig) const
     {
         TTS::Configuration ttsConfig;
 
@@ -397,7 +424,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Enable(bool &enable) const
+    Core::hresult TextToSpeechImplementation::Enable(bool &enable) const
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -418,7 +445,7 @@ namespace Plugin {
         return ++counter;
     }
 
-    uint32_t TextToSpeechImplementation::Speak(const string callsign,const string text,uint32_t &speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Speak(const string callsign, const string text, uint32_t &speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -438,7 +465,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Cancel(const uint32_t speechid)
+    Core::hresult TextToSpeechImplementation::Cancel(const uint32_t speechid)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         auto status = TTS::TTS_FAIL;
@@ -454,7 +481,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Pause(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Pause(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -468,7 +495,7 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    uint32_t TextToSpeechImplementation::Resume(const uint32_t speechid,Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
+    Core::hresult TextToSpeechImplementation::Resume(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
@@ -483,7 +510,7 @@ namespace Plugin {
     }
 
 
-    uint32_t TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid,Exchange::ITextToSpeech::SpeechState &estate)
+    Core::hresult TextToSpeechImplementation::GetSpeechState(const  uint32_t speechid, Exchange::ITextToSpeech::SpeechState &estate)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         TTS::SpeechState state;
@@ -515,16 +542,16 @@ namespace Plugin {
 
         while (index != _notificationClients.end()) {
             switch(event) {
-                case STATE_CHANGED:     (*index)->Enabled(params.Boolean()); break;
-                case VOICE_CHANGED:     (*index)->VoiceChanged(params.String()); break;
-                case WILL_SPEAK:        (*index)->WillSpeak(params.Number()); break;
-                case SPEECH_START:      (*index)->SpeechStart(params.Number()); break;
-                case SPEECH_PAUSE:      (*index)->SpeechPause(params.Number()); break;
-                case SPEECH_RESUME:     (*index)->SpeechResume(params.Number()); break;
-                case SPEECH_INTERRUPT:  (*index)->SpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (*index)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (*index)->PlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (*index)->SpeechComplete(params.Number()); break;
+                case STATE_CHANGED:     (*index)->OnTTSStateChanged(params.Boolean()); break;
+                case VOICE_CHANGED:     (*index)->OnVoiceChanged(params.String()); break;
+                case WILL_SPEAK:        (*index)->OnSpeechReady(params.Number()); break;
+                case SPEECH_START:      (*index)->OnSpeechStarted(params.Number()); break;
+                case SPEECH_PAUSE:      (*index)->OnSpeechPaused(params.Number()); break;
+                case SPEECH_RESUME:     (*index)->OnSpeechResumed(params.Number()); break;
+                case SPEECH_INTERRUPT:  (*index)->OnSpeechInterrupted(params.Number()); break;
+                case NETWORK_ERROR:     (*index)->OnNetworkError(params.Number()); break;
+                case PLAYBACK_ERROR:    (*index)->OnPlaybackError(params.Number()); break;
+                case SPEECH_COMPLETE:   (*index)->OnSpeechComplete(params.Number()); break;
                 default: break;
             }
             ++index;
@@ -535,14 +562,14 @@ namespace Plugin {
         if (callsignindex != _notificationCallsignClients.end()) {
              TTSLOG_INFO("Delivering event to callsign %s \n", (callsignindex->first).c_str());
              switch(event) {
-                case WILL_SPEAK:        (callsignindex->second)->WillSpeak(params.Number()); break;
-                case SPEECH_START:      (callsignindex->second)->SpeechStart(params.Number()); break;
-                case SPEECH_PAUSE:      (callsignindex->second)->SpeechPause(params.Number()); break;
-                case SPEECH_RESUME:     (callsignindex->second)->SpeechResume(params.Number()); break;
-                case SPEECH_INTERRUPT:  (callsignindex->second)->SpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (callsignindex->second)->NetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (callsignindex->second)->PlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (callsignindex->second)->SpeechComplete(params.Number()); break;
+                case WILL_SPEAK:        (callsignindex->second)->OnSpeechReady(params.Number()); break;
+                case SPEECH_START:      (callsignindex->second)->OnSpeechStarted(params.Number()); break;
+                case SPEECH_PAUSE:      (callsignindex->second)->OnSpeechPaused(params.Number()); break;
+                case SPEECH_RESUME:     (callsignindex->second)->OnSpeechResumed(params.Number()); break;
+                case SPEECH_INTERRUPT:  (callsignindex->second)->OnSpeechInterrupted(params.Number()); break;
+                case NETWORK_ERROR:     (callsignindex->second)->OnNetworkError(params.Number()); break;
+                case PLAYBACK_ERROR:    (callsignindex->second)->OnPlaybackError(params.Number()); break;
+                case SPEECH_COMPLETE:   (callsignindex->second)->OnSpeechComplete(params.Number()); break;
                 default: break;            
              }
          }
