@@ -470,7 +470,7 @@ TEST_F(TTSInitializedTest, listVoices) {
 TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"\"}"), response));
-    EXPECT_EQ(response, _T("{\"voices\":\"\",\"TTS_Status\":0,\"success\":true}"));
+    EXPECT_EQ(response, _T("{\"voices\":[\"\"],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -484,7 +484,7 @@ TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
 TEST_F(TTSInitializedTest, ListVoicesSetWhiteSpaceAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"  \"}"), response));
-    EXPECT_EQ(response, _T("{\"voices\":\"\",\"TTS_Status\":0,\"success\":true}"));
+    EXPECT_EQ(response, _T("{\"voices\":[\"\"],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -1107,6 +1107,16 @@ TEST_F(TTSInitializedTest, SetEmptyPrimvolduckpercent) {
 
 TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1131,6 +1141,16 @@ TEST_F(TTSInitializedTest, SetEmptySpeechRate) {
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1155,6 +1175,16 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1179,6 +1209,16 @@ TEST_F(TTSInitializedTest, SetNumberAsSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetNullSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": null}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1203,6 +1243,16 @@ TEST_F(TTSInitializedTest, SetNullSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"speechrate\": \"invalid\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t speechRatePos = response.find("\"speechrate\"");
@@ -1227,6 +1277,16 @@ TEST_F(TTSInitializedTest, SetInvalidSpeechRate) {
 
 TEST_F(TTSInitializedTest, SetEmptyLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"\"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1251,6 +1311,16 @@ TEST_F(TTSInitializedTest, SetEmptyLanguage) {
 
 TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": \"  \"}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1275,6 +1345,16 @@ TEST_F(TTSInitializedTest, SetWhiteSpaceAsLanguage) {
 
 TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": 01}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1299,6 +1379,16 @@ TEST_F(TTSInitializedTest, SetNumberAsLanguage) {
 
 TEST_F(TTSInitializedTest, SetNullLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"language\": NULL}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getttsconfiguration"), _T(""), response));
     size_t languagePos = response.find("\"language\"");
@@ -1323,6 +1413,16 @@ TEST_F(TTSInitializedTest, SetNullLanguage) {
 
 TEST_F(TTSInitializedTest, SetEmptyVoice) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setttsconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"volume\": \"95\",\"primvolduckpercent\": \"50\",\"rate\": \"40\",\"speechrate\":\"medium\"}"
+        ),
+        response
+    ));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("setttsconfiguration"), _T("{\"voice\": \"\"}"), response));
 }
 
