@@ -470,6 +470,7 @@ TEST_F(TTSInitializedTest, listVoices) {
 TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"\"}"), response));
+    EXPECT_EQ(response, _T("{\"voices\":\"\",\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -482,7 +483,8 @@ TEST_F(TTSInitializedTest, ListVoicesSetEmptyLanguage) {
 
 TEST_F(TTSInitializedTest, ListVoicesSetWhiteSpaceAsLanguage) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"  \"}"), response));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("listvoices"), _T("{\"language\": \"  \"}"), response));
+    EXPECT_EQ(response, _T("{\"voices\":\"\",\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
