@@ -334,7 +334,7 @@ TEST_F(TextToSpeechTest, setgetTTSConfiguration)
 
     configurationParameter["language"] = "en-US";
     configurationParameter["voice"] = "en-US";
-    configurationParameter["ttsendpointsecured"] = "http://testurl.net/tts/location?";
+    configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
     configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
 
     uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
