@@ -88,6 +88,13 @@ if (RDK_SERVICE_L2_TEST)
     endif (TESTMOCKLIB_LIBRARIES)
 endif()
 target_include_directories(${MODULE_NAME} PRIVATE ../helpers ${GSTREAMER_INCLUDES})
+target_compile_options(${MODULE_NAME} PRIVATE
+    -fsanitize=address
+    -g
+)
+target_link_options(${MODULE_NAME} PRIVATE
+    -fsanitize=address
+)
 
 if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
     target_include_directories(${MODULE_NAME} PRIVATE
