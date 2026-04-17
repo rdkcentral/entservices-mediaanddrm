@@ -153,7 +153,7 @@ namespace Plugin {
 #endif
 
         ttsConfig->loadFromConfigStore();
-        TTSLOG_INFO("TTSEndPoint : %s", ttsConfig->endPoint().c_str());
+        TTSLOG_INFO("RDKEMW-10301 TTSEndPoint : %s", ttsConfig->endPoint().c_str());
         TTSLOG_INFO("SecureTTSEndPoint : %s", ttsConfig->secureEndPoint().c_str());
         TTSLOG_INFO("RFCEndPoint : %s", ttsConfig->rfcEndPoint().c_str());
         TTSLOG_INFO("LocalTTSEndPoint : %s", ttsConfig->localEndPoint().c_str());
