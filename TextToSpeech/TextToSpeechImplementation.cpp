@@ -93,7 +93,7 @@ namespace Plugin {
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
 #ifndef UNIT_TESTING
         // To-do: DELIA-68409
-        TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
+        TTS::RFCURLObserver::getInstance()->triggerRFC(service, ttsConfig);
 #endif
 
         JsonObject config;
