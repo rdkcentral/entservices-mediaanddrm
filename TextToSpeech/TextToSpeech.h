@@ -124,14 +124,15 @@ namespace Plugin {
                     _parent.Notify("onspeechcomplete", params);
                 }
 
-                virtual void Activated(RPC::IRemoteConnection* /* connection */) final
+                virtual void Activated(RPC::IRemoteConnection*  connection ) final
                 {
-                    TTSLOG_WARNING("TextToSpeech::Notification::Activated - %p", this);
+                    if (connection->Id() == _connectionId) {
+                         TTSLOG_WARNING("TextToSpeech::Activated - %p", this);
+                    }
                 }
 
                 virtual void Deactivated(RPC::IRemoteConnection* connection) final
                 {
-                    TTSLOG_WARNING("TextToSpeech::Notification::Deactivated - %p", this);
                     _parent.Deactivated(connection);
                 }
 
