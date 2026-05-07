@@ -466,6 +466,11 @@ TEST_F(TextToSpeechTest, speakStartEventCheck)
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     EXPECT_EQ(Core::ERROR_NONE, status);
