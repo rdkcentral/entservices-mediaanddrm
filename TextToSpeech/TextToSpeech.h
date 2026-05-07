@@ -124,7 +124,7 @@ namespace Plugin {
                     _parent.Notify("onspeechcomplete", params);
                 }
 
-                virtual void Activated(RPC::IRemoteConnection*  /* connection */ ) final
+                virtual void Activated(RPC::IRemoteConnection* /* connection */) final
                 {
                     /* do nothing */
                 }
