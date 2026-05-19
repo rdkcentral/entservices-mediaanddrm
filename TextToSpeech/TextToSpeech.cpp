@@ -64,7 +64,7 @@ namespace Plugin {
            #ifndef UNIT_TESTING
                 ASSERT(_connectionId != 0);
            #endif
-
+            TTSLOG_WARNING("TextToSpeech::Initialize connection id %d", _connectionId);
             PluginHost::IStateControl* stateControl(_tts->QueryInterface<PluginHost::IStateControl>());
 
             if (stateControl == nullptr) {
