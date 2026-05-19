@@ -64,7 +64,7 @@ namespace Plugin {
             #ifndef UNIT_TESTING
                 ASSERT(_connectionId != 0);
             #endif
-
+            SAPLOG_WARNING("SystemAudioPlayer::Initialize connection id %d", _connectionId);
             _sap->Configure(_service);
             _sap->Register(&_notification);
             RegisterAll();
