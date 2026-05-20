@@ -91,10 +91,7 @@ namespace Plugin {
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
-#ifndef UNIT_TESTING
-        // To-do: DELIA-68409
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
-#endif
 
         JsonObject config;
         std::string jsonText;
@@ -143,7 +140,7 @@ namespace Plugin {
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-
+        
 #ifndef UNIT_TESTING
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));

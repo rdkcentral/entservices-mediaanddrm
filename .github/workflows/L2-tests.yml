@@ -174,6 +174,14 @@ jobs:
           &&
           cmake --install build/Thunder
 
+      - name: Checkout networkmanager
+        uses: actions/checkout@v3
+        with:
+          repository: rdkcentral/networkmanager
+          path: networkmanager
+          ref: develop
+          token: ${{ secrets.RDKCM_RDKE }}
+
       - name: Checkout entservices-apis
         uses: actions/checkout@v3
         with:
@@ -185,6 +193,7 @@ jobs:
       - name: Apply patches entservices-apis
         run: |
           cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
           patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/add-l2tests-interface.patch
           cd -
 
@@ -205,6 +214,8 @@ jobs:
         # Empty headers to mute errors
         run: >
           cd "$GITHUB_WORKSPACE/entservices-testframework/Tests/"
+          &&
+          cp $GITHUB_WORKSPACE/networkmanager/interface/INetworkManager.h $GITHUB_WORKSPACE/install/usr/include/WPEFramework/interfaces/
           &&
           mkdir -p
           headers
@@ -478,11 +489,13 @@ jobs:
       - name: Set up files
         run: >
           sudo mkdir -p -m 777
+          /etc/entservices
           /opt/persistent
           /opt/secure
           /opt/secure/reboot
           /opt/secure/persistent
           /opt/secure/persistent/System
+          /opt/www
           /tmp/secure/persistent
           /tmp/persistent
           /tmp/persistent/rdkservicestore
@@ -509,6 +522,9 @@ jobs:
           &&
           sudo touch
           /opt/standbyReason.txt
+          /opt/www/TTS_fallback.mp3
+          /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
           /opt/dcm.properties
@@ -538,6 +554,9 @@ jobs:
           /tmp/block/sdb/device/model
           &&
           sudo chmod -R 777
+          /opt/www/TTS_fallback.mp3
+          /etc/entservices/ttsConfig.json
+          /opt/persistent/tts.setting.ini
           /opt/standbyReason.txt
           /opt/tmtryoptout
           /opt/fwdnldstatus.txt
