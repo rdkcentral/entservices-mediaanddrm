@@ -95,7 +95,7 @@ void BufferQueue::clear()
         item = m_buffer.front();
         m_buffer.pop();
         item->deleteBuffer();
-	delete item;
+    delete item;
         sem_getvalue(&m_sem_full,&value);
         if(value != 0)
             sem_wait(&m_sem_full);
