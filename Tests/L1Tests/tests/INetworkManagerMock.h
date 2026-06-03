@@ -18,6 +18,7 @@
  */
 
 #include <gmock/gmock.h>
+#include "WPEFramework/interfaces/INetworkManager.h"
 #include "Module.h"
 
 class MockINetworkManager : public WPEFramework::Exchange::INetworkManager {
