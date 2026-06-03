@@ -31,7 +31,7 @@
 #include "RfcApiMock.h"
 #include "WPEFramework/interfaces/IAuthService.h"
 #include "mockauthservices.h"
-#include "INetworkManagerMock.h"
+#include "NetworkManagerMock.h"
 #include <iostream>
 #include <fstream>
 #include <string>
