@@ -124,7 +124,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: develop
+          ref: ef8357dd699fa91ecb2d914a1efd98849d7e9303
           token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-mediaanddrm
@@ -208,6 +208,12 @@ jobs:
           token : ${{ secrets.RDKCM_RDKE }}
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
+      - name: Apply patches entservices-apis
+        run: |
+          cd $GITHUB_WORKSPACE/entservices-apis
+          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
+          cd -
+
       - name: Checkout networkmanager
         uses: actions/checkout@v3
         with:
@@ -215,12 +221,6 @@ jobs:
           path: networkmanager
           ref: develop
           token: ${{ secrets.RDKCM_RDKE }}
-
-      - name: Apply patches entservices-apis
-        run: |
-          cd $GITHUB_WORKSPACE/entservices-apis
-          patch -p1 < $GITHUB_WORKSPACE/entservices-testframework/patches/RDKEMW-1007.patch
-          cd -
 
       - name: Build entservices-apis
         run: >
