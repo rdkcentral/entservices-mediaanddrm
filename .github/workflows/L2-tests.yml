@@ -606,6 +606,12 @@ jobs:
             nm -D "$1" 2>/dev/null | c++filt | grep "device::Host::setImpl" && echo "FOUND IN: $1"
           ' _ {} \;
 
+          echo "Checking libTestMocklib.so"
+          nm -D install/usr/lib/libTestMocklib.so | c++filt | grep "device::Host::setImpl" || true
+
+          echo "Checking full symbol table"
+          nm install/usr/lib/libTestMocklib.so | c++filt | grep "device::Host::setImpl" || true
+
       - name: Find libraries
         run: |
           find install -name "*.so*" | sort
