@@ -593,6 +593,19 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/install/usr/bin:${PATH}"
           $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/pact/install-verifier-cli.sh
 
+      - name: Check library dependencies
+        run: |
+          echo "=== LDD ==="
+          ldd install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so
+
+          echo "=== Unresolved symbols in plugin ==="
+          nm -D install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so | c++filt | grep "device::Host"
+
+          echo "=== Search symbol in all libraries ==="
+          find install -name "*.so" -exec sh -c '
+            nm -D "$1" 2>/dev/null | c++filt | grep "device::Host::setImpl" && echo "FOUND IN: $1"
+          ' _ {} \;
+
       - name: Run unit tests without valgrind
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
