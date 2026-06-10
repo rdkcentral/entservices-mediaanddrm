@@ -17,24 +17,11 @@
 * limitations under the License.
 **/
 
-#include <thread>
 #include "RFCURLObserver.h"
 #include "UtilsgetRFCConfig.h"
 #include "UtilsLogging.h"
 
-#if defined(SECURITY_TOKEN_ENABLED) && ((SECURITY_TOKEN_ENABLED == 0) || (SECURITY_TOKEN_ENABLED == false))
-#define GetSecurityToken(a, b) 0
-#define GetToken(a, b, c) 0
-#else
-#include <WPEFramework/securityagent/securityagent.h>
-#include <WPEFramework/securityagent/SecurityTokenUtil.h>
-#endif
-
-#define MAX_SECURITY_TOKEN_SIZE 1024
 #define SYSTEMSERVICE_CALLSIGN "org.rdk.System"
-#define SYSTEMSERVICE_CALLSIGN_VER SYSTEMSERVICE_CALLSIGN".1"
-
-#define RETRY_DELAY_MS 2000 // Define the delay between retries in milliseconds
 
 using namespace WPEFramework;
 
@@ -45,13 +32,11 @@ RFCURLObserver* RFCURLObserver::getInstance() {
     return instance;
 }
 
-
-void RFCURLObserver::triggerRFC(TTSConfiguration *config)
+void RFCURLObserver::triggerRFC(PluginHost::IShell* service, TTSConfiguration* config)
 {
-   m_defaultConfig = config;
-   fetchURLFromConfig();
-   std::thread notificationThread(&RFCURLObserver::registerNotification, this);
-   notificationThread.detach(); // Detach the thread to run independently
+    m_defaultConfig = config;
+    fetchURLFromConfig();
+    registerNotification(service);
 }
 
 void RFCURLObserver::fetchURLFromConfig() {
@@ -68,92 +53,40 @@ void RFCURLObserver::fetchURLFromConfig() {
     }
 }
 
-string RFCURLObserver::getSecurityToken() {
-    std::string token = "token=";
-    int tokenLength = 0;
-    unsigned char buffer[MAX_SECURITY_TOKEN_SIZE] = {0};
-    static std::string endpoint;
-
-    if(endpoint.empty()) {
-        Core::SystemInfo::GetEnvironment(_T("THUNDER_ACCESS"), endpoint);
-        TTSLOG_INFO("Thunder RPC Endpoint read from env - %s", endpoint.c_str());
-    }
-
-    if(endpoint.empty()) {
-        Core::File file("/etc/WPEFramework/config.json");
-        if(file.Open(true)) {
-            JsonObject config;
-            if(config.IElement::FromFile(file)) {
-                Core::JSON::String port = config.Get("port");
-                Core::JSON::String binding = config.Get("binding");
-                if(!binding.Value().empty() && !port.Value().empty())
-                    endpoint = binding.Value() + ":" + port.Value();
-            }
-            file.Close();
-        }
-        if(endpoint.empty()) 
-            endpoint = _T("127.0.0.1:9998");
-            
-        TTSLOG_INFO("Thunder RPC Endpoint read from config file - %s", endpoint.c_str());
-        Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), endpoint);        
-    }
-
-    string payload = "http://localhost";
-    if(payload.empty()) {
-        tokenLength = GetSecurityToken(sizeof(buffer), buffer);
-    } else {
-        int buffLength = std::min(sizeof(buffer), payload.length());
-        ::memcpy(buffer, payload.c_str(), buffLength);
-        tokenLength = GetToken(sizeof(buffer), buffLength, buffer);
-    }
-
-    if(tokenLength > 0) {
-        token.append((char*)buffer);
-    } else {
-        token.clear();
-    }
-
-    TTSLOG_INFO("Thunder token - %s", token.empty() ? "" : token.c_str());
-    return token;
-}
-
-
-void RFCURLObserver::registerNotification() {
-    if (m_systemService == nullptr && !m_eventRegistered) {
-        std::string token = getSecurityToken();
-        if(token.empty()) {
-            m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"");
-        } else {        
-            m_systemService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(SYSTEMSERVICE_CALLSIGN_VER),"", false, token);
-        }
-
-        while (!m_eventRegistered) {		
-            if (m_systemService->Subscribe<JsonObject>(3000, "onDeviceMgtUpdateReceived",
-                &RFCURLObserver::onDeviceMgtUpdateReceivedHandler, this) == Core::ERROR_NONE) {
-                m_eventRegistered = true;
-                TTSLOG_INFO("Subscribed to notification handler: onDeviceMgtUpdateReceived");
-                break;
+void RFCURLObserver::registerNotification(PluginHost::IShell* service) {
+    if (_systemServicesPlugin == nullptr && !_eventRegistered) {
+        _systemServicesPlugin = service->QueryInterfaceByCallsign<Exchange::ISystemServices>(SYSTEMSERVICE_CALLSIGN);
+        if (_systemServicesPlugin != nullptr) {
+            if (Core::ERROR_NONE == _systemServicesPlugin->Register(&_systemServicesNotification)) {
+                _eventRegistered = true;
+                TTSLOG_INFO("ISystemServices::Register event registered for onDeviceMgtUpdateReceived");
             } else {
-                TTSLOG_ERROR("Failed to subscribe to notification handler: onDeviceMgtUpdateReceived..Retrying");
-                std::this_thread::sleep_for(std::chrono::milliseconds(RETRY_DELAY_MS));
+                TTSLOG_ERROR("Failed to register ISystemServices notification handler");
+                _eventRegistered = false;
             }
+        } else {
+            TTSLOG_ERROR("Failed to get SystemServices instance");
         }
     }
 }
 
-void RFCURLObserver::onDeviceMgtUpdateReceivedHandler(const JsonObject& parameters) {
-    if(parameters["source"].String() == "rfc")
-    {
-       fetchURLFromConfig();
-       TTSLOG_INFO("onDeviceMgtUpdateReceived notification received");
+void RFCURLObserver::onDeviceMgtUpdateReceivedHandler(const string& source, const string& type, const bool success) {
+    TTSLOG_INFO("onDeviceMgtUpdateReceived notification received - source: %s, type: %s, success: %d", 
+                source.c_str(), type.c_str(), success);
+    if (source == "rfc" && success) {
+        fetchURLFromConfig();
     }
 }
 
 RFCURLObserver::~RFCURLObserver() {
-   // Clean up resources
-    if (m_systemService) {
-        delete m_systemService;
-        m_systemService = nullptr;
+    // Clean up resources
+    if (_systemServicesPlugin != nullptr) {
+        if (_eventRegistered) {
+            _systemServicesPlugin->Unregister(&_systemServicesNotification);
+            _eventRegistered = false;
+        }
+        _systemServicesPlugin->Release();
+        _systemServicesPlugin = nullptr;
     }
 }
 
