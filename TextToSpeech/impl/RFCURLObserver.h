@@ -21,29 +21,58 @@
 #define _TTS_RFC_H_
 #include "TTSCommon.h"
 #include "TTSConfiguration.h"
+#include <interfaces/ISystemServices.h>
 
 namespace TTS {
 
 class RFCURLObserver {
 public:
     static RFCURLObserver* getInstance();
-    void triggerRFC(TTSConfiguration*);
+    void triggerRFC(WPEFramework::PluginHost::IShell* service, TTSConfiguration* config);
     ~RFCURLObserver();
 
 private:
-    RFCURLObserver(){};
+    RFCURLObserver()
+        : _systemServicesNotification(*this)
+    {};
     RFCURLObserver(const RFCURLObserver&) = delete;
     RFCURLObserver& operator=(const RFCURLObserver&) = delete;
 
-    void fetchURLFromConfig();
-    void registerNotification();
-    string getSecurityToken();
-	
-    void onDeviceMgtUpdateReceivedHandler(const JsonObject& parameters);
+    class SystemServicesNotification : public WPEFramework::Exchange::ISystemServices::INotification
+    {
+    private:
+        SystemServicesNotification(const SystemServicesNotification&) = delete;
+        SystemServicesNotification& operator=(const SystemServicesNotification&) = delete;
 
-    WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>* m_systemService{nullptr};
-    bool m_eventRegistered {false};
-    TTSConfiguration *m_defaultConfig;
+    public:
+        explicit SystemServicesNotification(RFCURLObserver& parent)
+            : _parent(parent)
+        {
+        }
+        ~SystemServicesNotification() override = default;
+
+    public:
+        void OnDeviceMgtUpdateReceived(const string& source, const string& type, const bool success) override
+        {
+            _parent.onDeviceMgtUpdateReceivedHandler(source, type, success);
+        }
+
+        BEGIN_INTERFACE_MAP(SystemServicesNotification)
+        INTERFACE_ENTRY(WPEFramework::Exchange::ISystemServices::INotification)
+        END_INTERFACE_MAP
+
+    private:
+        RFCURLObserver& _parent;
+    };
+
+    void fetchURLFromConfig();
+    void registerNotification(WPEFramework::PluginHost::IShell* service);
+    void onDeviceMgtUpdateReceivedHandler(const string& source, const string& type, const bool success);
+
+    WPEFramework::Core::Sink<SystemServicesNotification> _systemServicesNotification;
+    WPEFramework::Exchange::ISystemServices* _systemServicesPlugin{nullptr};
+    bool _eventRegistered{false};
+    TTSConfiguration* m_defaultConfig{nullptr};
 };
 
 }
