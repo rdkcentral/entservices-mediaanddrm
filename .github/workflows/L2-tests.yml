@@ -612,6 +612,14 @@ jobs:
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           find install/usr/lib -name "*.so*" | sort
 
+      - name: Set LD_LIBRARY_PATH
+        run: |
+          export LD_LIBRARY_PATH=$PWD/install/usr/lib:$PWD/install/usr/lib/wpeframework/proxystubs:$LD_LIBRARY_PATH
+
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+
+          ldd install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so
+
       - name: Run unit tests without valgrind
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
