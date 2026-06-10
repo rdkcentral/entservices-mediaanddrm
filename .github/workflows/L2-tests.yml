@@ -606,6 +606,12 @@ jobs:
             nm -D "$1" 2>/dev/null | c++filt | grep "device::Host::setImpl" && echo "FOUND IN: $1"
           ' _ {} \;
 
+      - name: Find libraries
+        run: |
+          find install -name "*.so*" | sort
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          find install/usr/lib -name "*.so*" | sort
+
       - name: Run unit tests without valgrind
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
