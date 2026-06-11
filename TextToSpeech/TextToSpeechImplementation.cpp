@@ -91,8 +91,10 @@ namespace Plugin {
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
+#ifndef UNIT_TESTING
+        // To-do: DELIA-68409
         TTS::RFCURLObserver::getInstance()->triggerRFC(ttsConfig);
-
+#endif
         JsonObject config;
         std::string jsonText;
         if (!readTTSConfigFile(TTS_CONFIG_FILE_PATH, jsonText)) {
@@ -100,7 +102,7 @@ namespace Plugin {
         }
         TTSLOG_INFO("tts config %s\n", jsonText.c_str());
         config.FromString(jsonText);
-        
+        x`
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));
@@ -140,7 +142,7 @@ namespace Plugin {
                 expectedVoicesSet.insert(toLower(it.Current().String()));
             }
         }
-        
+
 #ifndef UNIT_TESTING
         InputValidation::Instance().addValidator("language", ExpectedValues<std::string>(expectedLanguageSet));
         InputValidation::Instance().addValidator("voice", ExpectedValues<std::string>(expectedVoicesSet));
