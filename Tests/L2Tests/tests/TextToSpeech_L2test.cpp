@@ -979,7 +979,7 @@ TEST_F(TextToSpeechTest, speakWithoutACL)
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
     enableTTS(false);
 }
 
