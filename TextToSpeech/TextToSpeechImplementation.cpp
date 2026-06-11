@@ -100,7 +100,6 @@ namespace Plugin {
         }
         TTSLOG_INFO("tts config %s\n", jsonText.c_str());
         config.FromString(jsonText);
-        x`
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
         ttsConfig->setLocalEndPoint(GET_STR(config, "localendpoint", ""));
