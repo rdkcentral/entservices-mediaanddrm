@@ -184,9 +184,9 @@ TextToSpeechTest::TextToSpeechTest()
 
             ipversion = "IPv4";
             interface = "eth0";
-            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_NOT_AVAILABLE;
+            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
 
-            return Core::ERROR_GENERAL;
+            return Core::ERROR_NONE;
         }));
 
     ON_CALL(*p_systemAudioPlatformAPIMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
