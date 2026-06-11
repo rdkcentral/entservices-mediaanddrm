@@ -960,6 +960,7 @@ TEST_F(TextToSpeechTest, speakWithoutACL)
     enableTTS(true);
 
     JsonObject parameterACL;
+    JsonObject responseACL;
     JsonObject accessListItem;
     accessListItem["method"] = "speak";
     JsonArray apps;
