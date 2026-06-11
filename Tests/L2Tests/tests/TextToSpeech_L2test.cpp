@@ -930,7 +930,7 @@ TEST_F(TextToSpeechTest, downloadAudioCheck)
     fallbackText["value"] = "TTS service unavailable";
     configurationParameter["fallbacktext"] = fallbackText;
 
-    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
 
     // Enable TTS
