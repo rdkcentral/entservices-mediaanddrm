@@ -959,6 +959,17 @@ TEST_F(TextToSpeechTest, speakWithoutACL)
     // Enable TTS
     enableTTS(true);
 
+    JsonObject parameterACL;
+    JsonObject accessListItem;
+    accessListItem["method"] = "speak";
+    JsonArray apps;
+    apps.Add("testApp");
+    accessListItem["apps"] = apps;
+    JsonArray accessList;
+    accessList.Add(accessListItem);
+    parameterACL["accesslist"] = accessList;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setACL", parameterACL, responseACL);
+    EXPECT_EQ(Core::ERROR_NONE, status);
     // Call Speak
     JsonObject parameterSpeak;
     JsonObject responseSpeak;
@@ -969,4 +980,28 @@ TEST_F(TextToSpeechTest, speakWithoutACL)
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
+}
+
+TEST_F(TextToSpeechTest, setConfigurationWithPreConfiguredEndpoint)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    DeactivateService("org.rdk.TextToSpeech.1");
+    sleep(1);
+    mockTTSConfigureTTS2();
+    ActivateService("org.rdk.TextToSpeech.1");
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+    JsonObject fallbackText;
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
+    configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
+    fallbackText["scenario"] = "error";
+    fallbackText["value"] = "TTS service unavailable";
+    configurationParameter["fallbacktext"] = fallbackText;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
 }
