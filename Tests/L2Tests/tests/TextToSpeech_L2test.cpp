@@ -593,6 +593,8 @@ TEST_F(TextToSpeechTest, speechInterruptEventCheck)
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
 
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     // Wait for onspeechstart (which triggers the interrupt)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
@@ -666,6 +668,8 @@ TEST_F(TextToSpeechTest, disableTTSDuringSpeak)
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
 
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     // Wait for onspeechstart (which triggers the disable)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
@@ -707,6 +711,8 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     parameterSpeak["callsign"] = callsign;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
     EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     
     uint32_t localSpeechID = responseSpeak["speechid"].Number();
 
