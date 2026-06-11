@@ -774,6 +774,24 @@ void TextToSpeechTest::setTTSConfiguration()
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
+void TextToSpeechTest::setTTS2Configuration()
+{
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+    JsonObject fallbackText;
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "carol";
+    configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
+    configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
+    fallbackText["scenario"] = "error";
+    fallbackText["value"] = "TTS service unavailable";
+    configurationParameter["fallbacktext"] = fallbackText;
+
+    uint32_t status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
 void TextToSpeechTest::enableTTS(bool ttsValue)
 {
     JsonObject parameter;
@@ -911,4 +929,17 @@ TEST_F(TextToSpeechTest, speakWithTTS2Endpoint)
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
+}
+
+
+TEST_F(TextToSpeechTest, downloadAudioCheck)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTS2Configuration
+    setTTS2Configuration();
+
+    // Enable TTS
+    enableTTS(true);
 }
