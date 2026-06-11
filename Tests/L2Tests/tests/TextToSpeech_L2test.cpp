@@ -932,7 +932,4 @@ TEST_F(TextToSpeechTest, downloadAudioCheck)
 
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
-
-    // Enable TTS
-    enableTTS(true);
 }
