@@ -68,8 +68,8 @@ public:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
@@ -99,8 +99,8 @@ public:
                     "\"language\":\"en-US\","
                     "\"volume\":100,"
                     "\"rate\":50,"
-                    "\"voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
-                    "\"local_voices\":{\"en-us\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
+                    "\"voices\":{\"en-US\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"},"
+                    "\"local_voices\":{\"en-US\":\"carol\",\"es-MX\":\"amelie\",\"fr-CA\":\"angelica\",\"en-GB\":\"ava\",\"de-DE\":\"de-DE\",\"it-IT\":\"it-IT\"}"
                     "}";
 
             file << json;
