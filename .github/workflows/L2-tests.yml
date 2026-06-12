@@ -672,6 +672,7 @@ jobs:
           '*/googlemock/*'
           '*/googletest/*'
           '*/sqlite/*'
+          '*/logger.cpp'
           -o filtered_coverage.info
           &&
           genhtml

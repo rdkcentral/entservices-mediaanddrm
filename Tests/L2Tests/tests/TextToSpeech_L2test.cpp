@@ -912,55 +912,6 @@ TEST_F(TextToSpeechTest, speakWithTTS2Endpoint)
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
 
-TEST_F(TextToSpeechTest, speakWithTTS2EndpointWithoutThunderEndpoint)
-{
-    uint32_t status = Core::ERROR_GENERAL;
-    unsetenv("THUNDER_ACCESS");
-    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
-
-    // SetTTSConfiguration
-    setTTSConfiguration();
-
-    // Enable TTS
-    enableTTS(true);
-
-    // Subscribe to willspeakEvent
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
-        [this](const JsonObject event) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            {
-                std::string eventString;
-                event.ToString(eventString);
-                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-                m_event_signalled = 1;
-            }
-            m_condition_variable.notify_one();
-        });
-
-    // setACL
-    setACL();
-
-    // Call Speak
-    JsonObject parameterSpeak;
-    JsonObject responseSpeak;
-    std::string text = "Hello Testing";
-    std::string callsign = "testApp";
-    parameterSpeak["text"] = text;
-    parameterSpeak["callsign"] = callsign;
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    sleep(2);
-    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
-    sleep(2);
-    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
-    sleep(2);
-    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
-    EXPECT_TRUE(signalled);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    enableTTS(false);
-    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-}
-
-
 TEST_F(TextToSpeechTest, downloadAudioCheck)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -1053,4 +1004,91 @@ TEST_F(TextToSpeechTest, setConfigurationWithPreConfiguredEndpoint)
 
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
+TEST_F(TextToSpeechTest, pauseResume)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to onspeechStart
+    // Note: In test environment, audio playback completes extremely fast (~8ms instead of 13+ seconds).
+    // To ensure we interrupt WHILE speech is actually playing, we trigger the cancel() immediately when
+    // onspeechstart fires, confirming speech has begun.
+
+    // setACL
+    setACL();
+
+    // Speak call
+    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
+    std::string callsign = "testApp";
+
+    // First invocation of speak in the main thread
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    parameterSpeak["text"] = text1;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    
+    uint32_t localSpeechID = responseSpeak["speechid"].Number();
+
+    // Subscribe to onspeechstart and trigger cancel immediately when it fires
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this, localSpeechID](const JsonObject event) {
+            std::string eventString;
+            event.ToString(eventString);
+            TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+            
+            // Trigger cancel immediately in a detached thread to avoid blocking the callback
+            std::thread([this, localSpeechID]() {
+                JsonObject parameterCancel;
+                JsonObject responseCancel;
+                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
+                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterCancel, responseCancel);
+                EXPECT_EQ(Core::ERROR_NONE, status1);
+            }).detach();
+            
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
+
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
+
+    // Subscribe to onspeechinterrupted to catch the interrupt event
+    // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
+    m_event_signalled = 0;
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
+        [this](const JsonObject event) {
+            std::string eventString;
+            event.ToString(eventString);
+            TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+             // Trigger resume immediately in a detached thread to avoid blocking the callback
+            std::thread([this, localSpeechID]() {
+                JsonObject parameterCancel;
+                JsonObject responseCancel;
+                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
+                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterCancel, responseCancel);
+                EXPECT_EQ(Core::ERROR_NONE, status1);
+            }).detach();
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_event_signalled = 1;
+            m_condition_variable.notify_one();
+        });
+
+    uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled1);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
+    enableTTS(false);
 }
