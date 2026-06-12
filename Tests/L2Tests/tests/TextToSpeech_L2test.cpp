@@ -1069,7 +1069,7 @@ TEST_F(TextToSpeechTest, pauseResume)
     // Subscribe to onspeechinterrupted to catch the interrupt event
     // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
     m_event_signalled = 0;
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechpause"),
         [this, localSpeechID](const JsonObject event) {
             std::string eventString;
             event.ToString(eventString);
@@ -1089,6 +1089,6 @@ TEST_F(TextToSpeechTest, pauseResume)
 
     uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled1);
-    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechpause"));
     enableTTS(false);
 }
