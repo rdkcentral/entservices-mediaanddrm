@@ -1054,6 +1054,7 @@ TEST_F(TextToSpeechTest, pauseResume)
                 JsonObject responseCancel;
                 parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
                 sleep(4);
+                printf("kyk pausing speech\n");
                 uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterCancel, responseCancel);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
             }).detach();
@@ -1070,6 +1071,7 @@ TEST_F(TextToSpeechTest, pauseResume)
     // Subscribe to onspeechinterrupted to catch the interrupt event
     // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
     m_event_signalled = 0;
+    printf("kyk subscribing ospeechpause\n");
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechpause"),
         [this, localSpeechID](const JsonObject event) {
             std::string eventString;
