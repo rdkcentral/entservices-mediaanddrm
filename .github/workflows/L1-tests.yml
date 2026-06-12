@@ -122,7 +122,6 @@ jobs:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
           ref: ef8357dd699fa91ecb2d914a1efd98849d7e9303
-          token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-mediaanddrm
         if: ${{ inputs.caller_source == 'local' }}
@@ -216,7 +215,6 @@ jobs:
           repository: rdkcentral/networkmanager
           path: networkmanager
           ref: develop
-          token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Build entservices-apis
         run: >
