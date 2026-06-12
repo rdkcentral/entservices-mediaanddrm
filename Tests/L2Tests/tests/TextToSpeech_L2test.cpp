@@ -1125,3 +1125,108 @@ TEST_F(TextToSpeechTest, speakWithTTS2ApiKey)
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
+
+TEST_F(TextToSpeechTest, isspeaking)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    DeactivateService("org.rdk.TextToSpeech.1");
+    sleep(1);
+    mockTTSConfigure();
+    ActivateService("org.rdk.TextToSpeech.1");
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    uint32_t localSpeechID = responseSpeak["speechid"].Number();
+    JsonObject parameter;
+    JsonObject response;
+    parameter["speechid"] = JsonValue((uint32_t)localSpeechID);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "isspeaking", parameter, response);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getspeechstate", parameter, response);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+}
+
+TEST_F(TextToSpeechTest, playbackError)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    GError* error = g_error_new(g_quark_from_static_string("mock-error"), 1, "Mock TTS error");
+
+    GstMessage* msg = gst_message_new_error(GST_OBJECT(this->sourceMock), error, "Simulated error");
+
+    gst_element_post_message(GST_ELEMENT(this->sourceMock), msg);
+    g_error_free(error);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
+}
