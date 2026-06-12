@@ -1052,8 +1052,8 @@ TEST_F(TextToSpeechTest, pauseResume)
             std::thread([this, localSpeechID]() {
                 JsonObject parameter;
                 JsonObject response;
-                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
-                sleep(4);
+                parameter["speechid"] = JsonValue((uint32_t)localSpeechID);
+                sleep(2);
                 printf("kyk pausing speech\n");
                 uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameter, response);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
@@ -1067,7 +1067,11 @@ TEST_F(TextToSpeechTest, pauseResume)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameter, response);
+    JsonObject parameterResume;
+    JsonObject responseResume;
+    parameterResume["speechid"] = JsonValue((uint32_t)localSpeechID);
+    sleep(5);
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterResume, responseResume);
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
 }
