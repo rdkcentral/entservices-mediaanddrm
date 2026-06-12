@@ -26,6 +26,9 @@
 #include <WPEFramework/securityagent/securityagent.h>
 #include <WPEFramework/securityagent/SecurityTokenUtil.h>
 #endif
+#ifdef UNIT_TESTING
+#include "WPEFramework/interfaces/INetworkManager.h"
+#endif
 
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define NETWORK_CALLSIGN "org.rdk.Network"
@@ -101,7 +104,19 @@ bool NetworkStatusObserver::isConnected() {
         }
 
         JsonObject joGetParams, joGetResult;
+#ifndef UNIT_TESTING
         auto status = m_networkService->Invoke<JsonObject, JsonObject>(3000, "isConnectedToInternet", joGetParams, joGetResult);
+#else
+        string ipversion;
+        string interface;
+        WPEFramework::Exchange::INetworkManager::InternetStatus netStatus;
+        WPEFramework::Exchange::INetworkManager *m_networkService_mock;
+        auto status = m_networkService_mock->IsConnectedToInternet(ipversion, interface, netStatus);
+
+        if (status == Core::ERROR_NONE) {
+            joGetResult["connectedToInternet"] = true;
+        }
+#endif
         if (status == Core::ERROR_NONE && joGetResult.HasLabel("connectedToInternet")) {
             m_isConnected = joGetResult["connectedToInternet"].Boolean();
         } else {
