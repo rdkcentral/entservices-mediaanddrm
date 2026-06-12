@@ -27,6 +27,10 @@
 #include <WPEFramework/securityagent/SecurityTokenUtil.h>
 #endif
 
+#ifdef UNIT_TESTING
+#include "WPEFramework/interfaces/IAuthService.h"
+#endif
+
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define CALLSIGN_VER ".1"
 
@@ -69,10 +73,10 @@ string SatToken::getSecurityToken() {
         if(file.Open(true)) {
             JsonObject config;
             if(config.IElement::FromFile(file)) {
-                Core::JSON::String port = config.Get("port");
-                Core::JSON::String binding = config.Get("binding");
-                if(!binding.Value().empty() && !port.Value().empty())
-                    endpoint = binding.Value() + ":" + port.Value();
+                std::string binding = config.Get("binding").String();
+                std::string port = config.Get("port").String();
+                if(!binding.empty() && !port.empty())
+                    endpoint = binding + ":" + port;
             }
             file.Close();
         }
@@ -116,7 +120,15 @@ std::string SatToken::getSAT() {
 void SatToken::getServiceAccessToken() {
     if(m_authService != nullptr) {
         JsonObject joGetParams, joGetResult;
+#ifndef UNIT_TESTING
         auto status = m_authService->Invoke<JsonObject, JsonObject>(1000, "getServiceAccessToken", joGetParams, joGetResult);
+#else
+        WPEFramework::Exchange::IAuthService* m_authService_test;
+        WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult result;
+        auto status = m_authService_test->GetServiceAccessToken(result);
+        if (status == Core::ERROR_NONE)
+            joGetResult["token"] = result.token;
+#endif
         if (status == Core::ERROR_NONE && joGetResult.HasLabel("token")) {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_SatToken = joGetResult["token"].String();
@@ -125,6 +137,7 @@ void SatToken::getServiceAccessToken() {
         }
     }
 
+#ifndef UNIT_TESTING
     if (!m_eventRegistered) {
         if (m_authService->Subscribe<JsonObject>(1000, "serviceAccessTokenChanged",
                     &SatToken::serviceAccessTokenChangedEventHandler, this) == Core::ERROR_NONE) {
@@ -134,6 +147,9 @@ void SatToken::getServiceAccessToken() {
             TTSLOG_ERROR("Failed to Subscribe notification handler : serviceAccessTokenChanged");
         }
     }
+#else
+    m_eventRegistered = true;
+#endif
 }
 
 void SatToken::serviceAccessTokenChangedEventHandler(const JsonObject& parameters) {
