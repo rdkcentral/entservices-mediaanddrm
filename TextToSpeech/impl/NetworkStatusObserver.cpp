@@ -61,10 +61,10 @@ string NetworkStatusObserver::getSecurityToken() {
         if(file.Open(true)) {
             JsonObject config;
             if(config.IElement::FromFile(file)) {
-                Core::JSON::String port = config.Get("port");
-                Core::JSON::String binding = config.Get("binding");
-                if(!binding.Value().empty() && !port.Value().empty())
-                    endpoint = binding.Value() + ":" + port.Value();
+                std::string binding = config.Get("binding").String();
+                std::string port = config.Get("port").String();
+                if(!binding.empty() && !port.empty())
+                    endpoint = binding + ":" + port;
             }
             file.Close();
         }
