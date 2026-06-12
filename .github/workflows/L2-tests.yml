@@ -115,7 +115,6 @@ jobs:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
           ref: ef8357dd699fa91ecb2d914a1efd98849d7e9303
-          token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout googletest
         if: steps.cache.outputs.cache-hit != 'true'
@@ -178,7 +177,6 @@ jobs:
           repository: rdkcentral/networkmanager
           path: networkmanager
           ref: develop
-          token: ${{ secrets.RDKCM_RDKE }}
 
       - name: Checkout entservices-apis
         uses: actions/checkout@v3
