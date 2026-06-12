@@ -1039,7 +1039,6 @@ TEST_F(TextToSpeechTest, pauseResume)
                 JsonObject response;
                 parameter["speechid"] = JsonValue((uint32_t)localSpeechID);
                 sleep(2);
-                printf("kyk pausing speech\n");
                 uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameter, response);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
             }).detach();
