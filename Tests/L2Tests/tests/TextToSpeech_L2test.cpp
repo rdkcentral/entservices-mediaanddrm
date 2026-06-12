@@ -1070,7 +1070,7 @@ TEST_F(TextToSpeechTest, pauseResume)
     // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
     m_event_signalled = 0;
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechinterrupted"),
-        [this](const JsonObject event) {
+        [this, localSpeechID](const JsonObject event) {
             std::string eventString;
             event.ToString(eventString);
             TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
