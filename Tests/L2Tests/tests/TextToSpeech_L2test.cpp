@@ -915,11 +915,7 @@ TEST_F(TextToSpeechTest, speakWithTTS2Endpoint)
 TEST_F(TextToSpeechTest, speakWithTTS2EndpointWithoutThunderEndpoint)
 {
     uint32_t status = Core::ERROR_GENERAL;
-    DeactivateService("org.rdk.TextToSpeech.1");
-    sleep(1);
-    mockTTSConfigureTTS2();
     unsetenv("THUNDER_ACCESS");
-    ActivateService("org.rdk.TextToSpeech.1");
     JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
 
     // SetTTSConfiguration
