@@ -18,6 +18,7 @@
 **/
 
 #include "TTSCommon.h"
+
 namespace WPEFramework {
 namespace Plugin {
 namespace TTS {
