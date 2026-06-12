@@ -26,6 +26,9 @@
 #include <WPEFramework/securityagent/securityagent.h>
 #include <WPEFramework/securityagent/SecurityTokenUtil.h>
 #endif
+#ifdef UNIT_TESTING
+#include "WPEFramework/interfaces/INetworkManager.h"
+#endif
 
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define NETWORK_CALLSIGN "org.rdk.Network"

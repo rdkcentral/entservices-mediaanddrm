@@ -27,6 +27,10 @@
 #include <WPEFramework/securityagent/SecurityTokenUtil.h>
 #endif
 
+#ifdef UNIT_TESTING
+#include "WPEFramework/interfaces/IAuthService.h"
+#endif
+
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define CALLSIGN_VER ".1"
 
