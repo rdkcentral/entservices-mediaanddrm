@@ -1075,3 +1075,68 @@ TEST_F(TextToSpeechTest, pauseResume)
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
 }
+
+TEST_F(TextToSpeechTest, speakWithTTS2ApiKey)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    DeactivateService("org.rdk.TextToSpeech.1");
+    sleep(1);
+    mockTTSConfigureTTS2();
+    ActivateService("org.rdk.TextToSpeech.1");
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    JsonObject configurationParameter;
+    JsonObject configurationResponse;
+
+    configurationParameter["language"] = "en-US";
+    configurationParameter["voice"] = "carol";
+    configurationParameter["ttsendpointsecured"] = "https://testurl.net/tts/location?";
+    configurationParameter["ttsendpoint"] = "http://testurl.net/tts/location?";
+    JsonObject authInfo;
+    authInfo["type"] = "apikey";
+    authInfo["value"] = "my_test_key";
+
+    configurationParameter["authinfo"] = authInfo;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "setttsconfiguration", configurationParameter, configurationResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
+}
