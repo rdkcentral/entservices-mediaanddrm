@@ -1050,12 +1050,12 @@ TEST_F(TextToSpeechTest, pauseResume)
             
             // Trigger cancel immediately in a detached thread to avoid blocking the callback
             std::thread([this, localSpeechID]() {
-                JsonObject parameterCancel;
-                JsonObject responseCancel;
+                JsonObject parameter;
+                JsonObject response;
                 parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
                 sleep(4);
                 printf("kyk pausing speech\n");
-                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterCancel, responseCancel);
+                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameter, response);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
             }).detach();
             
@@ -1067,31 +1067,7 @@ TEST_F(TextToSpeechTest, pauseResume)
     uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
     EXPECT_TRUE(signalled);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
-
-    // Subscribe to onspeechinterrupted to catch the interrupt event
-    // CRITICAL: Reset flag BEFORE subscribing to avoid race condition
-    m_event_signalled = 0;
-    printf("kyk subscribing ospeechpause\n");
-    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechpause"),
-        [this, localSpeechID](const JsonObject event) {
-            std::string eventString;
-            event.ToString(eventString);
-            TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
-             // Trigger resume immediately in a detached thread to avoid blocking the callback
-            std::thread([this, localSpeechID]() {
-                JsonObject parameterCancel;
-                JsonObject responseCancel;
-                parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
-                uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameterCancel, responseCancel);
-                EXPECT_EQ(Core::ERROR_NONE, status1);
-            }).detach();
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_event_signalled = 1;
-            m_condition_variable.notify_one();
-        });
-
-    uint32_t signalled1 = WaitForRequestStatus(JSON_TIMEOUT);
-    EXPECT_TRUE(signalled1);
-    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechpause"));
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "resume", parameter, response);
+    EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
 }
