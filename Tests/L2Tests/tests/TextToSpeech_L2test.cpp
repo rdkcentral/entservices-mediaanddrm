@@ -1066,7 +1066,7 @@ TEST_F(TextToSpeechTest, speakWithTTS2ApiKey)
     uint32_t status = Core::ERROR_GENERAL;
     DeactivateService("org.rdk.TextToSpeech.1");
     sleep(1);
-    mockTTSConfigureTTS2();
+    mockTTSConfigure();
     ActivateService("org.rdk.TextToSpeech.1");
     JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
 
@@ -1081,6 +1081,10 @@ TEST_F(TextToSpeechTest, speakWithTTS2ApiKey)
     JsonObject authInfo;
     authInfo["type"] = "apikey";
     authInfo["value"] = "my_test_key";
+    configurationParameter["volume"] = "95";
+    configurationParameter["primvolduckpercent"] = "50";
+    configurationParameter["rate"] = "40";
+    configurationParameter["speechrate"] = "medium";
 
     configurationParameter["authinfo"] = authInfo;
 
