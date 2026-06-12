@@ -715,49 +715,6 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
     
     uint32_t localSpeechID = responseSpeak["speechid"].Number();
-    JsonObject parameterCancel;
-    JsonObject responseCancel;
-    parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
-    sleep(3);
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "cancel", parameterCancel, responseCancel);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    enableTTS(false);
-}
-#if 0
-TEST_F(TextToSpeechTest, cancelDuringSpeak)
-{
-    uint32_t status = Core::ERROR_GENERAL;
-    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
-
-    // SetTTSConfiguration
-    setTTSConfiguration();
-
-    // Enable TTS
-    enableTTS(true);
-
-    // Subscribe to onspeechStart
-    // Note: In test environment, audio playback completes extremely fast (~8ms instead of 13+ seconds).
-    // To ensure we interrupt WHILE speech is actually playing, we trigger the cancel() immediately when
-    // onspeechstart fires, confirming speech has begun.
-
-    // setACL
-    setACL();
-
-    // Speak call
-    std::string text1 = "Hello Testing, I am trying to invoke the speechInterrupt for the next text. I am happy for the testing. How can I spend time for turning off the voice guidance in the tv. I see the way to do this.";
-    std::string callsign = "testApp";
-
-    // First invocation of speak in the main thread
-    JsonObject parameterSpeak;
-    JsonObject responseSpeak;
-    parameterSpeak["text"] = text1;
-    parameterSpeak["callsign"] = callsign;
-    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speak", parameterSpeak, responseSpeak);
-    EXPECT_EQ(Core::ERROR_NONE, status);
-    sleep(2);
-    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
-    
-    uint32_t localSpeechID = responseSpeak["speechid"].Number();
 
     // Subscribe to onspeechstart and trigger cancel immediately when it fires
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechstart"),
@@ -802,7 +759,6 @@ TEST_F(TextToSpeechTest, cancelDuringSpeak)
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechinterrupted"));
     enableTTS(false);
 }
-#endif
 
 void TextToSpeechTest::setTTSConfiguration()
 {
