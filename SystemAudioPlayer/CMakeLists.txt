@@ -76,14 +76,6 @@ target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMER_INCLUDES})
 target_include_directories(${MODULE_NAME} PRIVATE ${GSTREAMERBASE_INCLUDE_DIRS})
 
 find_package(${NAMESPACE}Definitions REQUIRED)
-if (RDK_SERVICE_L2_TEST)
-    find_library(TESTMOCKLIB_LIBRARIES NAMES TestMocklib)
-    if (TESTMOCKLIB_LIBRARIES)
-        target_link_libraries(${MODULE_NAME} PRIVATE ${TESTMOCKLIB_LIBRARIES})
-    else()
-        message(FATAL_ERROR "Required TestMocklib library not found")
-    endif()
-endif()
 if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
     target_include_directories(${MODULE_NAME} PRIVATE
         ../Tests/mocks

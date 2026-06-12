@@ -594,39 +594,6 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/install/usr/bin:${PATH}"
           $GITHUB_WORKSPACE/entservices-testframework/Tests/L2Tests/pact/install-verifier-cli.sh
 
-      - name: Check library dependencies
-        run: |
-          echo "=== LDD ==="
-          ldd install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so
-
-          echo "=== Unresolved symbols in plugin ==="
-          nm -D install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so | c++filt | grep "device::Host"
-
-          echo "=== Search symbol in all libraries ==="
-          find install -name "*.so" -exec sh -c '
-            nm -D "$1" 2>/dev/null | c++filt | grep "device::Host::setImpl" && echo "FOUND IN: $1"
-          ' _ {} \;
-
-          echo "Checking libTestMocklib.so"
-          nm -D install/usr/lib/libTestMocklib.so | c++filt | grep "device::Host::setImpl" || true
-
-          echo "Checking full symbol table"
-          nm install/usr/lib/libTestMocklib.so | c++filt | grep "device::Host::setImpl" || true
-
-      - name: Find libraries
-        run: |
-          find install -name "*.so*" | sort
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-          find install/usr/lib -name "*.so*" | sort
-
-      - name: Set LD_LIBRARY_PATH
-        run: |
-          export LD_LIBRARY_PATH=$PWD/install/usr/lib:$PWD/install/usr/lib/wpeframework/proxystubs:$LD_LIBRARY_PATH
-
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-
-          ldd install/usr/lib/wpeframework/plugins/libWPEFrameworkL2Tests.so
-
       - name: Run unit tests without valgrind
         run: >
           PATH=$GITHUB_WORKSPACE/install/usr/bin:${PATH}
