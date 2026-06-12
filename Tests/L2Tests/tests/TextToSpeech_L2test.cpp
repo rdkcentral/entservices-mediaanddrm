@@ -1053,6 +1053,7 @@ TEST_F(TextToSpeechTest, pauseResume)
                 JsonObject parameterCancel;
                 JsonObject responseCancel;
                 parameterCancel["speechid"] = JsonValue((uint32_t)localSpeechID);
+                sleep(4);
                 uint32_t status1 = InvokeServiceMethod("org.rdk.TextToSpeech.1", "pause", parameterCancel, responseCancel);
                 EXPECT_EQ(Core::ERROR_NONE, status1);
             }).detach();
