@@ -574,6 +574,7 @@ namespace Plugin {
 
     }
 
+    /* l2 test*/
     void TextToSpeechImplementation::onTTSStateChanged(bool state)
     {
         TTSLOG_INFO("Notify onttsstatechanged, state: %s", (state ? "true" : "false"));
