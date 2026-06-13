@@ -19,7 +19,6 @@
 
 #include "RFCURLObserver.h"
 #include "UtilsgetRFCConfig.h"
-#include "UtilsLogging.h"
 
 #define SYSTEMSERVICE_CALLSIGN "org.rdk.System"
 
