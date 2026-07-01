@@ -525,6 +525,7 @@ bool TTSSpeaker::pause(uint32_t id) {
         if(!m_isPaused) {
             m_isPaused = true;
             gst_element_set_state(m_pipeline, GST_STATE_PAUSED);
+            waitForStatus(GST_STATE_PAUSED, 1*1000);
             TTSLOG_INFO("Set state to PAUSED");
             return true;
         }
@@ -539,6 +540,7 @@ bool TTSSpeaker::resume(uint32_t id) {
     if(m_pipeline) {
         if(m_isPaused) {
             gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
+            waitForStatus(GST_STATE_PLAYING, 1*1000);
             TTSLOG_INFO("Set state to PLAYING");
             return true;
         }
@@ -759,7 +761,10 @@ void TTSSpeaker::resetPipeline() {
         createPipeline(m_pipelinetype);
     } else {
         // If pipeline is present, bring it to NULL state
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        //gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        printf("kumar reset pipeline %d\n",ret);
+        waitForStatus(GST_STATE_NULL, 1*1000);
         while(!waitForStatus(GST_STATE_NULL, 60*1000));
     }
 }
@@ -768,7 +773,9 @@ void TTSSpeaker::destroyPipeline() {
     TTSLOG_WARNING("Destroying Pipeline...");
 
     if(m_pipeline) {
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        //gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        printf("kumar destroy pipeline %d\n",ret);
         waitForStatus(GST_STATE_NULL, 1*1000);
         g_source_remove(m_busWatch);
         gst_object_unref(m_pipeline);
@@ -831,7 +838,12 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
 
     // Irrespective of EOS / Timeout reset pipeline
     if(m_pipeline)
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
+    {
+        //gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        printf("kumar wait for audio to finish %d\n",ret);
+        waitForStatus(GST_STATE_NULL, 1*1000);
+    }
 
     if(!m_isEOS)
         TTSLOG_ERROR("Stopped waiting for audio to finish without hitting EOS!");
@@ -887,6 +899,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
 
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
+    waitForStatus(GST_STATE_PLAYING, 1*1000);
 
     systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);
     TTSLOG_VERBOSE("Speaking.... ( %d, \"%s\")", data.id, data.text.c_str());
@@ -964,7 +977,9 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // Stop thread on Speaker's cue
         if(!speaker->m_runThread) {
             if(speaker->m_pipeline) {
-                gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
+                //gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
+                GstStateChangeReturn ret = gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
+                printf("kumar gstreamer thread NULL %d\n",ret);
                 speaker->waitForStatus(GST_STATE_NULL, 1*1000);
             }
             TTSLOG_INFO("Stopping GStreamerThread");
