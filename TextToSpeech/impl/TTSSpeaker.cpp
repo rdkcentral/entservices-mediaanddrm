@@ -840,7 +840,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     if(m_pipeline)
     {
         //gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_PAUSED);
         printf("kumar wait for audio to finish %d\n",ret);
         waitForStatus(GST_STATE_NULL, 1*1000);
     }
