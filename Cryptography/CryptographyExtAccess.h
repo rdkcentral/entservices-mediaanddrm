@@ -22,12 +22,53 @@
 #include "Module.h"
 #include <cryptography/cryptography.h>
 #include <interfaces/IConfiguration.h>
+#include <interfaces/IPowerManager.h>
+#include "PowerManagerInterface.h"
+
+#include <atomic>
+#include <mutex>
+#include <type_traits>
 
 namespace WPEFramework {
 namespace Plugin {
 
     class CryptographyExtAccess : public PluginHost::IPlugin {
     private:
+        using PowerState = Exchange::IPowerManager::PowerState;
+
+    private:
+        class PowerManagerNotification : public Exchange::IPowerManager::IModeChangedNotification {
+        private:
+            PowerManagerNotification(const PowerManagerNotification&) = delete;
+            PowerManagerNotification& operator=(const PowerManagerNotification&) = delete;
+
+        public:
+            explicit PowerManagerNotification(CryptographyExtAccess& parent)
+                : _parent(parent) {
+            }
+            ~PowerManagerNotification() override = default;
+
+        public:
+            void OnPowerModeChanged(const PowerState currentState, const PowerState newState) override
+            {
+                _parent.onPowerModeChanged(currentState, newState);
+            }
+
+            template <typename T>
+            T* baseInterface()
+            {
+                static_assert(std::is_base_of<T, PowerManagerNotification>(), "base type mismatch");
+                return static_cast<T*>(this);
+            }
+
+            BEGIN_INTERFACE_MAP(PowerManagerNotification)
+                INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
+            END_INTERFACE_MAP
+
+        private:
+            CryptographyExtAccess& _parent;
+        };
+
         class Notification : public RPC::IRemoteConnection::INotification {
         public:
             Notification() = delete;
@@ -65,7 +106,10 @@ PUSH_WARNING(DISABLE_WARNING_THIS_IN_MEMBER_INITIALIZER_LIST)
             : _connectionId(0)
             , _service(nullptr)
             , _implementation(nullptr)
-            , _notification(*this) {
+            , _notification(*this)
+            , _pwrMgrNotification(*this)
+            , _inDeepSleep(false)
+            , _registeredPowerEventHandlers(false) {
         }
 POP_WARNING()
         ~CryptographyExtAccess() override = default;
@@ -80,15 +124,30 @@ POP_WARNING()
         const string Initialize(PluginHost::IShell* service) override;
         void Deinitialize(PluginHost::IShell* service) override;
         string Information() const override;
-    
+
     private:
         void Deactivated(RPC::IRemoteConnection* connection);
+
+        bool createImplementation();
+        void destroyImplementation();
+
+        void InitializePowerManager();
+        void DeinitializePowerManager();
+        void registerPowerEventHandlers();
+        void unregisterPowerEventHandlers();
+        void onPowerModeChanged(const PowerState currentState, const PowerState newState);
 
     private:
         uint32_t _connectionId;
         PluginHost::IShell* _service;
         Exchange::IConfiguration* _implementation;
         Core::Sink<Notification> _notification;
+
+        PowerManagerInterfaceRef _powerManagerPlugin;
+        Core::Sink<PowerManagerNotification> _pwrMgrNotification;
+        std::mutex _implMutex;
+        std::atomic<bool> _inDeepSleep;
+        bool _registeredPowerEventHandlers;
     };
 
 } // Namespace Plugin.
