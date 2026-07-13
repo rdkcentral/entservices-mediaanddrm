@@ -61,6 +61,9 @@ target_link_libraries(${MODULE_NAME}
         ${NAMESPACE}Cryptography::${NAMESPACE}Cryptography
 )
 
+# PowerManagerInterface.h / PluginInterfaceBuilder.h / UtilsLogging.h live in ../helpers
+target_include_directories(${MODULE_NAME} PRIVATE ../helpers)
+
 install(TARGETS ${MODULE_NAME}
     DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
 
