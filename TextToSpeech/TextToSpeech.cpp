@@ -82,6 +82,7 @@ namespace Plugin {
         if(_tts != nullptr) {
             _tts->Register(&_notification);
             RegisterAll();
+            TTSLOG_WARNING("TextToSpeech initialized");
         } else {
             message = _T("TextToSpeech could not be instantiated.");
             _service->Unregister(&_notification);

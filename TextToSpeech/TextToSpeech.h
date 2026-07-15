@@ -126,6 +126,7 @@ namespace Plugin {
 
                 virtual void Activated(RPC::IRemoteConnection* /* connection */) final
                 {
+                    TTSLOG_WARNING("TextToSpeech::activated ");
                     /* do nothing */
                 }
 
