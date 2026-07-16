@@ -51,14 +51,18 @@ namespace Plugin {
     {
         ASSERT(_service == nullptr);
 
+        TTSLOG_ERROR("tts initialize");
         _connectionId = 0;
         _service = service;
         _skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
+        TTSLOG_ERROR("tts service notification`");
         _service->Register(&_notification);
 
+        TTSLOG_ERROR("tts get connection id");
         _tts = _service->Root<Exchange::ITextToSpeech>(_connectionId, 5000, _T("TextToSpeechImplementation"));
 
+        TTSLOG_ERROR("tts got connection id %d", _connectionId);
         std::string message;
         if(_tts != nullptr) {
            #ifndef UNIT_TESTING
@@ -71,17 +75,21 @@ namespace Plugin {
                 _tts->Release();
                 _tts = nullptr;
             } else {
+                TTSLOG_ERROR("tts configure");
                 if (stateControl->Configure(_service) != Core::ERROR_NONE) {
                     _tts->Release();
                     _tts = nullptr;
                 }
+                TTSLOG_ERROR("tts configure done");
                 stateControl->Release();
             }
         }
 
         if(_tts != nullptr) {
+            TTSLOG_ERROR("tts register notification");
             _tts->Register(&_notification);
             RegisterAll();
+            TTSLOG_ERROR("tts register notification done");
         } else {
             message = _T("TextToSpeech could not be instantiated.");
             _service->Unregister(&_notification);
