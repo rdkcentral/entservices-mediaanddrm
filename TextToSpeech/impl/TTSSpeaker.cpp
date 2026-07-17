@@ -763,7 +763,7 @@ void TTSSpeaker::resetPipeline() {
         if(ret == GST_STATE_CHANGE_ASYNC)
         {
             TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
-            while(!waitForStatus(GST_STATE_NULL, 60*1000));
+            waitForStatus(GST_STATE_NULL, 60*1000);
         }
         else if(ret == GST_STATE_CHANGE_FAILURE)
             TTSLOG_ERROR("Failed to set pipeline to NULL state");
@@ -852,7 +852,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
         if(ret == GST_STATE_CHANGE_ASYNC)
         {
             TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
-            while(!waitForStatus(GST_STATE_NULL, 1*1000));
+            waitForStatus(GST_STATE_NULL, 1*1000);
         }
         else if(ret == GST_STATE_CHANGE_FAILURE)
             TTSLOG_ERROR("Failed to set pipeline to NULL state");
