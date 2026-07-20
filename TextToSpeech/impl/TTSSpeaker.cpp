@@ -768,7 +768,7 @@ void TTSSpeaker::resetPipeline() {
         else if(ret == GST_STATE_CHANGE_FAILURE)
             TTSLOG_ERROR("Failed to set pipeline to NULL state");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            TTSLOG_VERBOSE("Pipeline set to NULL state");
+            TTSLOG_INFO("Pipeline set to NULL state");
     }
 }
 
@@ -785,7 +785,7 @@ void TTSSpeaker::destroyPipeline() {
         else if(ret == GST_STATE_CHANGE_FAILURE)
             TTSLOG_ERROR("Failed to set pipeline to NULL state");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            TTSLOG_VERBOSE("Pipeline set to NULL state");
+            TTSLOG_INFO("Pipeline set to NULL state");
         g_source_remove(m_busWatch);
         gst_object_unref(m_pipeline);
     }
@@ -857,7 +857,7 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
         else if(ret == GST_STATE_CHANGE_FAILURE)
             TTSLOG_ERROR("Failed to set pipeline to NULL state");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            TTSLOG_VERBOSE("Pipeline set to NULL state");
+            TTSLOG_INFO("Pipeline set to NULL state");
     }
 
     if(!m_isEOS)
@@ -1000,7 +1000,7 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
                 else if(ret == GST_STATE_CHANGE_FAILURE)
                     TTSLOG_ERROR("Failed to set pipeline to NULL state");
                 else if(ret == GST_STATE_CHANGE_SUCCESS)
-                    TTSLOG_VERBOSE("Pipeline set to NULL state");
+                    TTSLOG_INFO("Pipeline set to NULL state");
             }
             TTSLOG_INFO("Stopping GStreamerThread");
             return;
