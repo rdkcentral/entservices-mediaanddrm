@@ -871,8 +871,17 @@ std::string TTSSpeaker::constructURL(TTSConfiguration &config, SpeechData &d) {
 
 void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string token) {
     m_currentSpeech = &data;
-    //g_object_set(G_OBJECT(m_source), "location", url.c_str(), NULL);
-    g_object_set(G_OBJECT(m_source), "location", "http://10.0.0.202:8000/large.mp3", NULL);
+    std::ifstream file("/opt/ttsurl.txt");
+    std::string fileUrl;
+
+    if (std::getline(file, fileUrl) && !fileUrl.empty()) {
+        printf("KYK got URL from file %s", fileUrl.c_str());
+        g_object_set(G_OBJECT(m_source), "location", fileUrl.c_str(), NULL);
+    } else {
+        printf("KYK using default URL", url.c_str());
+        g_object_set(G_OBJECT(m_source), "location", url.c_str(), NULL);
+    }
+    
     if(authrequired)
     {
         string authStr = "test, Authorization=(string)\"Bearer\\ " + token + "\"";
