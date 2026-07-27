@@ -24,6 +24,7 @@
 #include <systemaudioplatform.h>
 #include <unistd.h>
 #include <regex>
+#include <fstream>
 
 #define INT_FROM_ENV(env, default_value) ((getenv(env) ? atoi(getenv(env)) : 0) > 0 ? atoi(getenv(env)) : default_value)
 #define TTS_CONFIGURATION_STORE "/opt/persistent/tts.setting.ini"
@@ -878,7 +879,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
         printf("KYK got URL from file %s", fileUrl.c_str());
         g_object_set(G_OBJECT(m_source), "location", fileUrl.c_str(), NULL);
     } else {
-        printf("KYK using default URL", url.c_str());
+        printf("KYK using default URL %s", url.c_str());
         g_object_set(G_OBJECT(m_source), "location", url.c_str(), NULL);
     }
     
