@@ -389,7 +389,8 @@ TTSSpeaker::TTSSpeaker(TTSConfiguration &config) :
     m_pipelineConstructionFailures(0),
     m_maxPipelineConstructionFailures(INT_FROM_ENV("MAX_PIPELINE_FAILURE_THRESHOLD", 1)) {
 
-        setenv("GST_DEBUG", "2", 0);
+        //setenv("GST_DEBUG", "2", 0);
+        setenv("GST_DEBUG", "*:2,souphttpsrc:6", 1);
         setenv("GST_REGISTRY_UPDATE", "no", 0);
         setenv("GST_REGISTRY_FORK", "no", 0);
 
@@ -763,13 +764,13 @@ void TTSSpeaker::resetPipeline() {
         GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
         if(ret == GST_STATE_CHANGE_ASYNC)
         {
-            printf("KYK set pipeline to NULL state in pending, waiting for completion");
+            printf("KYK set pipeline to NULL state in pending, waiting for completion\n");
             waitForStatus(GST_STATE_NULL, 60*1000);
         }
         else if(ret == GST_STATE_CHANGE_FAILURE)
-            printf("KYK Failed to set pipeline to NULL state");
+            printf("KYK Failed to set pipeline to NULL state\n");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            printf("KYK Pipeline set to NULL state");
+            printf("KYK Pipeline set to NULL state\n");
     }
 }
 
@@ -780,13 +781,13 @@ void TTSSpeaker::destroyPipeline() {
         GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
         if(ret == GST_STATE_CHANGE_ASYNC)
         {
-            printf("KYK set pipeline to NULL state in pending, waiting for completion");
+            printf("KYK set pipeline to NULL state in pending, waiting for completion\n");
             waitForStatus(GST_STATE_NULL, 1*1000);
         }
         else if(ret == GST_STATE_CHANGE_FAILURE)
-            printf("KYK Failed to set pipeline to NULL state");
+            printf("KYK Failed to set pipeline to NULL state\n");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            printf("KYK Pipeline set to NULL state");
+            printf("KYK Pipeline set to NULL state\n");
         g_source_remove(m_busWatch);
         gst_object_unref(m_pipeline);
     }
@@ -852,13 +853,13 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
         GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
         if(ret == GST_STATE_CHANGE_ASYNC)
         {
-            printf("KYK set pipeline to NULL state in pending, waiting for completion");
+            printf("KYK set pipeline to NULL state in pending, waiting for completion\n");
             waitForStatus(GST_STATE_NULL, 1*1000);
         }
         else if(ret == GST_STATE_CHANGE_FAILURE)
-            printf("KYK Failed to set pipeline to NULL state");
+            printf("KYK Failed to set pipeline to NULL state\n");
         else if(ret == GST_STATE_CHANGE_SUCCESS)
-            printf("KYK Pipeline set to NULL state");
+            printf("KYK Pipeline set to NULL state\n");
     }
     if(!m_isEOS)
         TTSLOG_ERROR("Stopped waiting for audio to finish without hitting EOS!");
@@ -902,10 +903,10 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     std::string fileUrl;
 
     if (std::getline(file, fileUrl) && !fileUrl.empty()) {
-        printf("KYK got URL from file %s", fileUrl.c_str());
+        printf("KYK got URL from file %s\n", fileUrl.c_str());
         g_object_set(G_OBJECT(m_source), "location", fileUrl.c_str(), NULL);
     } else {
-        printf("KYK using default URL %s", url.c_str());
+        printf("KYK using default URL %s\n", url.c_str());
         g_object_set(G_OBJECT(m_source), "location", url.c_str(), NULL);
     }
     
@@ -1004,13 +1005,13 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
                 GstStateChangeReturn ret = gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
                 if(ret == GST_STATE_CHANGE_ASYNC)
                     {
-                        printf("KYK set pipeline to NULL state in pending, waiting for completion");
+                        printf("KYK set pipeline to NULL state in pending, waiting for completion\n");
                         speaker->waitForStatus(GST_STATE_NULL, 1*1000);
                     }
                 else if(ret == GST_STATE_CHANGE_FAILURE)
-                    printf("KYK Failed to set pipeline to NULL state");
+                    printf("KYK Failed to set pipeline to NULL state\n");
                 else if(ret == GST_STATE_CHANGE_SUCCESS)
-                    printf("KYK Pipeline set to NULL state");
+                    printf("KYK Pipeline set to NULL state\n");
             }
             TTSLOG_INFO("Stopping GStreamerThread");
             return;
