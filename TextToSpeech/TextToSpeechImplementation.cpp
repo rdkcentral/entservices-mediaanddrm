@@ -206,6 +206,7 @@ namespace Plugin {
 
         TRACE_L1("Registered a sink on the browser %p", sink);
 
+	TTSLOG_INFO("KKP-DEBUG Registered a sink on the browser %p\n", sink);
         return Core::ERROR_NONE;
     }
 
@@ -235,6 +236,7 @@ namespace Plugin {
 
         _adminLock.Unlock();
 
+	TTSLOG_INFO("KKP-DEBUG UNRegistered a sink on the browser %p\n", sink);
         return Core::ERROR_NONE;
     }
 
@@ -445,11 +447,14 @@ namespace Plugin {
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
+        TTSLOG_INFO("KKP-debug Speak:%d acquiring _adminLock for callsign=%s\n", __LINE__, callsign.c_str());
         _adminLock.Lock();
+        TTSLOG_INFO("KKP-debug Speak:%d _adminLock acquired\n", __LINE__);
         speechid = nextSpeechId();
         auto status = _ttsManager->speak(speechid,callsign,text);
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) status;
         _adminLock.Unlock();
+        TTSLOG_INFO("KKP-debug Speak:%d _adminLock released, speechid=%d status=%d\n", __LINE__, speechid, status);
 
         if(status != TTS::TTS_OK)
             speechid = -1;
@@ -527,16 +532,21 @@ namespace Plugin {
 
     void TextToSpeechImplementation::dispatchEvent(Event event, string callsign, const JsonValue &params)
     {
+        TTSLOG_INFO("KKP-debug dispatchEvent:%d submitting event=%d to worker pool\n", __LINE__, event);
         Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
+        TTSLOG_INFO("KKP-debug dispatchEvent END :%d submitting event=%d to worker pool\n", __LINE__, event);
     }
 
     void TextToSpeechImplementation::Dispatch(Event event, string callsign, const JsonValue params)
     {
+        TTSLOG_INFO("KKP-debug Dispatch:%d acquiring _adminLock for event=%d\n", __LINE__, event);
         _adminLock.Lock();
+        TTSLOG_INFO("KKP-debug Dispatch:%d _adminLock acquired, event=%d, notificationClients=%zu\n", __LINE__, event, _notificationClients.size());
 
         std::list<Exchange::ITextToSpeech::INotification*>::iterator index(_notificationClients.begin());
 
         while (index != _notificationClients.end()) {
+            TTSLOG_INFO("KKP-debug Dispatch:%d BEFORE COM-RPC notification callback, event=%d\n", __LINE__, event);
             switch(event) {
                 case STATE_CHANGED:     (*index)->OnTTSStateChanged(params.Boolean()); break;
                 case VOICE_CHANGED:     (*index)->OnVoiceChanged(params.String()); break;
@@ -550,13 +560,14 @@ namespace Plugin {
                 case SPEECH_COMPLETE:   (*index)->OnSpeechComplete(params.Number()); break;
                 default: break;
             }
+            TTSLOG_INFO("KKP-debug Dispatch:%d AFTER COM-RPC notification callback, event=%d\n", __LINE__, event);
             ++index;
         }
 
         //notification to client with callsign
         std::map<string,Exchange::ITextToSpeech::INotification*>::iterator callsignindex(_notificationCallsignClients.find(callsign));
         if (callsignindex != _notificationCallsignClients.end()) {
-             TTSLOG_INFO("Delivering event to callsign %s \n", (callsignindex->first).c_str());
+             TTSLOG_INFO("KKP-debug Dispatch:%d Delivering event=%d to callsign %s\n", __LINE__, event, (callsignindex->first).c_str());
              switch(event) {
                 case WILL_SPEAK:        (callsignindex->second)->OnSpeechReady(params.Number()); break;
                 case SPEECH_START:      (callsignindex->second)->OnSpeechStarted(params.Number()); break;
@@ -568,9 +579,11 @@ namespace Plugin {
                 case SPEECH_COMPLETE:   (callsignindex->second)->OnSpeechComplete(params.Number()); break;
                 default: break;            
              }
+             TTSLOG_INFO("KKP-debug Dispatch:%d AFTER callsign COM-RPC callback, event=%d\n", __LINE__, event);
          }
 
         _adminLock.Unlock();
+        TTSLOG_INFO("KKP-debug Dispatch:%d _adminLock released, event=%d\n", __LINE__, event);
 
     }
 
@@ -590,12 +603,14 @@ namespace Plugin {
     {
         TTSLOG_INFO("Notify onwillspeak, speechId: %d", data.id);
         dispatchEvent(WILL_SPEAK, data.callsign, JsonValue((int)data.id));
+	TTSLOG_INFO("KKP-debug speechid:%d onWillSpeak", data.id);
     }
 
     void TextToSpeechImplementation::onSpeechStart(TTS::SpeechData &data)
     {
         TTSLOG_INFO("Notify onspeechstart, speechId: %d", data.id);
         dispatchEvent(SPEECH_START, data.callsign, JsonValue((int)data.id));
+	TTSLOG_INFO("KKP-debug speechid:%d onSpeechStart", data.id);
     }
 
     void TextToSpeechImplementation::onSpeechPause(uint32_t speechId, string callsign)
@@ -622,12 +637,14 @@ namespace Plugin {
         JsonObject params;
         params["speechid"]  = ss.str();
         dispatchEvent(SPEECH_CANCEL, callsign, params);
+	TTSLOG_INFO("KKP-debug speechid:%d onSpeechCancel", data.id);
     }
 
     void TextToSpeechImplementation::onSpeechInterrupted(uint32_t speechId, string callsign)
     {
         TTSLOG_INFO("Notify onspeechinterrupted, speechId: %d", speechId);
         dispatchEvent(SPEECH_INTERRUPT, callsign, JsonValue((int)speechId));
+	TTSLOG_INFO("KKP-debug speechid:%d onspeechinterrupted", data.id);
     }
 
     void TextToSpeechImplementation::onNetworkError(uint32_t speechId, string callsign)
@@ -646,6 +663,7 @@ namespace Plugin {
     {
         TTSLOG_INFO("Notify onspeechcomplete, speechId: %d", data.id);
         dispatchEvent(SPEECH_COMPLETE, data.callsign, JsonValue((int)data.id));
+	TTSLOG_INFO("KKP-debug speechid:%d onspeechComplete", data.id);
     }
 
     void logResponse(TTS::TTS_Error X)

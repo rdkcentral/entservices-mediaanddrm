@@ -260,9 +260,17 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     {
         CHECK_TTS_PARAMETER_RETURN_ON_FAIL("text");
         if(_tts) {
-            uint32_t speechid;
-            Exchange::ITextToSpeech::TTSErrorDetail status;
-            _tts->Speak(parameters["callsign"].String(),parameters["text"].String(),speechid,status);
+            uint32_t speechid = 0;
+            Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
+            TTSLOG_INFO("KKP-debug Speak:%d BEFORE COM-RPC _tts->Speak() callsign=%s\n", __LINE__, parameters["callsign"].String().c_str());
+            auto ret = _tts->Speak(parameters["callsign"].String(),parameters["text"].String(),speechid,status);
+            TTSLOG_INFO("KKP-debug Speak:%d AFTER COM-RPC _tts->Speak() ret=%d speechid=%d status=%d\n", __LINE__, ret, speechid, status);
+            if(ret != Core::ERROR_NONE) {
+                TTSLOG_ERROR("KKP-debug Speak:%d IPC call FAILED ret=%d, speechid=%d (garbage)\n", __LINE__, ret, speechid);
+                response["speechid"] = -1;
+                response["TTS_Status"] = static_cast<uint32_t>(Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL);
+                returnResponse(false);
+            }
             response["speechid"] = (int) speechid;
             response["TTS_Status"] = static_cast<uint32_t>(status);
             returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
