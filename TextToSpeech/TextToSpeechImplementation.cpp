@@ -637,7 +637,7 @@ namespace Plugin {
         JsonObject params;
         params["speechid"]  = ss.str();
         dispatchEvent(SPEECH_CANCEL, callsign, params);
-	TTSLOG_INFO("KKP-debug speechid:%d onSpeechCancel", speechId);
+	TTSLOG_INFO("KKP-debug speechid:%s onSpeechCancel", ss.str().c_str());
     }
 
     void TextToSpeechImplementation::onSpeechInterrupted(uint32_t speechId, string callsign)
