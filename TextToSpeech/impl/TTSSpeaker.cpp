@@ -796,6 +796,26 @@ void TTSSpeaker::destroyPipeline() {
     m_condition.notify_one();
 }
 
+void TTSSpeaker::gracefulShutdown() {
+    TTSLOG_WARNING("Initiating graceful shutdown...");
+    if(m_pipeline) {
+        GstState current, pending;
+        gst_element_get_state(m_pipeline, &current, &pending, 0);
+        if ((current == GST_STATE_PLAYING) && !m_isEOS && (pending != GST_STATE_NULL)) {
+            /* we should move to paused state before NULL state. It looks like souphttpsrc crashes \
+            if we move directly to NULL state while http connection is intact(RDKEMW-20138)*/
+            if (gst_element_set_state(m_pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_ASYNC) {
+                TTSLOG_ERROR("pause transition not happening immediately");
+                waitForStatus(GST_STATE_PAUSED, 1000);
+            }
+        }
+        if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_ASYNC) {
+            TTSLOG_ERROR("null transition not happening immediately");
+            waitForStatus(GST_STATE_NULL, 1000);
+        }
+    }
+}
+
 void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     TTSLOG_TRACE("timeout_s=%f", timeout_s);
 
@@ -848,16 +868,8 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
     // Irrespective of EOS / Timeout reset pipeline
     if(m_pipeline)
     {
-        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        if(ret == GST_STATE_CHANGE_ASYNC)
-        {
-            TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
-            waitForStatus(GST_STATE_NULL, 1*1000);
-        }
-        else if(ret == GST_STATE_CHANGE_FAILURE)
-            TTSLOG_ERROR("Failed to set pipeline to NULL state");
-        else if(ret == GST_STATE_CHANGE_SUCCESS)
-            TTSLOG_INFO("Pipeline set to NULL state");
+        /* Since the pipeline is stopped immediately during cancel speech we need graceful shutdown*/
+        gracefulShutdown();
     }
 
     if(!m_isEOS)

@@ -165,6 +165,7 @@ private:
     bool shouldUseLocalEndpoint();
     bool waitForStatus(GstState expected_state, uint32_t timeout_ms);
     void waitForAudioToFinishTimeout(float timeout_s);
+    void gracefulShutdown();
     bool handleMessage(GstMessage*);
     void play(string url,SpeechData &data,bool authrequired,string token);
     static int GstBusCallback(GstBus *bus, GstMessage *message, gpointer data);
