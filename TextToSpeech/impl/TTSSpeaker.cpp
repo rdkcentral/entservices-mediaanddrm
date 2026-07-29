@@ -759,8 +759,16 @@ void TTSSpeaker::resetPipeline() {
         createPipeline(m_pipelinetype);
     } else {
         // If pipeline is present, bring it to NULL state
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        while(!waitForStatus(GST_STATE_NULL, 60*1000));
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        if(ret == GST_STATE_CHANGE_ASYNC)
+        {
+            TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
+            waitForStatus(GST_STATE_NULL, 60*1000);
+        }
+        else if(ret == GST_STATE_CHANGE_FAILURE)
+            TTSLOG_ERROR("Failed to set pipeline to NULL state");
+        else if(ret == GST_STATE_CHANGE_SUCCESS)
+            TTSLOG_INFO("Pipeline set to NULL state");
     }
 }
 
@@ -768,8 +776,16 @@ void TTSSpeaker::destroyPipeline() {
     TTSLOG_WARNING("Destroying Pipeline...");
 
     if(m_pipeline) {
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
-        waitForStatus(GST_STATE_NULL, 1*1000);
+        GstStateChangeReturn ret = gst_element_set_state(m_pipeline, GST_STATE_NULL);
+        if(ret == GST_STATE_CHANGE_ASYNC)
+        {
+            TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
+            waitForStatus(GST_STATE_NULL, 1*1000);
+        }
+        else if(ret == GST_STATE_CHANGE_FAILURE)
+            TTSLOG_ERROR("Failed to set pipeline to NULL state");
+        else if(ret == GST_STATE_CHANGE_SUCCESS)
+            TTSLOG_INFO("Pipeline set to NULL state");
         g_source_remove(m_busWatch);
         gst_object_unref(m_pipeline);
     }
@@ -778,6 +794,26 @@ void TTSSpeaker::destroyPipeline() {
     m_pipeline = NULL;
     m_pipelineConstructionFailures = 0;
     m_condition.notify_one();
+}
+
+void TTSSpeaker::gracefulShutdown() {
+    TTSLOG_WARNING("Initiating graceful shutdown...");
+    if(m_pipeline) {
+        GstState current, pending;
+        gst_element_get_state(m_pipeline, &current, &pending, 0);
+        if ((current == GST_STATE_PLAYING) && !m_isEOS && (pending != GST_STATE_NULL)) {
+            /* we should move to paused state before NULL state. It looks like souphttpsrc crashes \
+            if we move directly to NULL state while http connection is intact(RDKEMW-20138)*/
+            if (gst_element_set_state(m_pipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_ASYNC) {
+                TTSLOG_ERROR("pause transition not happening immediately");
+                waitForStatus(GST_STATE_PAUSED, 1000);
+            }
+        }
+        if (gst_element_set_state(m_pipeline, GST_STATE_NULL) == GST_STATE_CHANGE_ASYNC) {
+            TTSLOG_ERROR("null transition not happening immediately");
+            waitForStatus(GST_STATE_NULL, 1000);
+        }
+    }
 }
 
 void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
@@ -831,7 +867,10 @@ void TTSSpeaker::waitForAudioToFinishTimeout(float timeout_s) {
 
     // Irrespective of EOS / Timeout reset pipeline
     if(m_pipeline)
-        gst_element_set_state(m_pipeline, GST_STATE_NULL);
+    {
+        /* Since the pipeline is stopped immediately during cancel speech we need graceful shutdown*/
+        gracefulShutdown();
+    }
 
     if(!m_isEOS)
         TTSLOG_ERROR("Stopped waiting for audio to finish without hitting EOS!");
@@ -964,8 +1003,16 @@ void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
         // Stop thread on Speaker's cue
         if(!speaker->m_runThread) {
             if(speaker->m_pipeline) {
-                gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
-                speaker->waitForStatus(GST_STATE_NULL, 1*1000);
+                GstStateChangeReturn ret = gst_element_set_state(speaker->m_pipeline, GST_STATE_NULL);
+                if(ret == GST_STATE_CHANGE_ASYNC)
+                    {
+                        TTSLOG_WARNING("set pipeline to NULL state in pending, waiting for completion");
+                        speaker->waitForStatus(GST_STATE_NULL, 1*1000);
+                    }
+                else if(ret == GST_STATE_CHANGE_FAILURE)
+                    TTSLOG_ERROR("Failed to set pipeline to NULL state");
+                else if(ret == GST_STATE_CHANGE_SUCCESS)
+                    TTSLOG_INFO("Pipeline set to NULL state");
             }
             TTSLOG_INFO("Stopping GStreamerThread");
             return;
