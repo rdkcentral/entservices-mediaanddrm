@@ -926,6 +926,26 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
 
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
 
+    // Default delay (milliseconds)
+    int delayMs = 1000;
+
+    std::ifstream file("/opt/ttssleep.txt");
+    if (file.is_open()) {
+        file >> delayMs;
+
+        if (file.fail()) {
+            TTSLOG_ERROR("Failed to read delay from /opt/ttssleep.txt");
+        }
+
+        file.close();
+    } else {
+        TTSLOG_ERROR("Unable to open /opt/ttssleep.txt");
+    }
+    TTSLOG_ERROR("KYK play null delay %d\n", delayMs);
+    g_usleep(delayMs); 
+
+    gst_element_set_state(m_pipeline, GST_STATE_NULL);
+#if 0
     systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);
     TTSLOG_VERBOSE("Speaking.... ( %d, \"%s\")", data.id, data.text.c_str());
 
@@ -937,7 +957,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     else {
         waitForAudioToFinishTimeout(10);
     }
-
+#endif
     m_currentSpeech = NULL;
 }
 
