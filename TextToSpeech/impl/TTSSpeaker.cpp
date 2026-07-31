@@ -929,15 +929,15 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     // Default delay (milliseconds)
     int delayMs = 1000;
 
-    std::ifstream file("/opt/ttssleep.txt");
-    if (file.is_open()) {
-        file >> delayMs;
+    std::ifstream delayFile("/opt/ttssleep.txt");
+    if (delayFile.is_open()) {
+        delayFile >> delayMs;
 
-        if (file.fail()) {
+        if (delayFile.fail()) {
             TTSLOG_ERROR("Failed to read delay from /opt/ttssleep.txt");
         }
 
-        file.close();
+        delayFile.close();
     } else {
         TTSLOG_ERROR("Unable to open /opt/ttssleep.txt");
     }
