@@ -438,10 +438,13 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
     TTSLOG_TRACE("id=%d, text=\"%s\"", id, text.c_str());
 
     // If force speak is set, clear old queued data & stop speaking
-    if(client->configuration()->isPreemptive())
+    if(client->configuration()->isPreemptive()) {
+        TTSLOG_INFO("KKP-debug TTSSpeaker::speak:%d isPreemptive=true, calling reset() before queuing speechId=%d\n", __LINE__, id);
         reset();
+    }
 
     SpeechData data(client, id, callsign, text, secure,primVolDuck);
+    TTSLOG_INFO("KKP-debug TTSSpeaker::speak:%d queuing speechId=%d, current queue size=%zu\n", __LINE__, id, m_queue.size());
     queueData(data);
 
     return 0;
