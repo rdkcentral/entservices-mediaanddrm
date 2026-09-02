@@ -34,6 +34,14 @@ static const std::map<std::string, int> speechRateMap = {
     {"fastest", 100}
 };
 
+static const std::map<int, std::string> utteranceRateMap = {
+    {0,  "slow"},
+    {25, "medium"},
+    {50, "fast"},
+    {75, "faster"},
+    {90, "fastest"}
+};
+
 namespace TTS
 {
 
@@ -53,6 +61,75 @@ std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::strin
           TTSLOG_INFO("Device using %s endpoint", isLocal? "Local":"Remote");
           return httpgetURL(config, text, isFallback, isLocal);
      }
+}
+
+std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal, \
+    const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& utterance) {
+    TTSConfiguration tmpConfig = config;
+    if(!utterance.language.empty()){
+        tmpConfig.setLanguage(utterance.language);
+    }
+    if(!utterance.voice.empty()){
+        tmpConfig.setVoice(utterance.voice);
+    }
+    if(utterance.rate != (-1.0))
+    {
+        tmpConfig.setRate(utterance.rate);
+    }
+    if(utterance.volume != (-1.0))
+    {
+        tmpConfig.setVolume(utterance.volume);
+    }
+    tmpConfig.setVolume(utterance.volume);
+    if(!(config.apiKey().empty()) && !isLocal && !(config.isRFCEnabled())) {
+          TTSLOG_INFO("Device using remote sky endpoint");
+          return httppostURL(tmpConfig, text, isFallback);
+     } else {
+          TTSLOG_INFO("Device using %s endpoint", isLocal? "Local":"Remote");
+          return httpgetUtteranceURL(tmpConfig, text, isFallback, isLocal);
+     }
+}
+
+std::string TTSURLConstructer::httpgetUtteranceURL(TTSConfiguration &config, std::string text, bool isfallback, bool isLocal) {
+    // EndPoint URL
+    std::string ttsRequest;
+    ttsRequest.append(isLocal ? config.localEndPoint() : (config.isRFCEnabled() ? config.rfcEndPoint() : config.secureEndPoint()));
+
+    // Voice
+    if(!config.voice().empty()) {
+        ttsRequest.append("voice=");
+        ttsRequest.append(isLocal ? config.localVoice() : config.voice());
+    }
+
+    // Language
+    if(!config.language().empty()) {
+        ttsRequest.append("&language=");
+        ttsRequest.append(config.language());
+    }
+
+    bool TTS1 = ((config.endPointType().compare("TTS2")) != 0);
+    double rate = config.rate();
+    int ttsRate = (rate == 0.0) ? 50 : static_cast<int>(rate * 10);
+    if(isLocal || TTS1) {
+        ttsRequest.append("&rate=");
+        ttsRequest.append(std::to_string(ttsRate));
+    } else {
+        ttsRequest.append("&speaking_rate=");
+        //TTS 2.0
+        auto it = utteranceRateMap.upper_bound(ttsRate);
+        if (it != utteranceRateMap.begin()) {
+            --it;
+        }
+        ttsRequest.append(it->second);
+    }
+    
+    // Sanitize String
+    std::string sanitizedString;
+    sanitizeString((isfallback ? config.getFallbackValue() : text), sanitizedString);
+
+    ttsRequest.append("&text=");
+    ttsRequest.append(sanitizedString);
+    return ttsRequest;
 }
 
 std::string TTSURLConstructer::httpgetURL(TTSConfiguration &config, std::string text, bool isfallback, bool isLocal) {

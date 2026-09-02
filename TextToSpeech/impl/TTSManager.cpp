@@ -86,29 +86,41 @@ bool TTSManager::isTTSEnabled() {
     return m_defaultConfiguration.enabled();
 }
 
-TTS_Error TTSManager::listVoices(std::string language, std::vector<std::string> &voices) {
+TTS_Error TTSManager::listVoices(std::string language,std::vector<std::string>& voices) {
     bool returnCurrentConfiguration = false;
     std::string key = std::string("voice_for_"); // return all voices
 
     if(language.empty()) {
         returnCurrentConfiguration = true; // return voice for the configured language
-        key = m_defaultConfiguration.language();
-    } else if(language != "*") {
+        key += m_defaultConfiguration.language();
+    }
+    else if(language != "*") {
         key += language; // return voices for only the passed language
-        if(m_defaultConfiguration.m_others.find(key) != m_defaultConfiguration.m_others.end())
-        {
-            voices.push_back(m_defaultConfiguration.m_others[key]);
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if(it != m_defaultConfiguration.m_others.end()) {
+            voices.insert(voices.end(),
+                          it->second.begin(),
+                          it->second.end());
         }
         return TTS_OK;
     }
 
     if(returnCurrentConfiguration) {
         voices.push_back(m_defaultConfiguration.voice());
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if(it != m_defaultConfiguration.m_others.end()) {
+            voices.insert(voices.end(),
+                          it->second.begin(),
+                          it->second.end());
+        }
     } else {
         auto it = m_defaultConfiguration.m_others.begin();
         while(it != m_defaultConfiguration.m_others.end()) {
-            if(it->first.find(key) == 0)
-                voices.push_back(it->second);
+            if(it->first.find(key) == 0) {
+                voices.insert(voices.end(),
+                              it->second.begin(),
+                              it->second.end());
+            }
             ++it;
         }
     }
@@ -116,17 +128,80 @@ TTS_Error TTSManager::listVoices(std::string language, std::vector<std::string> 
     return TTS_OK;
 }
 
+TTS_Error TTSManager::getVoices(std::string language,std::vector<VoiceInfo>& voices) {
+    bool returnCurrentConfiguration = false;
+    std::string key = "voice_for_";
+    voices.clear();
+    if(language.empty()) {
+        returnCurrentConfiguration = true;
+        key += m_defaultConfiguration.language();
+
+    } else if(language != "*") {
+        key += language;
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if(it != m_defaultConfiguration.m_others.end()) {
+            for(size_t i = 0; i < it->second.size(); ++i) {
+                VoiceInfo voiceInfo;
+                voiceInfo.name = it->second[i];
+                voiceInfo.language = language;
+                voiceInfo.isDefault = (i == 0);
+                voices.push_back(voiceInfo);
+            }
+        }
+        return TTS_OK;
+    }
+    if(returnCurrentConfiguration) {
+        std::string currentLanguage =
+            m_defaultConfiguration.language();
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if(it != m_defaultConfiguration.m_others.end()) {
+            for(size_t i = 0; i < it->second.size(); ++i) {
+                VoiceInfo voiceInfo;
+                voiceInfo.name = it->second[i];
+                voiceInfo.language = currentLanguage;
+                voiceInfo.isDefault = (i == 0);
+                voices.push_back(voiceInfo);
+            }
+        }
+    } else {
+        auto it = m_defaultConfiguration.m_others.begin();
+        while(it != m_defaultConfiguration.m_others.end()) {
+            //ignore local language
+            if(it->first.find("voice_for_local_") == 0) {
+                ++it;
+                continue;
+            }
+            if(it->first.find("voice_for_") == 0) {
+                std::string lang =
+                    it->first.substr(strlen("voice_for_"));
+
+                for(size_t i = 0; i < it->second.size(); ++i) {
+                    VoiceInfo voiceInfo;
+                    voiceInfo.name = it->second[i];
+                    voiceInfo.language = lang;
+                    voiceInfo.isDefault = (i == 0);
+                    voices.push_back(voiceInfo);
+                }
+            }
+            ++it;
+        }
+    }
+     return TTS_OK;
+ }
+
 TTS_Error TTSManager::listLocalVoices(std::string language, std::vector<std::string> &voices) {
      if(language.empty()) {
         voices.push_back(m_defaultConfiguration.localVoice());
      } else {
-         const std::string key = std::string("voice_for_local_") + language;
-         auto it = m_defaultConfiguration.m_others.find(key);
-         if (it != m_defaultConfiguration.m_others.end()) {
-             voices.push_back(it->second);
-         }
-     }
-     return TTS_OK;
+        const std::string key = std::string("voice_for_local_") + language;
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if (it != m_defaultConfiguration.m_others.end()) {          
+            voices.insert(voices.end(),
+              it->second.begin(),
+              it->second.end());
+        }
+    }
+    return TTS_OK;
 }
 
 TTS_Error TTSManager::setConfiguration(Configuration &configuration) {
@@ -179,15 +254,17 @@ TTS_Error TTSManager::setConfiguration(Configuration &configuration) {
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setVolume(configuration.volume);
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setRate(configuration.rate);
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setSpeechRate(configuration.speechRate);
+    m_needsConfigStoreUpdate |= m_defaultConfiguration.setPitch(configuration.pitch);
 
-    TTSLOG_INFO("Default config updated, endPoint=%s, secureEndPoint=%s, lang=%s, voice=%s, vol=%lf, rate=%u ,speechrate=%s",
+    TTSLOG_INFO("Default config updated, endPoint=%s, secureEndPoint=%s, lang=%s, voice=%s, vol=%lf, rate=%u ,speechrate=%s, pitch=%u",
             m_defaultConfiguration.endPoint().c_str(),
             m_defaultConfiguration.secureEndPoint().c_str(),
             m_defaultConfiguration.language().c_str(),
             m_defaultConfiguration.voice().c_str(),
             m_defaultConfiguration.volume(),
             m_defaultConfiguration.rate(),
-            m_defaultConfiguration.speechRate().c_str());
+            m_defaultConfiguration.speechRate().c_str(),
+            m_defaultConfiguration.pitch());
 
     if(v !=  m_defaultConfiguration.voice())
         m_callback->onVoiceChanged(m_defaultConfiguration.voice());
@@ -294,6 +371,7 @@ TTS_Error TTSManager::getConfiguration(Configuration &configuration) {
     configuration.speechRate = m_defaultConfiguration.speechRate();
     configuration.volume = m_defaultConfiguration.volume();
     configuration.rate = m_defaultConfiguration.rate();
+    configuration.pitch = m_defaultConfiguration.pitch();
 
     return TTS_OK;
 }
@@ -316,6 +394,35 @@ TTS_Error TTSManager::speak(int speechId, std::string callsign, std::string text
         if(checkAccess("speak", callsign))
         {
             m_speaker->speak(this, speechId , callsign, text, true, m_defaultConfiguration.primVolDuck());
+        }
+        else
+        {
+            TTSLOG_WARNING("No Speak access for callsign %s\n",callsign.c_str());
+            return TTS_NO_ACCESS;
+        }
+    }
+
+    return TTS_OK;
+}
+
+TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text) {
+    TTSLOG_TRACE("SpeakWithUteerance");
+
+    if(!m_defaultConfiguration.isValid()) {
+        TTSLOG_ERROR("Configuration is not set, can't speak");
+        return TTS_INVALID_CONFIGURATION;
+    }
+    
+    
+    if(text.empty() || text.find_first_not_of(' ') == std::string::npos) {
+        TTSLOG_ERROR("Invalid Text Provided from app");
+        return TTS_FAIL;
+    }
+    
+    if(m_speaker) {
+        if(checkAccess("speak", callsign))
+        {
+            m_speaker->speakWithUtterance(this, speechId , callsign, text, utterance, m_defaultConfiguration.primVolDuck());
         }
         else
         {

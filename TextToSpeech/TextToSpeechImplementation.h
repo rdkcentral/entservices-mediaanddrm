@@ -44,7 +44,8 @@ namespace Plugin {
                 SPEECH_INTERRUPT,
                 NETWORK_ERROR,
                 PLAYBACK_ERROR,
-                SPEECH_COMPLETE
+                SPEECH_COMPLETE,
+                CONFIG_CHANGED
             };
 
         class EXTERNAL Job : public Core::IDispatch {
@@ -108,6 +109,7 @@ namespace Plugin {
         virtual Core::hresult Enable(const bool enable) override;
         virtual Core::hresult Enable(bool &enable /* @out */) const override;
         virtual Core::hresult ListVoices(const string language, RPC::IStringIterator*& voices/* @out */) const override;
+        virtual Core::hresult GetVoices(const string& language,Exchange::ITextToSpeech::IVoiceInfoIterator*& voices /* @out */) const override;
         virtual Core::hresult SetConfiguration(const Exchange::ITextToSpeech::Configuration &object, Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
         virtual Core::hresult SetFallbackText(const string scenario, const string value) override;
         virtual Core::hresult SetAPIKey(const string apikey) override;
@@ -115,11 +117,18 @@ namespace Plugin {
         virtual Core::hresult SetACL(const string method, const string apps) override;
         virtual Core::hresult GetConfiguration(Exchange::ITextToSpeech::Configuration &object/* @out */) const override;
         virtual Core::hresult Speak(const string callsign, const string text, uint32_t &speechid/* @out */, Exchange::ITextToSpeech::TTSErrorDetail &status/* @out */) override;
+        virtual Core::hresult SetDeviceConfiguration(const Exchange::ITextToSpeech::DeviceConfiguration& config) override;
+        virtual Core::hresult SpeakWithUtterance(const string& callsign, const SpeechUtterance& utterance, const string& text, uint32_t& speechid /* @out */, Exchange::ITextToSpeech::TTSErrorDetail& status /* @out */) override;
+        virtual Core::hresult GetDeviceConfiguration(Exchange::ITextToSpeech::DeviceConfiguration &exchangeDeviceConfig/* @out */) const override;
+        virtual Core::hresult GetInterfaceVersion(uint32_t& version /* @out */) const override;
+        virtual Core::hresult GetCapability(Capability capability, bool& hasCapability /* @out */) const override;
+        virtual Core::hresult GetCapabilities(ICapabilityIterator*& capabilities /* @out */) const override;
         virtual Core::hresult Cancel(const uint32_t speechid) override;
         virtual Core::hresult Pause(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &status /* @out */) override;
         virtual Core::hresult Resume(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &status /* @out */) override;
         virtual Core::hresult GetSpeechState(const  uint32_t speechid, Exchange::ITextToSpeech::SpeechState &state/* @out */) override;
 
+        virtual void OnConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) override;
         virtual void onTTSStateChanged(bool enabled) override;
         virtual void onVoiceChanged(std::string voice) override;
         virtual void onWillSpeak(TTS::SpeechData &data) override;

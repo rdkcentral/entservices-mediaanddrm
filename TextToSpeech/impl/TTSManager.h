@@ -24,13 +24,14 @@
 #include "TTSSpeaker.h"
 #include "TTSConfiguration.h"
 #include "TTSDownloader.h"
+#include <interfaces/ITextToSpeech.h>
 
 #include <vector>
 
 namespace TTS {
 
 struct Configuration {
-    Configuration() : volume(0), rate(0) {};
+    Configuration() : volume(0), rate(0), pitch(0) {};
     ~Configuration() {}
 
     std::string ttsEndPoint;
@@ -41,6 +42,13 @@ struct Configuration {
     std::string speechRate;
     double volume;
     uint8_t rate;
+    double pitch;
+};
+
+struct VoiceInfo {
+    std::string name;
+    std::string language;
+    bool isDefault;
 };
 
 class TTSEventCallback {
@@ -51,6 +59,7 @@ public:
     virtual void onTTSStateChanged(bool enabled) { (void)enabled; }
     virtual void onVoiceChanged(std::string voice) { (void)voice; }
     virtual void onWillSpeak(SpeechData &data) { (void)data; }
+    virtual void OnConfigChanged(const WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration& config) { (void)config; }
     virtual void onSpeechStart(SpeechData &data) { (void)data; }
     virtual void onSpeechPause(uint32_t speechId,string callsign) { (void)speechId; }
     virtual void onSpeechResume(uint32_t speechId,string callsign) { (void)speechId; }
@@ -71,6 +80,7 @@ public:
     TTS_Error enableTTS(bool enable);
     bool isTTSEnabled();
     void initiateDownload();
+    TTS_Error getVoices(std::string language,std::vector<VoiceInfo>& voices);
     TTS_Error listVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error listLocalVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error setConfiguration(Configuration &configuration);
@@ -86,6 +96,7 @@ public:
 
     //Speak APIs
     TTS_Error speak(int speechId, std::string callsign, std::string text);
+    TTS_Error speakWithUtterance(int speechId, std::string callsign, const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text);
     TTS_Error pause(uint32_t id);
     TTS_Error resume(uint32_t id);
     TTS_Error shut(uint32_t id);

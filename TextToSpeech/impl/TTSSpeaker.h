@@ -30,9 +30,11 @@
 #include <thread>
 #include <vector>
 #include <condition_variable>
+#include <optional>
 
 #include "TTSCommon.h"
 #include "TTSConfiguration.h"
+#include <interfaces/ITextToSpeech.h>
 // --- //
 
 namespace TTS {
@@ -63,16 +65,58 @@ public:
 
 struct SpeechData {
     public:
-        SpeechData() : client(NULL), secure(false), id(0), callsign(), text(), primVolDuck(25) {}
-        SpeechData(TTSSpeakerClient *c, uint32_t i, std::string callsign,std::string t, bool s=false,int8_t vol=25) : client(c), secure(s), id(i), callsign(callsign), text(t), primVolDuck(vol) {}
-        SpeechData(const SpeechData &n) {
-            client = n.client;
-            id = n.id;
-            callsign =n.callsign;
-            text = n.text;
-            secure = n.secure;
-            primVolDuck = n.primVolDuck;
-        }
+        SpeechData() 
+        : client(NULL),
+          secure(false), 
+          id(0), 
+          callsign(), 
+          text(), 
+          primVolDuck(25), 
+          hasUtterance(false), 
+          utterance() 
+          {}
+
+        SpeechData(TTSSpeakerClient *c, 
+              uint32_t i, 
+              std::string callsign,
+              std::string t, 
+              bool s=false,
+              int8_t vol=25) 
+        : client(c), 
+          secure(s), 
+          id(i), 
+          callsign(callsign), 
+          text(t), 
+          primVolDuck(vol), 
+          hasUtterance(false),
+          utterance() 
+          {}
+
+        SpeechData(TTSSpeakerClient *c,
+               uint32_t i,
+               std::string callsign,
+               std::string t,
+               int8_t vol,
+               const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& u)
+        : client(c),
+          secure(false),
+          id(i),
+          callsign(std::move(callsign)),
+          text(std::move(t)),
+          primVolDuck(vol),
+          hasUtterance(true),
+          utterance(u) {}
+
+        SpeechData(const SpeechData& n)
+        : client(n.client),
+          secure(n.secure),
+          id(n.id),
+          callsign(n.callsign),
+          text(n.text),
+          primVolDuck(n.primVolDuck),
+          hasUtterance(n.hasUtterance),
+          utterance(n.utterance) {}
+
         ~SpeechData() {}
 
         TTSSpeakerClient *client;
@@ -81,6 +125,8 @@ struct SpeechData {
         std::string callsign;
         std::string text;
         int8_t primVolDuck;
+        bool hasUtterance;
+        WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance;
 };
 
 enum PipelineType
@@ -98,6 +144,8 @@ public:
 
     // Speak Functions
     int speak(TTSSpeakerClient* client, uint32_t id, std::string callsign, std::string text, bool secure,int8_t primVolDuck); // Formalize data to speak API
+    int speakWithUtterance(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, \
+      WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck);
     bool isSpeaking(uint32_t id);
     SpeechState getSpeechState(uint32_t id);
     bool cancelSpeech(uint32_t id=0);

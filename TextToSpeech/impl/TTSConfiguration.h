@@ -51,6 +51,7 @@ public:
     bool setEnabled(const bool dnabled);
     bool setVolume(const double volume);
     bool setRate(const uint8_t rate);
+    bool setPitch(const double pitch);
     bool setPrimVolDuck(const int8_t primvolduck);
     bool setSATPluginCallsign(const std::string callsign);
    
@@ -80,6 +81,7 @@ public:
     }
 
     const double &volume() { return m_volume; }
+    const double &pitch() { return m_pitch; }
     const uint8_t &rate() { return m_rate; }
     const int8_t &primVolDuck() { return m_primVolDuck; }
     bool enabled() { return m_enabled; }
@@ -92,7 +94,7 @@ public:
     bool updateWith(TTSConfiguration &config);
     bool isValid();
 
-    static std::map<std::string, std::string> m_others;
+    static std::map<std::string, std::vector<std::string>> m_others;
     static std::map<std::string, std::string> m_others_local;
 
 private:
@@ -108,6 +110,7 @@ private:
     std::string m_voice;
     std::string m_localVoice;
     double m_volume;
+    double m_pitch;
     uint8_t m_rate;
     int8_t m_primVolDuck;
     bool m_preemptiveSpeaking;

@@ -80,6 +80,18 @@ namespace Plugin {
                     _parent.Notify("onwillspeak", params);
                 }
 
+                virtual void OnDeviceConfigurationChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) { 
+                    JsonObject params; 
+                    params["ttsEndPoint"] = JsonValue(config.ttsEndPoint); 
+                    params["ttsEndPointSecured"] = JsonValue(config.ttsEndPointSecured); 
+                    params["language"] = JsonValue(config.language); 
+                    params["voice"] = JsonValue(config.voice); 
+                    params["volume"] = JsonValue(config.volume); 
+                    params["rate"] = JsonValue(config.rate); 
+                    params["pitch"] = JsonValue(config.pitch); 
+                    _parent.Notify("onconfigchanged", params); 
+                }
+
                 virtual void OnSpeechStarted(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
@@ -168,6 +180,7 @@ namespace Plugin {
         //TTS Global APIS for Resident application
         uint32_t Enable(const JsonObject& parameters, JsonObject& response);
         uint32_t ListVoices(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetVoices(const JsonObject& parameters, JsonObject& response);
         uint32_t SetConfiguration(const JsonObject& parameters, JsonObject& response);
         uint32_t GetConfiguration(const JsonObject& parameters, JsonObject& response);
 

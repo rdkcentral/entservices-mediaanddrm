@@ -32,6 +32,7 @@ namespace Plugin {
     void TextToSpeech::RegisterAll()
     {
         Register("enabletts", &TextToSpeech::Enable, this);
+        Register("getvoices", &TextToSpeech::GetVoices, this);
         Register("listvoices", &TextToSpeech::ListVoices, this);
         Register("setttsconfiguration", &TextToSpeech::SetConfiguration, this);
         Register("getttsconfiguration", &TextToSpeech::GetConfiguration, this);
@@ -240,6 +241,47 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
         config_failure:
             response["TTS_Status"] = static_cast<uint32_t>(status);
             returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+        }
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TextToSpeech::GetVoices(const JsonObject& parameters,
+                                 JsonObject& response)
+    {
+        if (_tts) {
+
+            CHECK_TTS_PARAMETER_RETURN_ON_FAIL("language");
+
+            Exchange::ITextToSpeech::IVoiceInfoIterator* voices = nullptr;
+
+            auto status =
+                _tts->GetVoices(parameters["language"].String(), voices);
+
+            if ((voices == nullptr) || (status != TTS::TTS_OK)) {
+
+                response["TTS_Status"] = status;
+                response["message"] = "Failed to get voices";
+                if (voices) {
+                    voices->Release();
+                } 
+                returnResponse(false);
+            }
+            JsonArray arr;
+            Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+
+            while (voices->Next(voiceInfo) == true) {
+                JsonObject voice;
+                voice["name"] = voiceInfo.name;
+                voice["language"] = voiceInfo.language;
+                voice["default"] = voiceInfo.isDefault;
+                arr.Add(voice);
+            }
+            response["voices"] = arr;
+            response["TTS_Status"] = status;
+
+            voices->Release();
+
+            returnResponse(status == TTS::TTS_OK);
         }
         return Core::ERROR_NONE;
     }
