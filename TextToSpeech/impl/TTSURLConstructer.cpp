@@ -72,14 +72,7 @@ std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::strin
     if(!utterance.voice.empty()){
         tmpConfig.setVoice(utterance.voice);
     }
-    if(utterance.rate != (-1.0))
-    {
-        tmpConfig.setRate(utterance.rate);
-    }
-    if(utterance.volume != (-1.0))
-    {
-        tmpConfig.setVolume(utterance.volume);
-    }
+    tmpConfig.setRate(utterance.rate);
     tmpConfig.setVolume(utterance.volume);
     if(!(config.apiKey().empty()) && !isLocal && !(config.isRFCEnabled())) {
           TTSLOG_INFO("Device using remote sky endpoint");
@@ -109,20 +102,34 @@ std::string TTSURLConstructer::httpgetUtteranceURL(TTSConfiguration &config, std
 
     bool TTS1 = ((config.endPointType().compare("TTS2")) != 0);
     double rate = config.rate();
-    int ttsRate = (rate == 0.0) ? 50 : static_cast<int>(rate * 10);
-    if(isLocal || TTS1) {
-        ttsRequest.append("&rate=");
-        ttsRequest.append(std::to_string(ttsRate));
-    } else {
-        ttsRequest.append("&speaking_rate=");
-        //TTS 2.0
-        auto it = utteranceRateMap.upper_bound(ttsRate);
-        if (it != utteranceRateMap.begin()) {
-            --it;
+    if(rate != -1.0)
+    {
+        int ttsRate = (rate == 0.0) ? 50 : static_cast<int>(rate * 10);
+        if(isLocal || TTS1) {
+            ttsRequest.append("&rate=");
+            ttsRequest.append(std::to_string(ttsRate));
+        } else {
+            ttsRequest.append("&speaking_rate=");
+            //TTS 2.0
+            auto it = utteranceRateMap.upper_bound(ttsRate);
+            if (it != utteranceRateMap.begin()) {
+                --it;
+            }
+            ttsRequest.append(it->second);
         }
-        ttsRequest.append(it->second);
     }
-    
+    else
+    {
+        if(isLocal || TTS1) {
+        ttsRequest.append("&rate=");
+        auto it = speechRateMap.find(config.speechRate());
+        ttsRequest.append(std::to_string((speechRateMap.end() != it ) ? it->second : 50));
+        } else {
+            //TTS 2.0
+            ttsRequest.append("&speaking_rate=");
+            ttsRequest.append(config.speechRate());
+        }
+    }
     // Sanitize String
     std::string sanitizedString;
     sanitizeString((isfallback ? config.getFallbackValue() : text), sanitizedString);

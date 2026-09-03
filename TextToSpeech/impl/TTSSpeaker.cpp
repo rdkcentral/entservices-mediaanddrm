@@ -461,10 +461,11 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
 
 int TTSSpeaker::speakWithUtterance(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck) {
     TTSLOG_TRACE("id=%d, text=\"%s\"", id, text.c_str());
-
+printf("kykumar speaker utterance queue data\n");
     SpeechData data(client, id, callsign, text, primVolDuck, utterance);
+    
     queueData(data);
-
+printf("kykumar data queued\n");
     return 0;
 }
 
@@ -918,6 +919,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
         g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
     }
 
+    printf("kykumar utterance volume %f  client volume %f MAX_VOLUME %d\n", data.utterance.volume, data.client->configuration()->volume(), MAX_VOLUME);
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
 
     systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);

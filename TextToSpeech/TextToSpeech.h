@@ -187,6 +187,7 @@ namespace Plugin {
         // Mandotory TTS APIs for client application
         uint32_t IsEnabled(const JsonObject& parameters, JsonObject& response);
         uint32_t Speak(const JsonObject& parameters, JsonObject& response);
+        uint32_t SpeakWithUtterance(const JsonObject& parameters, JsonObject& response);
         uint32_t Cancel(const JsonObject& parameters, JsonObject& response);
 
         // These extended APIS can be used by Client application if needed

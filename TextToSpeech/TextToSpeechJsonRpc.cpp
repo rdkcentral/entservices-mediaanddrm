@@ -33,6 +33,7 @@ namespace Plugin {
     {
         Register("enabletts", &TextToSpeech::Enable, this);
         Register("getvoices", &TextToSpeech::GetVoices, this);
+        Register("speakwithutterance", &TextToSpeech::SpeakWithUtterance, this);
         Register("listvoices", &TextToSpeech::ListVoices, this);
         Register("setttsconfiguration", &TextToSpeech::SetConfiguration, this);
         Register("getttsconfiguration", &TextToSpeech::GetConfiguration, this);
@@ -308,6 +309,68 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             response["speechid"] = (int) speechid;
             response["TTS_Status"] = static_cast<uint32_t>(status);
             returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+        }
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TextToSpeech::SpeakWithUtterance(const JsonObject& parameters, JsonObject& response)
+    {
+        CHECK_TTS_PARAMETER_RETURN_ON_FAIL("text");
+        printf("kykumar jsonrpc utter\n");
+        if(_tts) {
+            uint32_t speechid= 0;
+            Exchange::ITextToSpeech::TTSErrorDetail status;
+            // speechContext is optional
+            JsonObject speechContext;
+            Exchange::ITextToSpeech::SpeechUtterance utterance;
+            if (parameters.HasLabel("speechContext")) {
+                speechContext = parameters["speechContext"].Object();
+            }
+            else
+            {
+                _tts->Speak(parameters["callsign"].String(),parameters["text"].String(),speechid,status);
+                response["speechid"] = (int) speechid;
+                response["TTS_Status"] = static_cast<uint32_t>(status);
+                returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+                return Core::ERROR_NONE;
+            }
+            utterance.language = GET_STR(speechContext, "language", "");        
+            #ifndef UNIT_TESTING
+            utterance.voice = ""; //ignore voice from app           
+            #else
+            utterance.voice = GET_STR(speechContext, "voice", "");
+            #endif
+
+            std::string proxyVolume;
+            std::string proxyRate;
+            std::string proxyPitch;
+            
+            proxyVolume = GET_STR(speechContext, "volume", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyVolume))
+                goto config_failure;
+            utterance.volume = std::stod(proxyVolume);
+
+            proxyRate = GET_STR(speechContext, "rate", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyRate))
+                goto config_failure;
+            utterance.rate = std::stod(proxyRate);
+
+            proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyPitch))
+                goto config_failure;
+            utterance.pitch = std::stod(proxyPitch);
+
+            printf("kykumar printing params\n");
+            
+            printf("kykumar callsign %s\n", parameters["callsign"].String().c_str());
+            printf("kykumar text %s\n", parameters["text"].String().c_str());
+            printf("kykumar jsonrpc utterance: language=%s, voice=%s, volume=%lf, rate=%lf, pitch=%lf\n",
+                   utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate, utterance.pitch);
+            _tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status);
+            response["speechid"] = (int) speechid;
+            config_failure:
+                response["TTS_Status"] = static_cast<uint32_t>(status);
+                returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
         }
         return Core::ERROR_NONE;
     }

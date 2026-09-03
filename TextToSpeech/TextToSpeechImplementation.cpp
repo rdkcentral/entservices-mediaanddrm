@@ -85,9 +85,9 @@ namespace Plugin {
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
         InputValidation::Instance().addValidator("speechid", ExpectedValues<uint32_t>(1, UINT32_MAX));
         InputValidation::Instance().addValidator("speechrate", ExpectedValues<std::string>({"slow", "medium", "fast", "faster", "fastest"}));
-        InputValidation::Instance().addValidator("rate", ExpectedValues<uint8_t>(0, 100));
-        InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
-        InputValidation::Instance().addValidator("pitch", ExpectedValues<uint8_t>(0, 100));
+        InputValidation::Instance().addValidator("rate", ExpectedValues<float>(-1.0f, 10.0f));
+        InputValidation::Instance().addValidator("volume", ExpectedValues<float>(-1.0f, 1.0f));
+        InputValidation::Instance().addValidator("pitch", ExpectedValues<float>(-1.0f, 2.0f));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
 
@@ -123,11 +123,23 @@ namespace Plugin {
             JsonObject voices = config["voices"].Object();
             for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                 std::vector<std::string> voiceList;
-                JsonArray voiceArray = it.Current().Array();
-                for (JsonArray::Iterator voiceIt = voiceArray.Elements();voiceIt.Next(); ) {
-                    std::string voice = voiceIt.Current().String();
-                    voiceList.push_back(voice);
-                    expectedVoicesSet.insert(toLower(voice));
+                if (it.Current().Content() == Core::JSON::Variant::type::ARRAY) {
+                    // JSON format: "en-US": ["carol", "voice2"]
+                    JsonArray voiceArray = it.Current().Array();
+                    for (JsonArray::Iterator voiceIt = voiceArray.Elements();voiceIt.Next(); ) {
+                        std::string voice = voiceIt.Current().String();
+                        voiceList.push_back(voice);
+                        expectedVoicesSet.insert(toLower(voice));
+                    }
+                }
+                else {
+                    // JSON format: "en-US": "carol"
+                    std::string voice = it.Current().String();
+
+                    if (!voice.empty()) {
+                        voiceList.push_back(voice);
+                        expectedVoicesSet.insert(toLower(voice));
+                    }
                 }
                 ttsConfig->m_others["voice_for_" + string(it.Label())] = voiceList;
                 expectedLanguageSet.insert(toLower(string(it.Label()))); 
@@ -143,12 +155,23 @@ namespace Plugin {
            JsonObject voices = config["local_voices"].Object();
            for(JsonObject::Iterator it = voices.Variants(); it.Next(); ) {
                std::vector<std::string> voiceList;
-               JsonArray voiceArray = it.Current().Array();
-               for(JsonArray::Iterator voiceIt = voiceArray.Elements(); voiceIt.Next(); ) {
-                   std::string voice = voiceIt.Current().String();
-                   voiceList.push_back(voice);
-                   expectedVoicesSet.insert(toLower(voice));
-               }
+               if (it.Current().Content() == Core::JSON::Variant::type::ARRAY) {
+                    JsonArray voiceArray = it.Current().Array();
+                    for(JsonArray::Iterator voiceIt = voiceArray.Elements(); voiceIt.Next(); ) {
+                        std::string voice = voiceIt.Current().String();
+                        voiceList.push_back(voice);
+                        expectedVoicesSet.insert(toLower(voice));
+                    }
+                }
+                else {
+                    // Example: "en-US": "voice1"
+                    std::string voice = it.Current().String();
+
+                    if (!voice.empty()) {
+                        voiceList.push_back(voice);
+                        expectedVoicesSet.insert(toLower(voice));
+                    }
+                }
                ttsConfig->m_others["voice_for_local_" + string(it.Label())] = voiceList;
                expectedLanguageSet.insert(toLower(string(it.Label())));
            }
@@ -588,19 +611,27 @@ namespace Plugin {
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
-    Core::hresult TextToSpeechImplementation::SpeakWithUtterance(const string& callsign, const SpeechUtterance& utterance, const string& text,\
+    Core::hresult TextToSpeechImplementation::SpeakWithUtterance(const string& callsign, const Exchange::ITextToSpeech::SpeechUtterance& utterance, const string& text,\
          uint32_t& speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
+        printf("kykumar implemtation speakwithutterance\n");
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
+        printf("kykumar manager good\n");
         _adminLock.Lock();
+        printf("kykumar lock acquired\n");
         speechid = nextSpeechId();
+        printf("kykumar checking params\n");
         if((!utterance.language.empty() && !InputValidation::Instance().validate("language", toLower(utterance.language)))
         || (!utterance.voice.empty() && !InputValidation::Instance().validate("voice", toLower(utterance.voice)))
         || (!InputValidation::Instance().validate("rate", utterance.rate))
         || (!InputValidation::Instance().validate("volume", utterance.volume))) {
             TTSLOG_WARNING("speak utterance params are invalid");
+            printf("kykumar invalid params: language=%s, voice=%s, volume=%lf, rate=%lf\n",
+                   utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
             return Core::ERROR_GENERAL;
         }
+        printf("kykumar calling managerspeakWithUtterance: language=%s, voice=%s, volume=%lf, rate=%lf\n",
+               utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
         auto status = _ttsManager->speakWithUtterance(speechid, callsign, utterance, text);
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) status;
         _adminLock.Unlock();
@@ -959,4 +990,3 @@ namespace Plugin {
 
 } // namespace Plugin
 } // namespace WPEFramework
-
