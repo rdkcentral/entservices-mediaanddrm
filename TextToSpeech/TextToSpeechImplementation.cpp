@@ -87,7 +87,6 @@ namespace Plugin {
         InputValidation::Instance().addValidator("speechrate", ExpectedValues<std::string>({"slow", "medium", "fast", "faster", "fastest"}));
         InputValidation::Instance().addValidator("rate", ExpectedValues<uint8_t>(0, 100));
         InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
-        InputValidation::Instance().addValidator("pitch", ExpectedValues<double>(-1.0, 100));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
         InputValidation::Instance().addValidator<double>("utteranceRate", [](const double& v) {return (v == -1.0) || (v >= 0.0 && v <= 10.0); });
@@ -626,6 +625,7 @@ namespace Plugin {
         || (!InputValidation::Instance().validate("utteranceVolume", utterance.volume))) {
             TTSLOG_WARNING("speak utterance params are invalid: language=%s, voice=%s, volume=%lf, rate=%lf\n",
                    utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
+            _adminLock.Unlock();
             return Core::ERROR_GENERAL;
         }
         auto status = _ttsManager->speakWithUtterance(speechid, callsign, utterance, text);
