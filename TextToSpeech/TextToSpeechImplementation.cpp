@@ -85,11 +85,14 @@ namespace Plugin {
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
         InputValidation::Instance().addValidator("speechid", ExpectedValues<uint32_t>(1, UINT32_MAX));
         InputValidation::Instance().addValidator("speechrate", ExpectedValues<std::string>({"slow", "medium", "fast", "faster", "fastest"}));
-        InputValidation::Instance().addValidator("rate", ExpectedValues<float>(-1.0f, 10.0f));
-        InputValidation::Instance().addValidator("volume", ExpectedValues<float>(-1.0f, 1.0f));
-        InputValidation::Instance().addValidator("pitch", ExpectedValues<float>(-1.0f, 2.0f));
+        InputValidation::Instance().addValidator("rate", ExpectedValues<uint8_t>(0, 100));
+        InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
+        InputValidation::Instance().addValidator("pitch", ExpectedValues<double>(-1.0, 100));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
+        InputValidation::Instance().addValidator<double>("utteranceRate", [](const double& v) {return (v == -1.0) || (v >= 0.0 && v <= 10.0); });
+        InputValidation::Instance().addValidator<double>("utteranceVolume", [](const double& v) {return (v == -1.0) || (v >= 0.0 && v <= 1.0); });
+        InputValidation::Instance().addValidator<double>("pitch", [](const double& v) { return (v == -1.0) || (v >= 0.0 && v <= 1.0);});
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
         TTS::RFCURLObserver::getInstance()->triggerRFC(service, ttsConfig);
@@ -614,24 +617,17 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::SpeakWithUtterance(const string& callsign, const Exchange::ITextToSpeech::SpeechUtterance& utterance, const string& text,\
          uint32_t& speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
-        printf("kykumar implemtation speakwithutterance\n");
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
-        printf("kykumar manager good\n");
         _adminLock.Lock();
-        printf("kykumar lock acquired\n");
         speechid = nextSpeechId();
-        printf("kykumar checking params\n");
         if((!utterance.language.empty() && !InputValidation::Instance().validate("language", toLower(utterance.language)))
         || (!utterance.voice.empty() && !InputValidation::Instance().validate("voice", toLower(utterance.voice)))
-        || (!InputValidation::Instance().validate("rate", utterance.rate))
-        || (!InputValidation::Instance().validate("volume", utterance.volume))) {
-            TTSLOG_WARNING("speak utterance params are invalid");
-            printf("kykumar invalid params: language=%s, voice=%s, volume=%lf, rate=%lf\n",
+        || (!InputValidation::Instance().validate("utteranceRate", utterance.rate))
+        || (!InputValidation::Instance().validate("utteranceVolume", utterance.volume))) {
+            TTSLOG_WARNING("speak utterance params are invalid: language=%s, voice=%s, volume=%lf, rate=%lf\n",
                    utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
             return Core::ERROR_GENERAL;
         }
-        printf("kykumar calling managerspeakWithUtterance: language=%s, voice=%s, volume=%lf, rate=%lf\n",
-               utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
         auto status = _ttsManager->speakWithUtterance(speechid, callsign, utterance, text);
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) status;
         _adminLock.Unlock();

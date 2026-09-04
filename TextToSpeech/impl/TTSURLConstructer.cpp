@@ -72,8 +72,8 @@ std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::strin
     if(!utterance.voice.empty()){
         tmpConfig.setVoice(utterance.voice);
     }
-    tmpConfig.setRate(utterance.rate);
-    tmpConfig.setVolume(utterance.volume);
+    tmpConfig.setUtteranceRate(utterance.rate);
+    tmpConfig.setUtteranceVolume(utterance.volume);
     if(!(config.apiKey().empty()) && !isLocal && !(config.isRFCEnabled())) {
           TTSLOG_INFO("Device using remote sky endpoint");
           return httppostURL(tmpConfig, text, isFallback);
@@ -101,7 +101,7 @@ std::string TTSURLConstructer::httpgetUtteranceURL(TTSConfiguration &config, std
     }
 
     bool TTS1 = ((config.endPointType().compare("TTS2")) != 0);
-    double rate = config.rate();
+    double rate = config.utteranceRate();
     if(rate != -1.0)
     {
         int ttsRate = (rate == 0.0) ? 50 : static_cast<int>(rate * 10);

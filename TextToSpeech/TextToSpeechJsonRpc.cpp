@@ -316,7 +316,6 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     uint32_t TextToSpeech::SpeakWithUtterance(const JsonObject& parameters, JsonObject& response)
     {
         CHECK_TTS_PARAMETER_RETURN_ON_FAIL("text");
-        printf("kykumar jsonrpc utter\n");
         if(_tts) {
             uint32_t speechid= 0;
             Exchange::ITextToSpeech::TTSErrorDetail status;
@@ -334,12 +333,8 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
                 returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
                 return Core::ERROR_NONE;
             }
-            utterance.language = GET_STR(speechContext, "language", "");        
-            #ifndef UNIT_TESTING
-            utterance.voice = ""; //ignore voice from app           
-            #else
+            utterance.language = GET_STR(speechContext, "language", "");               
             utterance.voice = GET_STR(speechContext, "voice", "");
-            #endif
 
             std::string proxyVolume;
             std::string proxyRate;
@@ -359,14 +354,10 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             if(!InputValidation::Instance().validate("double_str", proxyPitch))
                 goto config_failure;
             utterance.pitch = std::stod(proxyPitch);
-
-            printf("kykumar printing params\n");
-            
-            printf("kykumar callsign %s\n", parameters["callsign"].String().c_str());
-            printf("kykumar text %s\n", parameters["text"].String().c_str());
-            printf("kykumar jsonrpc utterance: language=%s, voice=%s, volume=%lf, rate=%lf, pitch=%lf\n",
-                   utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate, utterance.pitch);
-            _tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status);
+            if(_tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) != Core::ERROR_NONE)
+            {
+                return Core::ERROR_GENERAL;
+            }
             response["speechid"] = (int) speechid;
             config_failure:
                 response["TTS_Status"] = static_cast<uint32_t>(status);

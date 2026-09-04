@@ -51,6 +51,8 @@ public:
     bool setEnabled(const bool dnabled);
     bool setVolume(const double volume);
     bool setRate(const uint8_t rate);
+    bool setUtteranceVolume(const double volume);
+    bool setUtteranceRate(const double rate);
     bool setPitch(const double pitch);
     bool setPrimVolDuck(const int8_t primvolduck);
     bool setSATPluginCallsign(const std::string callsign);
@@ -81,8 +83,10 @@ public:
     }
 
     const double &volume() { return m_volume; }
+    const double &utteranceVolume() { return m_utteranceVolume; }
     const double &pitch() { return m_pitch; }
     const uint8_t &rate() { return m_rate; }
+    const double &utteranceRate() { return m_utteranceRate; }
     const int8_t &primVolDuck() { return m_primVolDuck; }
     bool enabled() { return m_enabled; }
     bool isPreemptive() { return m_preemptiveSpeaking; }
@@ -112,6 +116,8 @@ private:
     double m_volume;
     double m_pitch;
     uint8_t m_rate;
+    double m_utteranceVolume;
+    double m_utteranceRate;
     int8_t m_primVolDuck;
     bool m_preemptiveSpeaking;
     bool m_enabled;

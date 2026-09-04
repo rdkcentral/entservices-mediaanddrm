@@ -78,6 +78,9 @@ TTSConfiguration::TTSConfiguration(TTSConfiguration &config)
     m_data.value = config.m_data.value;
     m_data.path = config.m_data.path;
     m_fallbackenabled = config.m_fallbackenabled;
+    m_ttsRFCEndpoint = config.m_ttsRFCEndpoint;
+    m_pitch = config.m_pitch;
+    m_localVoice = config.m_localVoice;
 }
 TTSConfiguration& TTSConfiguration::operator = (const TTSConfiguration &config)
 {
@@ -224,8 +227,18 @@ bool TTSConfiguration::setVolume(const double volume) {
     return false;
 }
 
+bool TTSConfiguration::setUtteranceVolume(const double volume) {
+    if(volume == -1.0 || (volume >= 0.0 && volume <= 1.0))
+    {
+        UPDATE_AND_RETURN(m_utteranceVolume, volume);    
+    }
+    else
+        TTSLOG_VERBOSE("Invalid Utterance Volume input \"%lf\"", volume);
+    return false;
+}
+
 bool TTSConfiguration::setPitch(const double pitch) {
-    if(pitch >= 0.0 && pitch <= 2.0)
+    if((pitch == -1.0) || (pitch >= 0.0 && pitch <= 2.0))
     {
         UPDATE_AND_RETURN(m_pitch, pitch);    
     }
@@ -241,6 +254,16 @@ bool TTSConfiguration::setRate(const uint8_t rate) {
     }
     else
         TTSLOG_VERBOSE("Invalid Rate input \"%u\"", rate);
+    return false;
+}
+
+bool TTSConfiguration::setUtteranceRate(const double rate) {
+    if(rate == -1.0 || (rate >= 0.0 && rate <= 10.0))
+    {
+        UPDATE_AND_RETURN(m_utteranceRate, rate);    
+    }
+    else
+        TTSLOG_VERBOSE("Invalid Utterance Rate input \"%lf\"", rate);
     return false;
 }
 
@@ -461,11 +484,9 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
 
 int TTSSpeaker::speakWithUtterance(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck) {
     TTSLOG_TRACE("id=%d, text=\"%s\"", id, text.c_str());
-printf("kykumar speaker utterance queue data\n");
     SpeechData data(client, id, callsign, text, primVolDuck, utterance);
     
     queueData(data);
-printf("kykumar data queued\n");
     return 0;
 }
 
@@ -912,14 +933,13 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
     }
 
     if(data.hasUtterance && (data.utterance.volume != (-1.0))) {
-        g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.utterance.volume / MAX_VOLUME), NULL);
+        g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.utterance.volume), NULL);
     }
     else{
         // PCM Sink seems to be accepting volume change before PLAYING state
         g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
     }
 
-    printf("kykumar utterance volume %f  client volume %f MAX_VOLUME %d\n", data.utterance.volume, data.client->configuration()->volume(), MAX_VOLUME);
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
 
     systemAudioChangePrimaryVol(MIXGAIN_PRIM, data.primVolDuck);
