@@ -25,6 +25,23 @@
 
 namespace TTS {
 
+    constexpr double DEFAULT_UTTERANCE_RATE = 1.0;
+    constexpr double DEFAULT_UTTERANCE_VOLUME = 1.0;
+    constexpr double DEFAULT_UTTERANCE_PITCH = 1.0;
+
+    constexpr double UNSPECIFIED_UTTERANCE_RATE = -1.0;
+    constexpr double UNSPECIFIED_UTTERANCE_VOLUME = -1.0;
+    constexpr double UNSPECIFIED_UTTERANCE_PITCH = -1.0;
+
+    constexpr double MIN_UTTERANCE_RATE = 0.1;
+    constexpr double MAX_UTTERANCE_RATE = 10.0;
+
+    constexpr double MIN_UTTERANCE_VOLUME = 0.0;
+    constexpr double MAX_UTTERANCE_VOLUME = 1.0;
+
+    constexpr double MIN_UTTERANCE_PITCH = 0.0;
+    constexpr double MAX_UTTERANCE_PITCH = 2.0;
+
     enum SpeechState {
         SPEECH_PENDING = 0,
         SPEECH_IN_PROGRESS,

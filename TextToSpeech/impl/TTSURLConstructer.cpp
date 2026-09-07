@@ -102,7 +102,7 @@ std::string TTSURLConstructer::httpgetUtteranceURL(TTSConfiguration &config, std
 
     bool TTS1 = ((config.endPointType().compare("TTS2")) != 0);
     double rate = config.utteranceRate();
-    if(rate != UNSPECIFIED_UTTERANCE_RATE)
+    if(rate != TTS::UNSPECIFIED_UTTERANCE_RATE)
     {
         int ttsRate = static_cast<int>(rate * 10);
         if(isLocal || TTS1) {

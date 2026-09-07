@@ -35,6 +35,8 @@ namespace Plugin {
         Register("getvoices", &TextToSpeech::GetVoices, this);
         Register("speakwithutterance", &TextToSpeech::SpeakWithUtterance, this);
         Register("listvoices", &TextToSpeech::ListVoices, this);
+        Register("setdeviceconfiguration", &TextToSpeech::SetDeviceConfiguration, this);
+        Register("getdeviceconfiguration", &TextToSpeech::GetDeviceConfiguration, this);
         Register("setttsconfiguration", &TextToSpeech::SetConfiguration, this);
         Register("getttsconfiguration", &TextToSpeech::GetConfiguration, this);
         Register("isttsenabled", &TextToSpeech::IsEnabled, this);
@@ -46,6 +48,7 @@ namespace Plugin {
         Register("getspeechstate", &TextToSpeech::GetSpeechState, this);
         Register("setACL", &TextToSpeech::SetACL, this);
         Register("getapiversion", &TextToSpeech::getapiversion, this);
+        Register("getinterfaceversion", &TextToSpeech::GetInterfaceVersion, this);
 
         InputValidation::Instance().setLogger([] (const char *log) { TTSLOG_WARNING(log); });
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
@@ -185,6 +188,36 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
          return Core::ERROR_NONE;
     }
 
+    uint32_t TextToSpeech::GetInterfaceVersion(const JsonObject& parameters, JsonObject& response)
+    {
+        if(_tts) {
+            uint32_t version = 0;
+            _tts->GetInterfaceVersion(version);
+            response["version"] = version;
+            response["TTS_Status"] = static_cast<uint32_t> (TTS::TTS_OK);
+            returnResponse(true);
+         }
+         return Core::ERROR_NONE;
+    }
+
+    uint32_t TextToSpeech::GetDeviceConfiguration(const JsonObject& parameters, JsonObject& response)
+    {
+        if(_tts) {
+            Exchange::ITextToSpeech::DeviceConfiguration ttsConfig;
+            _tts->GetDeviceConfiguration(ttsConfig);
+            response["ttsendpoint"]         = ttsConfig.ttsEndPoint;
+            response["ttsendpointsecured"]  = ttsConfig.ttsEndPointSecured;
+            response["language"]            = ttsConfig.language;
+            response["voice"]               = ttsConfig.voice;
+            response["rate"]                = ttsConfig.rate;
+            response["volume"]              = ttsConfig.volume;
+            response["pitch"]              = ttsConfig.pitch;
+            response["TTS_Status"] = static_cast<uint32_t> (TTS::TTS_OK);
+            returnResponse(true);
+         }
+         return Core::ERROR_NONE;
+    }
+
     uint32_t TextToSpeech::SetConfiguration(const JsonObject& parameters, JsonObject& response)
     {
         if(_tts) {
@@ -240,6 +273,41 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             _tts->SetConfiguration(config, status);
 
         config_failure:
+            response["TTS_Status"] = static_cast<uint32_t>(status);
+            returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+        }
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TextToSpeech::SetDeviceConfiguration(const JsonObject& parameters, JsonObject& response)
+    {
+        if(_tts) {
+            Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
+            Exchange::ITextToSpeech::DeviceConfiguration config;
+            config.ttsEndPoint = GET_STR(parameters, "ttsendpoint", "");
+            config.ttsEndPointSecured = GET_STR(parameters, "ttsendpointsecured", "");
+            config.language = GET_STR(parameters, "language", "");        
+            #ifndef UNIT_TESTING
+            config.voice = ""; //ignore voice from app           
+            #else
+            config.voice = GET_STR(parameters, "voice", "");
+            #endif
+
+            config.rate = TTS::DEFAULT_UTTERANCE_RATE;
+            config.volume = TTS::DEFAULT_UTTERANCE_VOLUME;
+            config.pitch = TTS::DEFAULT_UTTERANCE_PITCH;
+            if(parameters.HasLabel("rate")) {
+                getNumberParameter("rate", config.rate);
+            }
+            if(parameters.HasLabel("pitch")) {
+                getNumberParameter("pitch", config.pitch);
+            }
+            if(parameters.HasLabel("volume")) {
+                getNumberParameter("volume", config.volume);
+            }
+            if(_tts->SetDeviceConfiguration(config) == Core::ERROR_NONE) {
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK;
+            }
             response["TTS_Status"] = static_cast<uint32_t>(status);
             returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
         }
@@ -336,32 +404,29 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             utterance.language = GET_STR(speechContext, "language", "");               
             utterance.voice = GET_STR(speechContext, "voice", "");
 
-            std::string proxyVolume;
-            std::string proxyRate;
-            std::string proxyPitch;
+            utterance.volume = TTS::UNSPECIFIED_UTTERANCE_VOLUME;
+            utterance.rate = TTS::UNSPECIFIED_UTTERANCE_RATE;
+            utterance.pitch = TTS::UNSPECIFIED_UTTERANCE_PITCH;
+
+            if (speechContext.HasLabel("volume")) {
+                getNumberParameter("volume", utterance.volume);
+            }
+
+            if (speechContext.HasLabel("rate")) {
+                getNumberParameter("rate", utterance.rate);
+            }
+
+            if (speechContext.HasLabel("pitch")) {
+                getNumberParameter("pitch", utterance.pitch);
+            }
             
-            proxyVolume = GET_STR(speechContext, "volume", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyVolume))
-                goto config_failure;
-            utterance.volume = std::stod(proxyVolume);
-
-            proxyRate = GET_STR(speechContext, "rate", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyRate))
-                goto config_failure;
-            utterance.rate = std::stod(proxyRate);
-
-            proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyPitch))
-                goto config_failure;
-            utterance.pitch = std::stod(proxyPitch);
             if(_tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) != Core::ERROR_NONE)
             {
                 return Core::ERROR_GENERAL;
             }
             response["speechid"] = (int) speechid;
-            config_failure:
-                response["TTS_Status"] = static_cast<uint32_t>(status);
-                returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+            response["TTS_Status"] = static_cast<uint32_t>(status);
+            returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
         }
         return Core::ERROR_NONE;
     }
@@ -434,7 +499,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     {
         UNUSED(parameters);
 
-        response["version"] = _apiVersionNumber;
+        response["version"] = ITEXTTOSPEECH_VERSION;
 
         returnResponse(true);
     }

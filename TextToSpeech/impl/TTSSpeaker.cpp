@@ -45,10 +45,10 @@ TTSConfiguration::TTSConfiguration() :
     m_voice(""),
     m_localVoice(""),
     m_volume(MAX_VOLUME),
+    m_pitch(TTS::DEFAULT_UTTERANCE_PITCH),
     m_rate(DEFAULT_RATE),
-    m_utteranceRate(DEFAULT_UTTERANCE_RATE),
-    m_utteranceVolume(DEFAULT_UTTERANCE_VOLUME),
-    m_utterancePitch(DEFAULT_UTTERANCE_PITCH),
+    m_utteranceVolume(TTS::DEFAULT_UTTERANCE_VOLUME),
+    m_utteranceRate(TTS::DEFAULT_UTTERANCE_RATE),
     m_primVolDuck(25),
     m_preemptiveSpeaking(true),
     m_enabled(false),
@@ -231,7 +231,7 @@ bool TTSConfiguration::setVolume(const double volume) {
 }
 
 bool TTSConfiguration::setUtteranceVolume(const double volume) {
-    if(volume == UNSPECIFIED_UTTERANCE_VOLUME || (volume >= MIN_UTTERANCE_VOLUME && volume <= MAX_UTTERANCE_VOLUME))
+    if(volume == TTS::UNSPECIFIED_UTTERANCE_VOLUME || (volume >= TTS::MIN_UTTERANCE_VOLUME && volume <= TTS::MAX_UTTERANCE_VOLUME))
     {
         UPDATE_AND_RETURN(m_utteranceVolume, volume);    
     }
@@ -241,7 +241,7 @@ bool TTSConfiguration::setUtteranceVolume(const double volume) {
 }
 
 bool TTSConfiguration::setPitch(const double pitch) {
-    if((pitch == UNSPECIFIED_UTTERANCE_PITCH) || (pitch >= MIN_UTTERANCE_PITCH && pitch <= MAX_UTTERANCE_PITCH))
+    if((pitch == TTS::UNSPECIFIED_UTTERANCE_PITCH) || (pitch >= TTS::MIN_UTTERANCE_PITCH && pitch <= TTS::MAX_UTTERANCE_PITCH))
     {
         UPDATE_AND_RETURN(m_pitch, pitch);    
     }
@@ -261,7 +261,7 @@ bool TTSConfiguration::setRate(const uint8_t rate) {
 }
 
 bool TTSConfiguration::setUtteranceRate(const double rate) {
-    if(rate == UNSPECIFIED_UTTERANCE_RATE || (rate >= MIN_UTTERANCE_RATE && rate <= MAX_UTTERANCE_RATE))
+    if(rate == TTS::UNSPECIFIED_UTTERANCE_RATE || (rate >= TTS::MIN_UTTERANCE_RATE && rate <= TTS::MAX_UTTERANCE_RATE))
     {
         UPDATE_AND_RETURN(m_utteranceRate, rate);    
     }
@@ -935,7 +935,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
         }
     }
 
-    if(data.hasUtterance && (data.utterance.volume != UNSPECIFIED_UTTERANCE_VOLUME)) {
+    if(data.hasUtterance && (data.utterance.volume != TTS::UNSPECIFIED_UTTERANCE_VOLUME)) {
         g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.utterance.volume), NULL);
     }
     else{

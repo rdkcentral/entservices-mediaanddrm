@@ -183,6 +183,8 @@ namespace Plugin {
         uint32_t GetVoices(const JsonObject& parameters, JsonObject& response);
         uint32_t SetConfiguration(const JsonObject& parameters, JsonObject& response);
         uint32_t GetConfiguration(const JsonObject& parameters, JsonObject& response);
+        uint32_t SetDeviceConfiguration(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetDeviceConfiguration(const JsonObject& parameters, JsonObject& response);
 
         // Mandotory TTS APIs for client application
         uint32_t IsEnabled(const JsonObject& parameters, JsonObject& response);
@@ -199,6 +201,7 @@ namespace Plugin {
 
         //version number API's
         uint32_t getapiversion(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetInterfaceVersion(const JsonObject& parameters, JsonObject& response);
 
         void dispatchJsonEvent(const char *event, const string &data);
         void Deactivated(RPC::IRemoteConnection* connection);
