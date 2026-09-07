@@ -84,7 +84,9 @@ public:
     TTS_Error listVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error listLocalVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error setConfiguration(Configuration &configuration);
+    TTS_Error setDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
     TTS_Error getConfiguration(Configuration &configuration);
+    TTS_Error getDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
     TTS_Error setFallbackText(FallbackData &data);
     TTS_Error setPrimaryVolDuck(const uint8_t prim);
     TTS_Error setAPIKey(string apikey);

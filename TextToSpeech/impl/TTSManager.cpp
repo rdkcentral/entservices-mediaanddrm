@@ -204,7 +204,83 @@ TTS_Error TTSManager::listLocalVoices(std::string language, std::vector<std::str
     return TTS_OK;
 }
 
+TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
+    std::string v = m_defaultConfiguration.voice();
+    
+    bool endpointUpdated = false;
+    endpointUpdated |= m_defaultConfiguration.setEndPoint(configuration.ttsEndPoint);
+    endpointUpdated |= m_defaultConfiguration.setSecureEndPoint(configuration.ttsEndPointSecured);
+
+    /* If new endpoint url provided is using localhost always use that endpoint for VG*/
+    if( m_defaultConfiguration.hasValidLocalEndpoint() && endpointUpdated ) {
+        string url = m_defaultConfiguration.secureEndPoint();
+        if((url.rfind(LOOPBACK_ENDPOINT,0) != std::string::npos)  || (url.rfind(LOCALHOST_ENDPOINT,0) != std::string::npos))
+            m_defaultConfiguration.setLocalEndPoint("");
+    }
+
+    bool languageUpdated = false;
+    /* Set default voice for the language only when voice is empty*/
+    if(!configuration.language.empty() && configuration.voice.empty()) {
+        std::vector<std::string> voices;
+        listVoices(configuration.language, voices);
+        if(voices.empty()) {
+            TTSLOG_WARNING("voice is empty and no voices are defined for the specified language ('%s')!!!", configuration.language.c_str());
+            return TTS_FAIL;
+        }
+        else {
+            m_needsConfigStoreUpdate |= m_defaultConfiguration.setVoice(voices.front());
+            languageUpdated = m_defaultConfiguration.setLanguage(configuration.language);
+            m_needsConfigStoreUpdate |= languageUpdated;
+        }
+    }
+    else {
+        m_needsConfigStoreUpdate |= m_defaultConfiguration.setVoice(configuration.voice);
+        languageUpdated = m_defaultConfiguration.setLanguage(configuration.language);
+        m_needsConfigStoreUpdate |= languageUpdated;
+    }
+
+
+    if( m_defaultConfiguration.hasValidLocalEndpoint() && languageUpdated ) {
+        std::vector<std::string> localVoices;
+        listLocalVoices(m_defaultConfiguration.language(),localVoices);
+        if(localVoices.empty()) {
+            TTSLOG_WARNING("Local Voice is empty and no voices are defined for the specified language ('%s')!!!", m_defaultConfiguration.language().c_str());
+            return TTS_FAIL;
+        } else {
+            m_defaultConfiguration.setLocalVoice(localVoices.front());
+        }
+     }
+
+    m_needsConfigStoreUpdate |= m_defaultConfiguration.setUtteranceVolume(configuration.volume);
+    m_needsConfigStoreUpdate |= m_defaultConfiguration.setUtteranceRate(configuration.rate);
+    m_needsConfigStoreUpdate |= m_defaultConfiguration.setPitch(configuration.pitch);
+
+    TTSLOG_INFO("Default config updated, endPoint=%s, secureEndPoint=%s, lang=%s, voice=%s, vol=%lf, rate=%lf, pitch=%lf",
+            m_defaultConfiguration.endPoint().c_str(),
+            m_defaultConfiguration.secureEndPoint().c_str(),
+            m_defaultConfiguration.language().c_str(),
+            m_defaultConfiguration.voice().c_str(),
+            m_defaultConfiguration.utteranceVolume(),
+            m_defaultConfiguration.utteranceRate(),
+            m_defaultConfiguration.pitch());
+
+    if(v !=  m_defaultConfiguration.voice())
+        m_callback->onVoiceChanged(m_defaultConfiguration.voice());
+    //if any of the configuration attribute changes..config store gets updated
+    if(m_needsConfigStoreUpdate)
+    {
+        if(m_defaultConfiguration.isFallbackEnabled())
+        {
+            initiateDownload();
+        }
+        m_defaultConfiguration.updateConfigStore();
+        m_needsConfigStoreUpdate = false;
+    }
+    return TTS_OK;
+}
+
 TTS_Error TTSManager::setConfiguration(Configuration &configuration) {
+    /* This implementation needs to be removed once we move to device configuration */
     std::string v = m_defaultConfiguration.voice();
     
     bool endpointUpdated = false;
@@ -254,17 +330,15 @@ TTS_Error TTSManager::setConfiguration(Configuration &configuration) {
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setVolume(configuration.volume);
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setRate(configuration.rate);
     m_needsConfigStoreUpdate |= m_defaultConfiguration.setSpeechRate(configuration.speechRate);
-    m_needsConfigStoreUpdate |= m_defaultConfiguration.setPitch(configuration.pitch);
 
-    TTSLOG_INFO("Default config updated, endPoint=%s, secureEndPoint=%s, lang=%s, voice=%s, vol=%lf, rate=%u ,speechrate=%s, pitch=%u",
+    TTSLOG_INFO("Default config updated, endPoint=%s, secureEndPoint=%s, lang=%s, voice=%s, vol=%lf, rate=%u ,speechrate=%s",
             m_defaultConfiguration.endPoint().c_str(),
             m_defaultConfiguration.secureEndPoint().c_str(),
             m_defaultConfiguration.language().c_str(),
             m_defaultConfiguration.voice().c_str(),
             m_defaultConfiguration.volume(),
             m_defaultConfiguration.rate(),
-            m_defaultConfiguration.speechRate().c_str(),
-            m_defaultConfiguration.pitch());
+            m_defaultConfiguration.speechRate().c_str());
 
     if(v !=  m_defaultConfiguration.voice())
         m_callback->onVoiceChanged(m_defaultConfiguration.voice());
@@ -361,7 +435,22 @@ bool TTSManager::checkAccess(const string &method,string &callsign)
     }
 }
 
+TTS_Error TTSManager::getDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
+    TTSLOG_TRACE("Getting Default Device Configuration");
+
+    configuration.ttsEndPoint = m_defaultConfiguration.endPoint();
+    configuration.ttsEndPointSecured = m_defaultConfiguration.isRFCEnabled() ? m_defaultConfiguration.rfcEndPoint() : m_defaultConfiguration.secureEndPoint();
+    configuration.language = m_defaultConfiguration.language();
+    configuration.voice = m_defaultConfiguration.voice();
+    configuration.volume = m_defaultConfiguration.utteranceVolume();
+    configuration.rate = m_defaultConfiguration.utteranceRate();
+    configuration.pitch = m_defaultConfiguration.pitch();
+
+    return TTS_OK;
+}
+
 TTS_Error TTSManager::getConfiguration(Configuration &configuration) {
+    /* This implementation needs to be removed once we move to device configuration */
     TTSLOG_TRACE("Getting Default Configuration");
 
     configuration.ttsEndPoint = m_defaultConfiguration.endPoint();

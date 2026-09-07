@@ -46,6 +46,9 @@ TTSConfiguration::TTSConfiguration() :
     m_localVoice(""),
     m_volume(MAX_VOLUME),
     m_rate(DEFAULT_RATE),
+    m_utteranceRate(DEFAULT_UTTERANCE_RATE),
+    m_utteranceVolume(DEFAULT_UTTERANCE_VOLUME),
+    m_utterancePitch(DEFAULT_UTTERANCE_PITCH),
     m_primVolDuck(25),
     m_preemptiveSpeaking(true),
     m_enabled(false),
@@ -228,7 +231,7 @@ bool TTSConfiguration::setVolume(const double volume) {
 }
 
 bool TTSConfiguration::setUtteranceVolume(const double volume) {
-    if(volume == -1.0 || (volume >= 0.0 && volume <= 1.0))
+    if(volume == UNSPECIFIED_UTTERANCE_VOLUME || (volume >= MIN_UTTERANCE_VOLUME && volume <= MAX_UTTERANCE_VOLUME))
     {
         UPDATE_AND_RETURN(m_utteranceVolume, volume);    
     }
@@ -238,7 +241,7 @@ bool TTSConfiguration::setUtteranceVolume(const double volume) {
 }
 
 bool TTSConfiguration::setPitch(const double pitch) {
-    if((pitch == -1.0) || (pitch >= 0.0 && pitch <= 2.0))
+    if((pitch == UNSPECIFIED_UTTERANCE_PITCH) || (pitch >= MIN_UTTERANCE_PITCH && pitch <= MAX_UTTERANCE_PITCH))
     {
         UPDATE_AND_RETURN(m_pitch, pitch);    
     }
@@ -258,7 +261,7 @@ bool TTSConfiguration::setRate(const uint8_t rate) {
 }
 
 bool TTSConfiguration::setUtteranceRate(const double rate) {
-    if(rate == -1.0 || (rate >= 0.0 && rate <= 10.0))
+    if(rate == UNSPECIFIED_UTTERANCE_RATE || (rate >= MIN_UTTERANCE_RATE && rate <= MAX_UTTERANCE_RATE))
     {
         UPDATE_AND_RETURN(m_utteranceRate, rate);    
     }
@@ -932,7 +935,7 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
         }
     }
 
-    if(data.hasUtterance && (data.utterance.volume != (-1.0))) {
+    if(data.hasUtterance && (data.utterance.volume != UNSPECIFIED_UTTERANCE_VOLUME)) {
         g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.utterance.volume), NULL);
     }
     else{

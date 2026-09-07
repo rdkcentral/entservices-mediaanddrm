@@ -89,9 +89,9 @@ namespace Plugin {
         InputValidation::Instance().addValidator("volume", ExpectedValues<uint8_t>(0, 100));
         InputValidation::Instance().addValidator("primvolduckpercent", ExpectedValues<std::string>("^-?[0-9]+$"));
         InputValidation::Instance().addValidator("setPrimaryVolDuck", ExpectedValues<uint8_t>(0, 100));
-        InputValidation::Instance().addValidator<double>("utteranceRate", [](const double& v) {return (v == -1.0) || (v >= 0.0 && v <= 10.0); });
+        InputValidation::Instance().addValidator<double>("utteranceRate", [](const double& v) {return (v == -1.0) || (v >= 0.1 && v <= 10.0); });
         InputValidation::Instance().addValidator<double>("utteranceVolume", [](const double& v) {return (v == -1.0) || (v >= 0.0 && v <= 1.0); });
-        InputValidation::Instance().addValidator<double>("pitch", [](const double& v) { return (v == -1.0) || (v >= 0.0 && v <= 1.0);});
+        InputValidation::Instance().addValidator<double>("pitch", [](const double& v) { return (v == -1.0) || (v >= 0.0 && v <= 2.0);});
 
         TTS::TTSConfiguration *ttsConfig = _ttsManager->configuration();
         TTS::RFCURLObserver::getInstance()->triggerRFC(service, ttsConfig);
@@ -420,24 +420,24 @@ namespace Plugin {
         || (!object.ttsEndPointSecured.empty() && !InputValidation::Instance().validate("ttsendpointsecured", object.ttsEndPointSecured))
         || (!object.language.empty() && !InputValidation::Instance().validate("language", toLower(object.language)))
         || (!object.voice.empty() && !InputValidation::Instance().validate("voice", toLower(object.voice)))
-        || (!InputValidation::Instance().validate("rate", object.rate))
+        || (!InputValidation::Instance().validate("utteranceRate", object.rate))
         || (!InputValidation::Instance().validate("pitch", object.pitch))
-        || (!InputValidation::Instance().validate("volume", object.volume))) {
+        || (!InputValidation::Instance().validate("utteranceVolume", object.volume))) {
             TTSLOG_WARNING("Input device configuration(s) are invalid");
             return Core::ERROR_GENERAL;
         }
 
-        TTS::Configuration config;
+        Exchange::ITextToSpeech::DeviceConfiguration config;
         config.ttsEndPoint = object.ttsEndPoint;
         config.ttsEndPointSecured = object.ttsEndPointSecured;
         config.language =  object.language;
         config.voice =  object.voice;
-        config.volume = (double) object.volume;
+        config.volume = object.volume;
         config.rate =  object.rate;
         config.pitch =  object.pitch;
 
         _adminLock.Lock();
-        auto status = _ttsManager->setConfiguration(config);
+        auto status = _ttsManager->setDeviceConfiguration(config);
         _adminLock.Unlock();
 
         TTSLOG_INFO("Set Configuration invoked\n");
@@ -446,10 +446,12 @@ namespace Plugin {
         TTSLOG_INFO("Language : %s", config.language.c_str());
         TTSLOG_INFO("Voice : %s", config.voice.c_str());
         TTSLOG_INFO("Volume : %lf",config.volume);
-        TTSLOG_INFO("Rate : %u", config.rate);
+        TTSLOG_INFO("Rate : %lf", config.rate);
 
         logResponse(status);
-        OnConfigChanged(object);
+        if (status == TTS::TTS_OK) {
+            OnConfigChanged(object);
+         }
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
@@ -543,10 +545,10 @@ namespace Plugin {
 
     Core::hresult TextToSpeechImplementation::GetDeviceConfiguration(Exchange::ITextToSpeech::DeviceConfiguration &exchangeDeviceConfig) const
     {
-        TTS::Configuration ttsConfig;
+        Exchange::ITextToSpeech::DeviceConfiguration ttsConfig;
 
         _adminLock.Lock();
-        auto status = _ttsManager->getConfiguration(ttsConfig);
+        auto status = _ttsManager->getDeviceConfiguration(ttsConfig);
         _adminLock.Unlock();
 
         if(status == TTS::TTS_OK) {
@@ -554,9 +556,9 @@ namespace Plugin {
             exchangeDeviceConfig.ttsEndPointSecured = ttsConfig.ttsEndPointSecured;
             exchangeDeviceConfig.language           = ttsConfig.language;
             exchangeDeviceConfig.voice              = ttsConfig.voice;
-            exchangeDeviceConfig.rate               = (double) ttsConfig.rate;
-            exchangeDeviceConfig.volume             = (double) ttsConfig.volume;
-            exchangeDeviceConfig.pitch             = (double) ttsConfig.pitch;
+            exchangeDeviceConfig.rate               = ttsConfig.rate;
+            exchangeDeviceConfig.volume             = ttsConfig.volume;
+            exchangeDeviceConfig.pitch             = ttsConfig.pitch;
         }
 
         TTSLOG_INFO("Get DeviceConfiguration invoked\n");
@@ -565,8 +567,8 @@ namespace Plugin {
         TTSLOG_INFO("Language : %s",  ttsConfig.language.c_str());
         TTSLOG_INFO("Voice : %s",  ttsConfig.voice.c_str());
         TTSLOG_INFO("Volume : %lf", ttsConfig.volume);
-        TTSLOG_INFO("Rate : %lf",  (double) ttsConfig.rate);
-        TTSLOG_INFO("Pitch : %lf",  (double) ttsConfig.pitch);
+        TTSLOG_INFO("Rate : %lf",  ttsConfig.rate);
+        TTSLOG_INFO("Pitch : %lf",  ttsConfig.pitch);
 
         logResponse(status);
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
