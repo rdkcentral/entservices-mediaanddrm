@@ -279,6 +279,61 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
         return Core::ERROR_NONE;
     }
 
+    uint32_t TextToSpeech::GetCapability(const JsonObject& parameters, JsonObject& response)
+    {
+        if (_tts) {
+            Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
+            string capabilityString = parameters["capability"].String();
+            Exchange::ITextToSpeech::Capability capability = Exchange::ITextToSpeech::Capability::UNSET;
+            if (capabilityString == "raw_text") {
+                capability = Exchange::ITextToSpeech::Capability::RAW_TEXT;
+            } else if (capabilityString == "ssml") {
+                capability = Exchange::ITextToSpeech::Capability::SSML;
+            }
+            bool hasCapability = false;
+            if (_tts->GetCapability(capability, hasCapability) == Core::ERROR_NONE) {
+                response["HasCapability"] = hasCapability;
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK;
+            }
+            response["TTS_Status"] = static_cast<uint32_t>(status);
+            returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+        }
+        return Core::ERROR_NONE;
+    }
+
+    uint32_t TextToSpeech::GetCapabilities(const JsonObject& parameters, JsonObject& response)
+    {
+        if (_tts) {
+            Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
+            Exchange::ITextToSpeech::ICapabilityIterator* capabilities = nullptr;
+
+            if(_tts->GetCapabilities(capabilities) == Core::ERROR_NONE){
+                JsonArray capabilityArray;
+                Exchange::ITextToSpeech::Capability capability;
+                while (capabilities->Next(capability)) {
+                    switch (capability) {
+                    case Exchange::ITextToSpeech::Capability::RAW_TEXT:
+                        capabilityArray.Add("RAW_TEXT");
+                        break;
+
+                    case Exchange::ITextToSpeech::Capability::SSML:
+                        capabilityArray.Add("SSML");
+                        break;
+
+                    default:
+                        break;
+                    }
+                }
+                response["Capabilities"] = capabilityArray;
+                capabilities->Release();
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK;
+            }
+            response["TTS_Status"] = static_cast<uint32_t>(status);
+            returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+        }
+        return Core::ERROR_NONE;
+    }
+
     uint32_t TextToSpeech::SetDeviceConfiguration(const JsonObject& parameters, JsonObject& response)
     {
         if(_tts) {

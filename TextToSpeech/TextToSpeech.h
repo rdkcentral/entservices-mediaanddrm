@@ -191,6 +191,8 @@ namespace Plugin {
         uint32_t Speak(const JsonObject& parameters, JsonObject& response);
         uint32_t SpeakWithUtterance(const JsonObject& parameters, JsonObject& response);
         uint32_t Cancel(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetCapability(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetCapabilities(const JsonObject& parameters, JsonObject& response);
 
         // These extended APIS can be used by Client application if needed
         uint32_t Pause(const JsonObject& parameters, JsonObject& response);
