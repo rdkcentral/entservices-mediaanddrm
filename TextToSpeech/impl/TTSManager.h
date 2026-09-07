@@ -31,7 +31,7 @@
 namespace TTS {
 
 struct Configuration {
-    Configuration() : volume(0), rate(0), pitch(0) {};
+    Configuration() : volume(0), rate(0) {};
     ~Configuration() {}
 
     std::string ttsEndPoint;
@@ -42,7 +42,6 @@ struct Configuration {
     std::string speechRate;
     double volume;
     uint8_t rate;
-    double pitch;
 };
 
 struct VoiceInfo {

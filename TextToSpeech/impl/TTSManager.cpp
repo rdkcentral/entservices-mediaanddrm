@@ -460,7 +460,6 @@ TTS_Error TTSManager::getConfiguration(Configuration &configuration) {
     configuration.speechRate = m_defaultConfiguration.speechRate();
     configuration.volume = m_defaultConfiguration.volume();
     configuration.rate = m_defaultConfiguration.rate();
-    configuration.pitch = m_defaultConfiguration.pitch();
 
     return TTS_OK;
 }
