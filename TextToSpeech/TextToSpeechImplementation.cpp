@@ -328,30 +328,20 @@ namespace Plugin {
             status = _ttsManager->getVoices(language, ttsVoices);
             _adminLock.Unlock();
         }
-        std::vector<Exchange::ITextToSpeech::VoiceInfo> exchangeVoices;
 
         if (status == TTS::TTS_OK) {
-
             for (const auto& voice : ttsVoices) {
                 TTSLOG_INFO("Voice Name : %s, Language : %s, IsDefault : %s",voice.name.c_str(),voice.language.c_str(),voice.isDefault ? "true" : "false");
-                Exchange::ITextToSpeech::VoiceInfo exchangeVoice;
-
-                exchangeVoice.name       = voice.name;
-                exchangeVoice.language   = voice.language;
-                exchangeVoice.isDefault  = voice.isDefault;
-
-                exchangeVoices.push_back(exchangeVoice);
             } 
-        } 
-
-        voices = Core::Service<RPC::IteratorType<Exchange::ITextToSpeech::IVoiceInfoIterator>>
-        ::Create<Exchange::ITextToSpeech::IVoiceInfoIterator>(exchangeVoices);
-
+            voices = Core::Service<RPC::IteratorType<IVoiceInfoIterator>>::Create<IVoiceInfoIterator>(ttsVoices);
+            if (voices == nullptr) {
+                TTSLOG_ERROR("Failed to create voice iterator");
+                status = TTS::TTS_FAIL;
+            }
+        }
         logResponse(status);
 
-        return (status == TTS::TTS_OK)
-            ? Core::ERROR_NONE
-            : Core::ERROR_GENERAL;
+        return (status == TTS::TTS_OK) ? Core::ERROR_NONE : Core::ERROR_GENERAL;
    } 
 
     Core::hresult TextToSpeechImplementation::ListVoices(const string language, RPC::IStringIterator*& voices) const
@@ -674,7 +664,7 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::GetCapabilities(ICapabilityIterator*& capabilities) const
     {
         std::vector<Capability> supportedCapabilities = {Capability::RAW_TEXT};
-        capabilities = Core::ServiceType<RPC::IteratorType<ICapabilityIterator>>::Create<ICapabilityIterator>(std::move(supportedCapabilities));
+        capabilities = Core::ServiceType<RPC::IteratorType<ICapabilityIterator>>::Create<ICapabilityIterator>(supportedCapabilities);
         if (capabilities == nullptr)
         {
             return Core::ERROR_GENERAL;
