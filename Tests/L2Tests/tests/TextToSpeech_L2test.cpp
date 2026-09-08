@@ -179,12 +179,13 @@ TextToSpeechTest::TextToSpeechTest()
             return Core::ERROR_NONE;
         }));
 
-    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_))
-        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status) {
+    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_,  testing::_))
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, string& reason) {
 
             ipversion = "IPv4";
             interface = "eth0";
             status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+            reason = "";
 
             return Core::ERROR_NONE;
         }));
@@ -523,6 +524,307 @@ TEST_F(TextToSpeechTest, speechCompleteEventCheck)
     EXPECT_EQ(Core::ERROR_NONE, status);
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+}
+
+TEST_F(TextToSpeechTest, speakWithUtterance)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+    JsonObject speechContext;
+    speechContext["language"] = "en-US";
+    speechContext["voice"] = "default";
+    speechContext["volume"] = 0.8;
+    speechContext["rate"] = 1.0;
+    speechContext["pitch"] = 1.0;
+
+    parameterSpeak["speechContext"] = speechContext;
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+}
+
+TEST_F(TextToSpeechTest, speakWithUtteranceEmptySpeechContext)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+}
+
+TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedRate)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+    JsonObject speechContext;
+    speechContext["language"] = "en-US";
+    speechContext["voice"] = "default";
+    speechContext["volume"] = 0.8;
+    speechContext["rate"] = -1.0;
+    speechContext["pitch"] = 1.0;
+
+    parameterSpeak["speechContext"] = speechContext;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+}
+
+TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedVol)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+    JsonObject speechContext;
+    speechContext["language"] = "en-US";
+    speechContext["voice"] = "default";
+    speechContext["volume"] = -1.0;
+    speechContext["rate"] = 1.0;
+    speechContext["pitch"] = 1.0;
+
+    parameterSpeak["speechContext"] = speechContext;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    sleep(2);
+    g_timeout_add(100, (GSourceFunc)push_data, this->sourceMock); // every 100ms
+    sleep(2);
+    g_signal_emit_by_name(this->sourceMock, "end-of-stream", NULL);
+    sleep(2);
+    uint32_t signalled = WaitForRequestStatus(JSON_TIMEOUT);
+    EXPECT_TRUE(signalled);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+    enableTTS(false);
+    jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechcomplete"));
+}
+
+TEST_F(TextToSpeechTest, speakWithUtteranceInvalidRate)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+    JsonObject speechContext;
+    speechContext["language"] = "en-US";
+    speechContext["voice"] = "default";
+    speechContext["volume"] = -1.0;
+    speechContext["rate"] = 0.0;
+    speechContext["pitch"] = 1.0;
+
+    parameterSpeak["speechContext"] = speechContext;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
+}
+
+TEST_F(TextToSpeechTest, speakWithUtteranceInvalidVolume)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+
+    // Enable TTS
+    enableTTS(true);
+
+    // Subscribe to willspeakEvent
+    status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
+        [this](const JsonObject event) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            {
+                std::string eventString;
+                event.ToString(eventString);
+                TEST_LOG("Event received in subscription callback: %s", eventString.c_str());
+                m_event_signalled = 1;
+            }
+            m_condition_variable.notify_one();
+        });
+
+    // setACL
+    setACL();
+
+    // Call Speak
+    JsonObject parameterSpeak;
+    JsonObject responseSpeak;
+    std::string text = "Hello Testing";
+    std::string callsign = "testApp";
+    parameterSpeak["text"] = text;
+    parameterSpeak["callsign"] = callsign;
+    parameterSpeak["callsign"] = callsign;
+    JsonObject speechContext;
+    speechContext["language"] = "en-US";
+    speechContext["voice"] = "default";
+    speechContext["volume"] = -3.0;
+    speechContext["rate"] = 0.0;
+    speechContext["pitch"] = 1.0;
+
+    parameterSpeak["speechContext"] = speechContext;
+
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
 }
 
 TEST_F(TextToSpeechTest, speechInterruptEventCheck)
