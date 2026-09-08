@@ -347,24 +347,30 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             #else
             config.voice = GET_STR(parameters, "voice", "");
             #endif
+            
+            std::string proxyRate;
+            std::string proxyPitch;
+            std::string proxyVolume = GET_STR(parameters, "volume", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyVolume))
+                goto config_failure;
+            config.volume = std::stod(proxyVolume);
 
-            config.rate = TTS::DEFAULT_UTTERANCE_RATE;
-            config.volume = TTS::DEFAULT_UTTERANCE_VOLUME;
-            config.pitch = TTS::DEFAULT_UTTERANCE_PITCH;
-            if(parameters.HasLabel("rate")) {
-                getNumberParameter("rate", config.rate);
-            }
-            if(parameters.HasLabel("pitch")) {
-                getNumberParameter("pitch", config.pitch);
-            }
-            if(parameters.HasLabel("volume")) {
-                getNumberParameter("volume", config.volume);
-            }
+            proxyRate = GET_STR(parameters, "rate", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyRate))
+                goto config_failure;
+            config.rate = std::stod(proxyRate);
+
+            proxyPitch = GET_STR(parameters, "pitch", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyPitch))
+                goto config_failure;
+            config.pitch = std::stod(proxyPitch);
+
             if(_tts->SetDeviceConfiguration(config) == Core::ERROR_NONE) {
                 status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK;
             }
-            response["TTS_Status"] = static_cast<uint32_t>(status);
-            returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+            config_failure:
+                response["TTS_Status"] = static_cast<uint32_t>(status);
+                returnResponse(status == Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
         }
         return Core::ERROR_NONE;
     }
@@ -441,7 +447,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
         CHECK_TTS_PARAMETER_RETURN_ON_FAIL("text");
         if(_tts) {
             uint32_t speechid= 0;
-            Exchange::ITextToSpeech::TTSErrorDetail status;
+            Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
             // speechContext is optional
             JsonObject speechContext;
             Exchange::ITextToSpeech::SpeechUtterance utterance;
@@ -459,29 +465,31 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             utterance.language = GET_STR(speechContext, "language", "");               
             utterance.voice = GET_STR(speechContext, "voice", "");
 
-            utterance.volume = TTS::UNSPECIFIED_UTTERANCE_VOLUME;
-            utterance.rate = TTS::UNSPECIFIED_UTTERANCE_RATE;
-            utterance.pitch = TTS::UNSPECIFIED_UTTERANCE_PITCH;
+            std::string proxyPitch;
+            std::string proxyRate;
+            std::string proxyVolume = GET_STR(speechContext, "volume", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyVolume))
+                goto config_failure;
+            utterance.volume = std::stod(proxyVolume);
 
-            if (speechContext.HasLabel("volume")) {
-                getNumberParameter("volume", utterance.volume);
-            }
+            proxyRate = GET_STR(speechContext, "rate", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyRate))
+                goto config_failure;
+            utterance.rate = std::stod(proxyRate);
 
-            if (speechContext.HasLabel("rate")) {
-                getNumberParameter("rate", utterance.rate);
-            }
-
-            if (speechContext.HasLabel("pitch")) {
-                getNumberParameter("pitch", utterance.pitch);
-            }
+            proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
+            if(!InputValidation::Instance().validate("double_str", proxyPitch))
+                goto config_failure;
+            utterance.pitch = std::stod(proxyPitch);
             
             if(_tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) != Core::ERROR_NONE)
             {
                 return Core::ERROR_GENERAL;
             }
             response["speechid"] = (int) speechid;
-            response["TTS_Status"] = static_cast<uint32_t>(status);
-            returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
+            config_failure:
+                response["TTS_Status"] = static_cast<uint32_t>(status);
+                returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
         }
         return Core::ERROR_NONE;
     }
