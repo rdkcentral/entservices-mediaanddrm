@@ -1845,7 +1845,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtterance) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"female\","
                "\"volume\":\"0.8\","
@@ -1863,7 +1863,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"female\","
                "\"volume\":\"0.8\","
@@ -1876,7 +1876,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"female\","
                "\"volume\":\"2.8\","
@@ -1890,7 +1890,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"female\","
                "\"volume\":\"2.8\","
@@ -1903,7 +1903,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
     mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
-    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"female\","
                "\"volume\":\"-1.0\","
