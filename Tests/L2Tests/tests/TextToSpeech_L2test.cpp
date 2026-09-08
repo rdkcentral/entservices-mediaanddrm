@@ -1267,7 +1267,7 @@ TEST_F(TextToSpeechTest, getVoicesInvalidLanguage)
     JsonObject voiceResponse;
     voiceParameter["language"] = "dutch";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
-    EXPECT_EQ(Core::ERROR_NONE, status);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
 }
 
 TEST_F(TextToSpeechTest, speakWithoutACL)
