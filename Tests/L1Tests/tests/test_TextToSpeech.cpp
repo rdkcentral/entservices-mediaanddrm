@@ -1851,7 +1851,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtterance) {
                "\"volume\":\"0.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
-               "}"), response));
+               "}}"), response));
     sleep(3);
 
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
@@ -1869,7 +1869,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
                "\"volume\":\"0.8\","
                "\"rate\":\"0.0\","
                "\"pitch\":\"1.0\""
-               "}"), response));
+               "}}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
@@ -1882,7 +1882,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
                "\"volume\":\"2.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
-               "}"), response));
+               "}}"), response));
 
 }
 
@@ -1896,7 +1896,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
                "\"volume\":\"2.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"5.0\""
-               "}"), response));
+               "}}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
@@ -1909,7 +1909,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
                "\"volume\":\"-1.0\","
                "\"rate\":\"-1.0\","
                "\"pitch\":\"-1.0\""
-               "}"), response));
+               "}}"), response));
     sleep(3);
 
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));

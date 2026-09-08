@@ -128,7 +128,7 @@ TTS_Error TTSManager::listVoices(std::string language,std::vector<std::string>& 
     return TTS_OK;
 }
 
-TTS_Error TTSManager::getVoices(std::string language,std::vector<VoiceInfo>& voices) {
+TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::Exchange::ITextToSpeech::VoiceInfo>& voices) {
     bool returnCurrentConfiguration = false;
     std::string key = "voice_for_";
     voices.clear();
@@ -141,7 +141,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<VoiceInfo>& voi
         auto it = m_defaultConfiguration.m_others.find(key);
         if(it != m_defaultConfiguration.m_others.end()) {
             for(size_t i = 0; i < it->second.size(); ++i) {
-                VoiceInfo voiceInfo;
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = it->second[i];
                 voiceInfo.language = language;
                 voiceInfo.isDefault = (i == 0);
@@ -156,7 +156,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<VoiceInfo>& voi
         auto it = m_defaultConfiguration.m_others.find(key);
         if(it != m_defaultConfiguration.m_others.end()) {
             for(size_t i = 0; i < it->second.size(); ++i) {
-                VoiceInfo voiceInfo;
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = it->second[i];
                 voiceInfo.language = currentLanguage;
                 voiceInfo.isDefault = (i == 0);
@@ -176,7 +176,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<VoiceInfo>& voi
                     it->first.substr(strlen("voice_for_"));
 
                 for(size_t i = 0; i < it->second.size(); ++i) {
-                    VoiceInfo voiceInfo;
+                    WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                     voiceInfo.name = it->second[i];
                     voiceInfo.language = lang;
                     voiceInfo.isDefault = (i == 0);

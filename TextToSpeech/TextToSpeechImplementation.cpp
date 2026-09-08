@@ -319,7 +319,7 @@ namespace Plugin {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
 
         TTSLOG_INFO("GetVoices\n");
-        std::vector<TTS::VoiceInfo> ttsVoices;
+        std::vector<Exchange::ITextToSpeech::VoiceInfo> ttsVoices;
         auto status = TTS::TTS_FAIL;
 
         if (InputValidation::Instance().validate("language", toLower(language))) {
@@ -624,9 +624,10 @@ namespace Plugin {
         if((!utterance.language.empty() && !InputValidation::Instance().validate("language", toLower(utterance.language)))
         || (!utterance.voice.empty() && !InputValidation::Instance().validate("voice", toLower(utterance.voice)))
         || (!InputValidation::Instance().validate("utteranceRate", utterance.rate))
+        || (!InputValidation::Instance().validate("pitch", utterance.pitch))
         || (!InputValidation::Instance().validate("utteranceVolume", utterance.volume))) {
-            TTSLOG_WARNING("speak utterance params are invalid: language=%s, voice=%s, volume=%lf, rate=%lf\n",
-                   utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate);
+            TTSLOG_WARNING("speak utterance params are invalid: language=%s, voice=%s, volume=%lf, rate=%lf, pitch = %lf\n",
+                   utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate, utterance.pitch);
             _adminLock.Unlock();
             return Core::ERROR_GENERAL;
         }

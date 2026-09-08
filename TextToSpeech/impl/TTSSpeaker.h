@@ -30,7 +30,6 @@
 #include <thread>
 #include <vector>
 #include <condition_variable>
-#include <optional>
 
 #include "TTSCommon.h"
 #include "TTSConfiguration.h"

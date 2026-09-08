@@ -283,6 +283,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
     {
         if (_tts) {
             Exchange::ITextToSpeech::TTSErrorDetail status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_FAIL;
+            CHECK_TTS_PARAMETER_RETURN_ON_FAIL("capability");
             string capabilityString = parameters["capability"].String();
             Exchange::ITextToSpeech::Capability capability = Exchange::ITextToSpeech::Capability::UNSET;
             if (capabilityString == "raw_text") {
@@ -460,7 +461,6 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
                 response["speechid"] = (int) speechid;
                 response["TTS_Status"] = static_cast<uint32_t>(status);
                 returnResponse(status ==  Exchange::ITextToSpeech::TTSErrorDetail::TTS_OK);
-                return Core::ERROR_NONE;
             }
             utterance.language = GET_STR(speechContext, "language", "");               
             utterance.voice = GET_STR(speechContext, "voice", "");
@@ -482,10 +482,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
                 goto config_failure;
             utterance.pitch = std::stod(proxyPitch);
             
-            if(_tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) != Core::ERROR_NONE)
-            {
-                return Core::ERROR_GENERAL;
-            }
+            _tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) ;
             response["speechid"] = (int) speechid;
             config_failure:
                 response["TTS_Status"] = static_cast<uint32_t>(status);

@@ -44,12 +44,6 @@ struct Configuration {
     uint8_t rate;
 };
 
-struct VoiceInfo {
-    std::string name;
-    std::string language;
-    bool isDefault;
-};
-
 class TTSEventCallback {
 public:
     TTSEventCallback() {}
@@ -79,7 +73,7 @@ public:
     TTS_Error enableTTS(bool enable);
     bool isTTSEnabled();
     void initiateDownload();
-    TTS_Error getVoices(std::string language,std::vector<VoiceInfo>& voices);
+    TTS_Error getVoices(std::string language,std::vector<WPEFramework::Exchange::ITextToSpeech::VoiceInfo>& voices);
     TTS_Error listVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error listLocalVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error setConfiguration(Configuration &configuration);
