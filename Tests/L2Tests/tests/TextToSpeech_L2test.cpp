@@ -562,7 +562,7 @@ TEST_F(TextToSpeechTest, speakWithUtterance)
     parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
-    speechContext["voice"] = "default";
+    speechContext["voice"] = "carol";
     speechContext["volume"] = 0.8;
     speechContext["rate"] = 1.0;
     speechContext["pitch"] = 1.0;
@@ -667,7 +667,7 @@ TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedRate)
     parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
-    speechContext["voice"] = "default";
+    speechContext["voice"] = "carol";
     speechContext["volume"] = 0.8;
     speechContext["rate"] = -1.0;
     speechContext["pitch"] = 1.0;
@@ -724,7 +724,7 @@ TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedVol)
     parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
-    speechContext["voice"] = "default";
+    speechContext["voice"] = "carol";
     speechContext["volume"] = -1.0;
     speechContext["rate"] = 1.0;
     speechContext["pitch"] = 1.0;
@@ -767,7 +767,7 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidRate)
     parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
-    speechContext["voice"] = "default";
+    speechContext["voice"] = "carol";
     speechContext["volume"] = -1.0;
     speechContext["rate"] = 0.0;
     speechContext["pitch"] = 1.0;
@@ -815,7 +815,7 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidVolume)
     parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
-    speechContext["voice"] = "default";
+    speechContext["voice"] = "carol";
     speechContext["volume"] = -3.0;
     speechContext["rate"] = 0.0;
     speechContext["pitch"] = 1.0;
