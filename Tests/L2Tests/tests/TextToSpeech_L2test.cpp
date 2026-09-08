@@ -752,8 +752,6 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidRate)
     // SetTTSConfiguration
     setTTSConfiguration();
 
-    // Enable TTS
-    enableTTS(true);
     // setACL
     setACL();
 
@@ -785,9 +783,6 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidVolume)
 
     // SetTTSConfiguration
     setTTSConfiguration();
-
-    // Enable TTS
-    enableTTS(true);
 
     // Subscribe to willspeakEvent
     status = jsonrpc.Subscribe<JsonObject>(JSON_TIMEOUT, _T("onspeechcomplete"),
