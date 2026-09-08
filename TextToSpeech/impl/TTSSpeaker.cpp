@@ -31,7 +31,7 @@
 
 namespace TTS {
 
-std::map<std::string, std::string> TTSConfiguration::m_others;
+std::map<std::string, std::vector<std::string>> TTSConfiguration::m_others;
 
 TTSConfiguration::TTSConfiguration() :
     m_ttsEndPoint(""),
@@ -45,7 +45,10 @@ TTSConfiguration::TTSConfiguration() :
     m_voice(""),
     m_localVoice(""),
     m_volume(MAX_VOLUME),
+    m_pitch(TTS::DEFAULT_UTTERANCE_PITCH),
     m_rate(DEFAULT_RATE),
+    m_utteranceVolume(TTS::DEFAULT_UTTERANCE_VOLUME),
+    m_utteranceRate(TTS::DEFAULT_UTTERANCE_RATE),
     m_primVolDuck(25),
     m_preemptiveSpeaking(true),
     m_enabled(false),
@@ -78,6 +81,9 @@ TTSConfiguration::TTSConfiguration(TTSConfiguration &config)
     m_data.value = config.m_data.value;
     m_data.path = config.m_data.path;
     m_fallbackenabled = config.m_fallbackenabled;
+    m_ttsRFCEndpoint = config.m_ttsRFCEndpoint;
+    m_pitch = config.m_pitch;
+    m_localVoice = config.m_localVoice;
 }
 TTSConfiguration& TTSConfiguration::operator = (const TTSConfiguration &config)
 {
@@ -224,6 +230,26 @@ bool TTSConfiguration::setVolume(const double volume) {
     return false;
 }
 
+bool TTSConfiguration::setUtteranceVolume(const double volume) {
+    if(volume == TTS::UNSPECIFIED_UTTERANCE_VOLUME || (volume >= TTS::MIN_UTTERANCE_VOLUME && volume <= TTS::MAX_UTTERANCE_VOLUME))
+    {
+        UPDATE_AND_RETURN(m_utteranceVolume, volume);    
+    }
+    else
+        TTSLOG_VERBOSE("Invalid Utterance Volume input \"%lf\"", volume);
+    return false;
+}
+
+bool TTSConfiguration::setPitch(const double pitch) {
+    if((pitch == TTS::UNSPECIFIED_UTTERANCE_PITCH) || (pitch >= TTS::MIN_UTTERANCE_PITCH && pitch <= TTS::MAX_UTTERANCE_PITCH))
+    {
+        UPDATE_AND_RETURN(m_pitch, pitch);    
+    }
+    else
+        TTSLOG_VERBOSE("Invalid pitch input \"%lf\"", pitch);
+    return false;
+}
+
 bool TTSConfiguration::setRate(const uint8_t rate) {
     if(rate >= 1 && rate <= 100)
     {
@@ -231,6 +257,16 @@ bool TTSConfiguration::setRate(const uint8_t rate) {
     }
     else
         TTSLOG_VERBOSE("Invalid Rate input \"%u\"", rate);
+    return false;
+}
+
+bool TTSConfiguration::setUtteranceRate(const double rate) {
+    if(rate == TTS::UNSPECIFIED_UTTERANCE_RATE || (rate >= TTS::MIN_UTTERANCE_RATE && rate <= TTS::MAX_UTTERANCE_RATE))
+    {
+        UPDATE_AND_RETURN(m_utteranceRate, rate);    
+    }
+    else
+        TTSLOG_VERBOSE("Invalid Utterance Rate input \"%lf\"", rate);
     return false;
 }
 
@@ -279,8 +315,9 @@ const std::string TTSConfiguration::voice() {
     else {
         std::string key = std::string("voice_for_") + m_language;
         auto it = m_others.find(key);
-        if(it != m_others.end())
-            str = it->second;
+        if ((it != m_others.end()) && !it->second.empty()) {
+            str = it->second[0];
+        }
         return str;
     }
 }
@@ -293,8 +330,9 @@ const std::string TTSConfiguration::localVoice() {
     else {
         std::string key = std::string("voice_for_local_") + m_language;
         auto it = m_others.find(key);
-        if(it != m_others.end())
-            str = it->second;
+        if ((it != m_others.end()) && !it->second.empty()) {
+            str = it->second[0];
+        }
         return str;
     }
 }
@@ -441,9 +479,17 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
     if(client->configuration()->isPreemptive())
         reset();
 
-    SpeechData data(client, id, callsign, text, secure,primVolDuck);
+    SpeechData data(client, id, callsign, text, secure, primVolDuck);
     queueData(data);
 
+    return 0;
+}
+
+int TTSSpeaker::speakWithUtterance(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck) {
+    TTSLOG_TRACE("id=%d, text=\"%s\"", id, text.c_str());
+    SpeechData data(client, id, callsign, text, primVolDuck, utterance);
+    
+    queueData(data);
     return 0;
 }
 
@@ -850,7 +896,13 @@ std::string TTSSpeaker::constructURL(TTSConfiguration &config, SpeechData &d) {
     }
 
     TTSURLConstructer urlConstructor;
-    std::string tts_request = urlConstructor.constructURL(m_defaultConfig, d.text, false, shouldUseLocalEndpoint());
+    std::string tts_request;
+    if (d.hasUtterance) {
+        tts_request = urlConstructor.constructURL(m_defaultConfig, d.text, false, shouldUseLocalEndpoint(), d.utterance);
+    }
+    else {
+        tts_request = urlConstructor.constructURL(m_defaultConfig, d.text, false, shouldUseLocalEndpoint());
+    }
     if(m_defaultConfig.hasValidLocalEndpoint()) {
        PipelineType pipelineType = getUrlPipelineType(tts_request);
        if(pipelineType != m_pipelinetype) {
@@ -883,8 +935,13 @@ void TTSSpeaker::play(string url, SpeechData &data, bool authrequired, string to
         }
     }
 
-    // PCM Sink seems to be accepting volume change before PLAYING state
-    g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
+    if(data.hasUtterance && (data.utterance.volume != TTS::UNSPECIFIED_UTTERANCE_VOLUME)) {
+        g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.utterance.volume), NULL);
+    }
+    else{
+        // PCM Sink seems to be accepting volume change before PLAYING state
+        g_object_set(G_OBJECT(m_audioVolume), "volume", (double) (data.client->configuration()->volume() / MAX_VOLUME), NULL);
+    }
 
     gst_element_set_state(m_pipeline, GST_STATE_PLAYING);
 

@@ -21,6 +21,7 @@
 #define _TTS_URLCONSTRUCTER_H_
 #include "TTSCommon.h"
 #include "TTSConfiguration.h"
+#include <interfaces/ITextToSpeech.h>
 #include <string>
 #include <mutex>
 #include <thread>
@@ -35,9 +36,12 @@ class TTSURLConstructer
     ~TTSURLConstructer();
     TTSURLConstructer();
     std::string constructURL(TTSConfiguration &config ,std::string text, bool isFallback, bool isLocal);
+    std::string constructURL(TTSConfiguration &config ,std::string text, bool isFallback, bool isLocal, \
+        const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& utterance);
 
     private:
     std::string httpgetURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal);
+    std::string httpgetUtteranceURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal);
     std::string httppostURL(TTSConfiguration &config, std::string text, bool isFallback);
     void sanitizeString(const std::string &input, std::string &sanitizedString);
     bool isSilentPunctuation(const char c);

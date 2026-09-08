@@ -80,6 +80,18 @@ namespace Plugin {
                     _parent.Notify("onwillspeak", params);
                 }
 
+                virtual void OnDeviceConfigurationChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) { 
+                    JsonObject params; 
+                    params["ttsEndPoint"] = JsonValue(config.ttsEndPoint); 
+                    params["ttsEndPointSecured"] = JsonValue(config.ttsEndPointSecured); 
+                    params["language"] = JsonValue(config.language); 
+                    params["voice"] = JsonValue(config.voice); 
+                    params["volume"] = JsonValue(config.volume); 
+                    params["rate"] = JsonValue(config.rate); 
+                    params["pitch"] = JsonValue(config.pitch); 
+                    _parent.Notify("onconfigchanged", params); 
+                }
+
                 virtual void OnSpeechStarted(const uint32_t speechid) {
                     JsonObject params;
                     params["speechid"]  = JsonValue((int)speechid);
@@ -168,13 +180,19 @@ namespace Plugin {
         //TTS Global APIS for Resident application
         uint32_t Enable(const JsonObject& parameters, JsonObject& response);
         uint32_t ListVoices(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetVoices(const JsonObject& parameters, JsonObject& response);
         uint32_t SetConfiguration(const JsonObject& parameters, JsonObject& response);
         uint32_t GetConfiguration(const JsonObject& parameters, JsonObject& response);
+        uint32_t SetDeviceConfiguration(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetDeviceConfiguration(const JsonObject& parameters, JsonObject& response);
 
         // Mandotory TTS APIs for client application
         uint32_t IsEnabled(const JsonObject& parameters, JsonObject& response);
         uint32_t Speak(const JsonObject& parameters, JsonObject& response);
+        uint32_t SpeakWithUtterance(const JsonObject& parameters, JsonObject& response);
         uint32_t Cancel(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetCapability(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetCapabilities(const JsonObject& parameters, JsonObject& response);
 
         // These extended APIS can be used by Client application if needed
         uint32_t Pause(const JsonObject& parameters, JsonObject& response);
@@ -185,6 +203,7 @@ namespace Plugin {
 
         //version number API's
         uint32_t getapiversion(const JsonObject& parameters, JsonObject& response);
+        uint32_t GetInterfaceVersion(const JsonObject& parameters, JsonObject& response);
 
         void dispatchJsonEvent(const char *event, const string &data);
         void Deactivated(RPC::IRemoteConnection* connection);
