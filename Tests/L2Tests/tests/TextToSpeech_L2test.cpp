@@ -559,7 +559,6 @@ TEST_F(TextToSpeechTest, speakWithUtterance)
     std::string callsign = "testApp";
     parameterSpeak["text"] = text;
     parameterSpeak["callsign"] = callsign;
-    parameterSpeak["callsign"] = callsign;
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";

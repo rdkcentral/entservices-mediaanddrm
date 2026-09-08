@@ -494,7 +494,7 @@ TTS_Error TTSManager::speak(int speechId, std::string callsign, std::string text
 }
 
 TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text) {
-    TTSLOG_TRACE("SpeakWithUteerance");
+    TTSLOG_TRACE("SpeakWithUtterance");
 
     if(!m_defaultConfiguration.isValid()) {
         TTSLOG_ERROR("Configuration is not set, can't speak");

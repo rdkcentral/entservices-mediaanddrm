@@ -286,9 +286,9 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             CHECK_TTS_PARAMETER_RETURN_ON_FAIL("capability");
             string capabilityString = parameters["capability"].String();
             Exchange::ITextToSpeech::Capability capability = Exchange::ITextToSpeech::Capability::UNSET;
-            if (capabilityString == "raw_text") {
+            if (capabilityString == "RAW_TEXT") {
                 capability = Exchange::ITextToSpeech::Capability::RAW_TEXT;
-            } else if (capabilityString == "ssml") {
+            } else if (capabilityString == "SSML") {
                 capability = Exchange::ITextToSpeech::Capability::SSML;
             }
             bool hasCapability = false;
