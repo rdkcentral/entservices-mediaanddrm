@@ -232,12 +232,13 @@ protected:
             return Core::ERROR_NONE;
         }));
 
-    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_))
-        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status) {
+    ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_,   testing::_))
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status, string& reason) {
 
             ipversion = "IPv4";
             interface = "eth0";
             status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+            reason = "";
 
             return Core::ERROR_NONE;
         }));
