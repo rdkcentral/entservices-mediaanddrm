@@ -1847,7 +1847,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtterance) {
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
                "\"language\":\"en-US\","
-               "\"voice\":\"female\","
+               "\"voice\":\"carol\","
                "\"volume\":\"0.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
@@ -1865,7 +1865,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
                "\"language\":\"en-US\","
-               "\"voice\":\"female\","
+               "\"voice\":\"carol\","
                "\"volume\":\"0.8\","
                "\"rate\":\"0.0\","
                "\"pitch\":\"1.0\""
@@ -1878,7 +1878,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
                "\"language\":\"en-US\","
-               "\"voice\":\"female\","
+               "\"voice\":\"carol\","
                "\"volume\":\"2.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
@@ -1892,7 +1892,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
 
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\",\"speechContext\":{"
                "\"language\":\"en-US\","
-               "\"voice\":\"female\","
+               "\"voice\":\"carol\","
                "\"volume\":\"2.8\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"5.0\""
@@ -1905,7 +1905,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
                "\"language\":\"en-US\","
-               "\"voice\":\"female\","
+               "\"voice\":\"carol\","
                "\"volume\":\"-1.0\","
                "\"rate\":\"-1.0\","
                "\"pitch\":\"-1.0\""
