@@ -347,17 +347,20 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             #else
             config.voice = GET_STR(parameters, "voice", "");
             #endif
+            
+            std::string proxyRate;
+            std::string proxyPitch;
             std::string proxyVolume = GET_STR(parameters, "volume", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyVolume))
                 goto config_failure;
             config.volume = std::stod(proxyVolume);
 
-            std::string proxyRate = GET_STR(parameters, "rate", "-1.0");
+            proxyRate = GET_STR(parameters, "rate", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyRate))
                 goto config_failure;
             config.rate = std::stod(proxyRate);
 
-            std::string proxyPitch = GET_STR(parameters, "pitch", "-1.0");
+            proxyPitch = GET_STR(parameters, "pitch", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyPitch))
                 goto config_failure;
             config.pitch = std::stod(proxyPitch);
@@ -462,17 +465,19 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             utterance.language = GET_STR(speechContext, "language", "");               
             utterance.voice = GET_STR(speechContext, "voice", "");
 
+            std::string proxyPitch;
+            std::string proxyRate;
             std::string proxyVolume = GET_STR(speechContext, "volume", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyVolume))
                 goto config_failure;
             utterance.volume = std::stod(proxyVolume);
 
-            std::string proxyRate = GET_STR(speechContext, "rate", "-1.0");
+            proxyRate = GET_STR(speechContext, "rate", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyRate))
                 goto config_failure;
             utterance.rate = std::stod(proxyRate);
 
-            std::string proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
+            proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
             if(!InputValidation::Instance().validate("double_str", proxyPitch))
                 goto config_failure;
             utterance.pitch = std::stod(proxyPitch);
