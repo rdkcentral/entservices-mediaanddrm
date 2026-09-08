@@ -322,6 +322,8 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setttsconfiguration")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speak")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speakwithutterance")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getvoices")));
 }
 
 /*******************************************************************************************************************
@@ -1837,4 +1839,167 @@ TEST_F(TTSInitializedTest, speakWithApiKey) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("enabletts"), _T("{\"enabletts\": true}"), response));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"}"), response));
     sleep(2);
+}
+
+TEST_F(TTSInitializedTest,SpeakWithUtterance) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"female\","
+               "\"volume\":\"0.8\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"1.0\""
+               "}"), response));
+    sleep(3);
+
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERATE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"female\","
+               "\"volume\":\"0.8\","
+               "\"rate\":\"0.0\","
+               "\"pitch\":\"1.0\""
+               "}"), response));
+}
+
+TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"female\","
+               "\"volume\":\"2.8\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"1.0\""
+               "}"), response));
+
+}
+
+TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"female\","
+               "\"volume\":\"2.8\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"5.0\""
+               "}"), response));
+}
+
+TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("speak"), _T("{\"text\": \"speech_123\"\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"female\","
+               "\"volume\":\"-1.0\","
+               "\"rate\":\"-1.0\","
+               "\"pitch\":\"-1.0\""
+               "}"), response));
+    sleep(3);
+
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"speechid\"")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":0")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
+}
+
+/**
+ * @name  : IsGetVoicesEmpty
+ * @brief : Returns empty voice list
+ *
+ * @param[in]   : language
+ * @return      : ERROR_NONE
+ */
+TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\":\"en-US\"}"),
+                             response));
+
+    EXPECT_EQ(response,
+              _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
+}
+
+/**
+ * @name  : GetVoicesSetEmptyLanguage
+ * @brief : Set language as empty and check whether it returns success
+ *
+ * @expected : ERROR_NONE
+ */
+TEST_F(TTSInitializedTest, GetVoicesSetEmptyLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\": \"\"}"),
+                             response));
+}
+
+/**
+ * @name  : GetVoicesSetWhiteSpaceAsLanguage
+ * @brief : Set language as whitespace and verify failure
+ *
+ * @param[in]   : Set " " in language
+ * @expected    : ERROR_GENERAL
+ */
+TEST_F(TTSInitializedTest, GetVoicesSetWhiteSpaceAsLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\": \"  \"}"),
+                             response));
+}
+
+/**
+ * @name  : GetVoicesSetNumberAsLanguage
+ * @brief : Set language as Number and check whether it returns error
+ *
+ * @param[in]   : Set number in language
+ * @expected    : ERROR_GENERAL
+ */
+TEST_F(TTSInitializedTest, GetVoicesSetNumberAsLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\": 01}"),
+                             response));
+}
+
+/**
+ * @name  : GetVoicesSetNullLanguage
+ * @brief : Set language as NULL and check whether it returns error
+ *
+ * @param[in]   : Set NULL language
+ * @expected    : ERROR_GENERAL
+ */
+TEST_F(TTSInitializedTest, GetVoicesSetNullLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\": NULL}"),
+                             response));
 }

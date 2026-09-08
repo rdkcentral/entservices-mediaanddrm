@@ -1228,6 +1228,48 @@ TEST_F(TextToSpeechTest, listVoices)
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
 
+TEST_F(TextToSpeechTest, getVoices)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+    JsonObject voiceParameter;
+    JsonObject voiceResponse;
+    voiceParameter["language"] = "en-US";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
+TEST_F(TextToSpeechTest, getVoicesCompleteList)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+    JsonObject voiceParameter;
+    JsonObject voiceResponse;
+    voiceParameter["language"] = "*";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
+TEST_F(TextToSpeechTest, getVoicesInvalidLanguage)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+    JsonObject voiceParameter;
+    JsonObject voiceResponse;
+    voiceParameter["language"] = "dutch";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
+    EXPECT_EQ(Core::ERROR_NONE, status);
+}
+
 TEST_F(TextToSpeechTest, speakWithoutACL)
 {
     uint32_t status = Core::ERROR_GENERAL;
@@ -1529,3 +1571,4 @@ TEST_F(TextToSpeechTest, playbackError)
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
+
