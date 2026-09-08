@@ -400,7 +400,7 @@ TEST_F(TTSInitializedTest,EnableTTSFalse) {
 TEST_F(TTSInitializedTest,GetAPIVersion) {
     EXPECT_EQ(string(""), plugin->Initialize(&service));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getapiversion"), _T(""), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"version\":1")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"version\":2")));
     EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":true")));
 }
 
