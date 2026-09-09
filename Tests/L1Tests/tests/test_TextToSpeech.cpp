@@ -1870,6 +1870,9 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
                "\"rate\":\"0.0\","
                "\"pitch\":\"1.0\""
                "}}"), response));
+
+        EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
+        EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
@@ -1883,7 +1886,8 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
                "}}"), response));
-
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
@@ -1897,6 +1901,8 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
                "\"rate\":\"1.0\","
                "\"pitch\":\"5.0\""
                "}}"), response));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
+    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {

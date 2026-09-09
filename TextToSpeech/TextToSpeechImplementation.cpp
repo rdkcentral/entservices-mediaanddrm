@@ -619,6 +619,7 @@ namespace Plugin {
             TTSLOG_WARNING("speak utterance params are invalid: language=%s, voice=%s, volume=%lf, rate=%lf, pitch = %lf\n",
                    utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate, utterance.pitch);
             _adminLock.Unlock();
+            ttsStatus = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
             return Core::ERROR_GENERAL;
         }
         auto status = _ttsManager->speakWithUtterance(speechid, callsign, utterance, text);

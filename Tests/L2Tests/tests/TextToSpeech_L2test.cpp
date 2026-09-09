@@ -562,9 +562,9 @@ TEST_F(TextToSpeechTest, speakWithUtterance)
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";
-    speechContext["volume"] = 0.8;
-    speechContext["rate"] = 1.0;
-    speechContext["pitch"] = 1.0;
+    speechContext["volume"] = "0.8";
+    speechContext["rate"] = "1.0";
+    speechContext["pitch"] = "1.0";
 
     parameterSpeak["speechContext"] = speechContext;
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "speakwithutterance", parameterSpeak, responseSpeak);
@@ -667,9 +667,9 @@ TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedRate)
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";
-    speechContext["volume"] = 0.8;
-    speechContext["rate"] = -1.0;
-    speechContext["pitch"] = 1.0;
+    speechContext["volume"] = "0.8";
+    speechContext["rate"] = "-1.0";
+    speechContext["pitch"] = "1.0";
 
     parameterSpeak["speechContext"] = speechContext;
 
@@ -724,9 +724,9 @@ TEST_F(TextToSpeechTest, speakWithUtteranceUnspecifiedVol)
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";
-    speechContext["volume"] = -1.0;
-    speechContext["rate"] = 1.0;
-    speechContext["pitch"] = 1.0;
+    speechContext["volume"] = "-1.0";
+    speechContext["rate"] = "1.0";
+    speechContext["pitch"] = "1.0";
 
     parameterSpeak["speechContext"] = speechContext;
 
@@ -765,9 +765,9 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidRate)
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";
-    speechContext["volume"] = -1.0;
-    speechContext["rate"] = 0.0;
-    speechContext["pitch"] = 1.0;
+    speechContext["volume"] = "-1.0";
+    speechContext["rate"] = "0.0";
+    speechContext["pitch"] = "1.0";
 
     parameterSpeak["speechContext"] = speechContext;
 
@@ -810,9 +810,9 @@ TEST_F(TextToSpeechTest, speakWithUtteranceInvalidVolume)
     JsonObject speechContext;
     speechContext["language"] = "en-US";
     speechContext["voice"] = "carol";
-    speechContext["volume"] = -3.0;
-    speechContext["rate"] = 0.0;
-    speechContext["pitch"] = 1.0;
+    speechContext["volume"] = "-3.0";
+    speechContext["rate"] = "0.0";
+    speechContext["pitch"] = "1.0";
 
     parameterSpeak["speechContext"] = speechContext;
 
