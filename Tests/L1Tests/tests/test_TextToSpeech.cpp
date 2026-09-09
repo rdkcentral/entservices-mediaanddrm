@@ -1870,9 +1870,30 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidRate) {
                "\"rate\":\"0.0\","
                "\"pitch\":\"1.0\""
                "}}"), response));
+    
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"0.8\","
+               "\"rate\":\"11.0\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
 
-        EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
-        EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"0.8\","
+               "\"rate\":\"abc\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"0.8\","
+               "\"rate\":\"!@#\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
@@ -1886,8 +1907,30 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidVolume) {
                "\"rate\":\"1.0\","
                "\"pitch\":\"1.0\""
                "}}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"-2.0\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"abc\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\", \"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"@#$\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"1.0\""
+               "}}"), response));
 }
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
@@ -1897,13 +1940,36 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceInvalidPitch) {
     EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\",\"speechContext\":{"
                "\"language\":\"en-US\","
                "\"voice\":\"carol\","
-               "\"volume\":\"2.8\","
+               "\"volume\":\"1.0\","
                "\"rate\":\"1.0\","
                "\"pitch\":\"5.0\""
                "}}"), response));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"TTS_Status\":3")));
-    EXPECT_THAT(response, ::testing::ContainsRegex(_T("\"success\":false")));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\",\"speechContext\":{"
+               "\"language\":\"en-US\","
+               "\"voice\":\"carol\","
+               "\"volume\":\"1.0\","
+               "\"rate\":\"1.0\","
+               "\"pitch\":\"-2.0\""
+               "}}"), response));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\",\"speechContext\":{"
+                "\"language\":\"en-US\","
+                "\"voice\":\"carol\","
+                "\"volume\":\"2.8\","
+                "\"rate\":\"1.0\","
+                "\"pitch\":\"abc\""
+                "}}"), response));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(connection, _T("speakwithutterance"), _T("{\"text\": \"speech_123\",\"speechContext\":{"
+                "\"language\":\"en-US\","
+                "\"voice\":\"carol\","
+                "\"volume\":\"2.8\","
+                "\"rate\":\"1.0\","
+                "\"pitch\":\"%$@\""
+                "}}"), response));
 }
+
 
 TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
     mockTTSConfigure();

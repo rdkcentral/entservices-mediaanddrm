@@ -620,6 +620,7 @@ namespace Plugin {
                    utterance.language.c_str(), utterance.voice.c_str(), utterance.volume, utterance.rate, utterance.pitch);
             _adminLock.Unlock();
             ttsStatus = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
+            speechid = -1;
             return Core::ERROR_GENERAL;
         }
         auto status = _ttsManager->speakWithUtterance(speechid, callsign, utterance, text);

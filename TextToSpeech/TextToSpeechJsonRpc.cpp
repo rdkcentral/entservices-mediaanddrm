@@ -468,19 +468,43 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             std::string proxyPitch;
             std::string proxyRate;
             std::string proxyVolume = GET_STR(speechContext, "volume", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyVolume))
+            if(!InputValidation::Instance().validate("double_str", proxyVolume)){
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
                 goto config_failure;
-            utterance.volume = std::stod(proxyVolume);
+            }
+            try{
+                utterance.volume = std::stod(proxyVolume);
+            } catch (...) {
+                TTSLOG_ERROR("Failed to convert volume to double: %s", proxyVolume.c_str());
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
+                goto config_failure;
+            }
 
             proxyRate = GET_STR(speechContext, "rate", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyRate))
+            if(!InputValidation::Instance().validate("double_str", proxyRate)){
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
                 goto config_failure;
-            utterance.rate = std::stod(proxyRate);
+            }
+            try{
+                utterance.rate = std::stod(proxyRate);
+            } catch (...) {
+                TTSLOG_ERROR("Failed to convert rate to double: %s", proxyRate.c_str());
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
+                goto config_failure;
+            }
 
             proxyPitch = GET_STR(speechContext, "pitch", "-1.0");
-            if(!InputValidation::Instance().validate("double_str", proxyPitch))
+            if(!InputValidation::Instance().validate("double_str", proxyPitch)){
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
                 goto config_failure;
-            utterance.pitch = std::stod(proxyPitch);
+            }
+            try{
+                utterance.pitch = std::stod(proxyPitch);
+            } catch (...) {
+                TTSLOG_ERROR("Failed to convert pitch to double: %s", proxyPitch.c_str());
+                status = Exchange::ITextToSpeech::TTSErrorDetail::TTS_INVALID_CONFIGURATION;
+                goto config_failure;
+            }
             
             _tts->SpeakWithUtterance(parameters["callsign"].String(), utterance, parameters["text"].String(), speechid, status) ;
             response["speechid"] = (int) speechid;
