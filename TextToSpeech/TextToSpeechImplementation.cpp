@@ -120,6 +120,7 @@ namespace Plugin {
         std::set<std::string> expectedVoicesSet;
 
         expectedLanguageSet.insert("*");
+        expectedLanguageSet.insert("");
 
         if(config.HasLabel("voices")) {
             JsonObject voices = config["voices"].Object();
