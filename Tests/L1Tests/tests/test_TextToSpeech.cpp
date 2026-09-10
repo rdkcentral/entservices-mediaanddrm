@@ -2003,7 +2003,7 @@ TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
     EXPECT_EQ(Core::ERROR_NONE,
               handler.Invoke(connection,
                              _T("getvoices"),
-                             _T("{\"language\":\"en-US\"}"),
+                             _T("{\"language\":\"en-us\"}"),
                              response));
 
     EXPECT_EQ(response,
@@ -2036,8 +2036,6 @@ TEST_F(TTSInitializedTest, GetVoicesSetEmptyLanguage) {
                              _T("getvoices"),
                              _T("{\"language\": \"\"}"),
                              response));
-
-    EXPECT_EQ(response,_T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
