@@ -1250,7 +1250,7 @@ TEST_F(TextToSpeechTest, getVoicesCompleteList)
     setTTSConfiguration();
     JsonObject voiceParameter;
     JsonObject voiceResponse;
-    voiceParameter["language"] = "*";
+    voiceParameter["language"] = "";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
     EXPECT_EQ(Core::ERROR_NONE, status);
 }
@@ -1265,6 +1265,20 @@ TEST_F(TextToSpeechTest, getVoicesInvalidLanguage)
     JsonObject voiceParameter;
     JsonObject voiceResponse;
     voiceParameter["language"] = "dutch";
+    status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
+    EXPECT_EQ(Core::ERROR_GENERAL, status);
+}
+
+TEST_F(TextToSpeechTest, getVoicesInvalidLanguageType)
+{
+    uint32_t status = Core::ERROR_GENERAL;
+    JSONRPC::LinkType<Core::JSON::IElement> jsonrpc(SAMPLEPLUGIN_CALLSIGN, SAMPLEPLUGINL2TEST_CALLSIGN);
+
+    // SetTTSConfiguration
+    setTTSConfiguration();
+    JsonObject voiceParameter;
+    JsonObject voiceResponse;
+    voiceParameter["language"] = "*";
     status = InvokeServiceMethod("org.rdk.TextToSpeech.1", "getvoices", voiceParameter, voiceResponse);
     EXPECT_EQ(Core::ERROR_GENERAL, status);
 }

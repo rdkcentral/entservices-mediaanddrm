@@ -176,7 +176,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: 90e1d4a17ea8c0193650d19fc98e3cb27f9360b5
+          ref: 007616201bb3b0c5f90b4d168c0bb91d1951e27d
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
       - name: Apply patches entservices-apis

@@ -2023,6 +2023,8 @@ TEST_F(TTSInitializedTest, GetVoicesSetEmptyLanguage) {
                              _T("getvoices"),
                              _T("{\"language\": \"\"}"),
                              response));
+
+    EXPECT_EQ(response,_T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
 }
 
 /**
@@ -2073,5 +2075,15 @@ TEST_F(TTSInitializedTest, GetVoicesSetNullLanguage) {
               handler.Invoke(connection,
                              _T("getvoices"),
                              _T("{\"language\": NULL}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetVoicesSetInvalidLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\": \"*\"}"),
                              response));
 }

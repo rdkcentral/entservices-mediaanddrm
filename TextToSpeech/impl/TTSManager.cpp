@@ -129,41 +129,9 @@ TTS_Error TTSManager::listVoices(std::string language,std::vector<std::string>& 
 }
 
 TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::Exchange::ITextToSpeech::VoiceInfo>& voices) {
-    bool returnCurrentConfiguration = false;
     std::string key = "voice_for_";
     voices.clear();
     if(language.empty()) {
-        returnCurrentConfiguration = true;
-        key += m_defaultConfiguration.language();
-
-    } else if(language != "*") {
-        key += language;
-        auto it = m_defaultConfiguration.m_others.find(key);
-        if(it != m_defaultConfiguration.m_others.end()) {
-            for(size_t i = 0; i < it->second.size(); ++i) {
-                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
-                voiceInfo.name = it->second[i];
-                voiceInfo.language = language;
-                voiceInfo.isDefault = (i == 0);
-                voices.push_back(voiceInfo);
-            }
-        }
-        return TTS_OK;
-    }
-    if(returnCurrentConfiguration) {
-        std::string currentLanguage =
-            m_defaultConfiguration.language();
-        auto it = m_defaultConfiguration.m_others.find(key);
-        if(it != m_defaultConfiguration.m_others.end()) {
-            for(size_t i = 0; i < it->second.size(); ++i) {
-                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
-                voiceInfo.name = it->second[i];
-                voiceInfo.language = currentLanguage;
-                voiceInfo.isDefault = (i == 0);
-                voices.push_back(voiceInfo);
-            }
-        }
-    } else {
         auto it = m_defaultConfiguration.m_others.begin();
         while(it != m_defaultConfiguration.m_others.end()) {
             //ignore local language
@@ -172,8 +140,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 continue;
             }
             if(it->first.find("voice_for_") == 0) {
-                std::string lang =
-                    it->first.substr(strlen("voice_for_"));
+                std::string lang = it->first.substr(strlen("voice_for_"));
 
                 for(size_t i = 0; i < it->second.size(); ++i) {
                     WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
@@ -185,8 +152,24 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
             }
             ++it;
         }
+    } else {
+        key += language;
+        auto it = m_defaultConfiguration.m_others.find(key);
+        if(it == m_defaultConfiguration.m_others.end()) {
+            TTSLOG_ERROR("No voices found for language: %s", language.c_str());
+            return TTS_FAIL;
+        }
+        else{
+            for(size_t i = 0; i < it->second.size(); ++i) {
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                voiceInfo.name = it->second[i];
+                voiceInfo.language = language;
+                voiceInfo.isDefault = (i == 0);
+                voices.push_back(voiceInfo);
+            }
+        }
     }
-     return TTS_OK;
+    return TTS_OK;
  }
 
 TTS_Error TTSManager::listLocalVoices(std::string language, std::vector<std::string> &voices) {
