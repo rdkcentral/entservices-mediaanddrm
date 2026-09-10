@@ -1997,6 +1997,7 @@ TEST_F(TTSInitializedTest,SpeakWithUtteranceUnspecifiedParams) {
  * @return      : ERROR_NONE
  */
 TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE,
@@ -2009,6 +2010,17 @@ TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
               _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
 }
 
+TEST_F(TTSInitializedTest, getVoicesUnavailableLanguage) {
+    mockTTSConfigure();
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getvoices"),
+                             _T("{\"language\":\"en-TT\"}"),
+                             response));
+}
+
 /**
  * @name  : GetVoicesSetEmptyLanguage
  * @brief : Set language as empty and check whether it returns success
@@ -2016,6 +2028,7 @@ TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
  * @expected : ERROR_NONE
  */
 TEST_F(TTSInitializedTest, GetVoicesSetEmptyLanguage) {
+    mockTTSConfigure();
     EXPECT_EQ(string(""), plugin->Initialize(&service));
 
     EXPECT_EQ(Core::ERROR_NONE,
