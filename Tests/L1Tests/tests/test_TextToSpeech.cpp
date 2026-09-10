@@ -2007,7 +2007,7 @@ TEST_F(TTSInitializedTest, IsGetVoicesEmpty) {
                              response));
 
     EXPECT_EQ(response,
-              _T("{\"voices\":[],\"TTS_Status\":0,\"success\":true}"));
+              _T("{\"voices\":[{\"name\":\"carol\",\"language\":\"en-us\",\"default\":true}],\"TTS_Status\":0,\"success\":true}"));
 }
 
 TEST_F(TTSInitializedTest, getVoicesUnavailableLanguage) {
