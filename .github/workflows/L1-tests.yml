@@ -122,7 +122,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: 2.0.0
+          ref: 2.0.10
 
       - name: Checkout entservices-mediaanddrm
         if: ${{ inputs.caller_source == 'local' }}
@@ -184,7 +184,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: ${{env.INTERFACES_REF}}
+          ref: 007616201bb3b0c5f90b4d168c0bb91d1951e27d
           run: rm -rf $GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json
 
       - name: Apply patches entservices-apis
