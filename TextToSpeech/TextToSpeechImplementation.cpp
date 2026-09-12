@@ -99,10 +99,15 @@ namespace Plugin {
         JsonObject config;
         std::string jsonText;
         if (!readTTSConfigFile(TTS_CONFIG_FILE_PATH, jsonText)) {
-            TTSLOG_ERROR("Failed to read ttsconfig JSON file %s", TTS_CONFIG_FILE_PATH);
+            TTSLOG_WARNING("Failed to read ttsconfig JSON file %s, falling back to service configuration line", TTS_CONFIG_FILE_PATH);
+            TTSLOG_INFO("tts service config %s\n", service->ConfigLine().c_str());
+            config.FromString(service->ConfigLine());
         }
-        TTSLOG_INFO("tts config %s\n", jsonText.c_str());
-        config.FromString(jsonText);
+        else
+        {
+            TTSLOG_INFO("tts file config %s\n", jsonText.c_str());
+            config.FromString(jsonText);
+        }
         
         ttsConfig->setEndPoint(GET_STR(config, "endpoint", ""));
         ttsConfig->setSecureEndPoint(GET_STR(config, "secureendpoint", ""));
