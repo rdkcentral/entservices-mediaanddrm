@@ -916,7 +916,7 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
         std::string url = constructURL(config, data);
         // Pipeline may have been destroyed inside constructURL()
         if (!m_pipeline || !m_source || m_flushed) {
-            TTSLOG_WARNING("vis Pipeline became invalid during URL construction");
+            TTSLOG_WARNING("Pipeline became invalid during URL construction");
             return;
         } 
         play(url,data,authrequired,token);
@@ -935,7 +935,7 @@ void TTSSpeaker::event_loop(void *data)
 }
 
 void TTSSpeaker::GStreamerThreadFunc(void *ctx) {
-    TTSLOG_INFO("vis Starting GStreamerThread");
+    TTSLOG_INFO("Starting GStreamerThread");
     TTSSpeaker *speaker = (TTSSpeaker*) ctx;
 
     if(!gst_is_initialized())
