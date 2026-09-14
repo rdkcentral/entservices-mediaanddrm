@@ -969,8 +969,14 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
         if(authrequired) 
             token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
-        
-        play(constructURL(config, data),data,authrequired,token);
+       
+        std::string url = constructURL(config, data);
+        // Pipeline may have been destroyed inside constructURL()
+        if (!m_pipeline || !m_source || m_flushed) {
+            TTSLOG_WARNING("Pipeline became invalid during URL construction");
+            return;
+        } 
+        play(url,data,authrequired,token);
 
     } else {
         TTSLOG_WARNING("m_pipeline=%p, m_pipelineError=%d", m_pipeline, m_pipelineError);
