@@ -822,6 +822,9 @@ void TTSSpeaker::destroyPipeline() {
 
     m_busWatch = 0;
     m_pipeline = NULL;
+	m_source = NULL;
+    m_audioSink = NULL;
+    m_audioVolume = NULL;
     m_pipelineConstructionFailures = 0;
     m_condition.notify_one();
 }
@@ -972,7 +975,7 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
        
         std::string url = constructURL(config, data);
         // Pipeline may have been destroyed inside constructURL()
-        if (!m_pipeline || !m_source || m_flushed) {
+        if (!m_pipeline || !m_source || !m_audioVolume || m_flushed) {
             TTSLOG_WARNING("Pipeline became invalid during URL construction");
             return;
         } 
