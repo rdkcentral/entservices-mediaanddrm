@@ -744,75 +744,149 @@ namespace Plugin {
         Core::IWorkerPool::Instance().Submit(Job::Create(this, event, callsign, params));
     }
 
-    void TextToSpeechImplementation::Dispatch(Event event, string callsign, const JsonValue params)
+    void TextToSpeechImplementation::Dispatch(Event event,string callsign,const JsonValue params)
     {
+        std::list<Exchange::ITextToSpeech::INotification*> clients;
+        Exchange::ITextToSpeech::INotification* callsignClient = nullptr;
+
         _adminLock.Lock();
+        clients = _notificationClients;
 
-        std::list<Exchange::ITextToSpeech::INotification*>::iterator index(_notificationClients.begin());
+        for (auto* client : clients) {
+            client->AddRef();
+        }
 
-        while (index != _notificationClients.end()) {
+        auto callsignindex = _notificationCallsignClients.find(callsign);
+        if (callsignindex != _notificationCallsignClients.end()) {
+            callsignClient = callsignindex->second;
+            callsignClient->AddRef();
+        }
+
+        _adminLock.Unlock();
+        std::list<Exchange::ITextToSpeech::INotification*>::iterator index(clients.begin());
+
+        while (index != clients.end()) {
             switch(event) {
-                case STATE_CHANGED:     (*index)->OnTTSStateChanged(params.Boolean()); break;
-                case VOICE_CHANGED:     (*index)->OnVoiceChanged(params.String()); break;
-                case WILL_SPEAK:        (*index)->OnSpeechReady(params.Number()); break;
-                case SPEECH_START:      (*index)->OnSpeechStarted(params.Number()); break;
-                case SPEECH_PAUSE:      (*index)->OnSpeechPaused(params.Number()); break;
-                case SPEECH_RESUME:     (*index)->OnSpeechResumed(params.Number()); break;
-                case SPEECH_INTERRUPT:  (*index)->OnSpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (*index)->OnNetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (*index)->OnPlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (*index)->OnSpeechComplete(params.Number()); break;
-                case CONFIG_CHANGED:{
+                case STATE_CHANGED:
+                    (*index)->OnTTSStateChanged(params.Boolean());
+                    break;
+                case VOICE_CHANGED:
+                    (*index)->OnVoiceChanged(params.String());
+                    break;
+                case WILL_SPEAK:
+                    (*index)->OnSpeechReady(params.Number());
+                    break;
+                case SPEECH_START:
+                    (*index)->OnSpeechStarted(params.Number());
+                    break;
+                case SPEECH_PAUSE:
+                    (*index)->OnSpeechPaused(params.Number());
+                    break;
+                case SPEECH_RESUME:
+                    (*index)->OnSpeechResumed(params.Number());
+                    break;
+                case SPEECH_INTERRUPT:
+                    (*index)->OnSpeechInterrupted(params.Number());
+                    break;
+                case NETWORK_ERROR:
+                    (*index)->OnNetworkError(params.Number());
+                    break;
+            	case PLAYBACK_ERROR:
+                    (*index)->OnPlaybackError(params.Number());
+                    break;
+                case SPEECH_COMPLETE:
+                    (*index)->OnSpeechComplete(params.Number());
+                    break;
+                case CONFIG_CHANGED: {
                     Exchange::ITextToSpeech::DeviceConfiguration config;
-                    config.ttsEndPoint = params.Object()["ttsEndPoint"].String();
-                    config.ttsEndPointSecured = params.Object()["ttsEndPointSecured"].String();
-                    config.language = params.Object()["language"].String();
-                    config.voice =  params.Object()["voice"].String();
-                    config.volume = params.Object()["volume"].Number();
-                    config.rate = params.Object()["rate"].Number();
-                    config.pitch = params.Object()["pitch"].Number();
 
+                    config.ttsEndPoint =
+                        params.Object()["ttsEndPoint"].String();
+                    config.ttsEndPointSecured =
+                        params.Object()["ttsEndPointSecured"].String();
+                    config.language =
+                        params.Object()["language"].String();
+                    config.voice =
+                        params.Object()["voice"].String();
+                    config.volume =
+                        params.Object()["volume"].Number();
+                    config.rate =
+                        params.Object()["rate"].Number();
+                    config.pitch =
+                        params.Object()["pitch"].Number();
                     (*index)->OnDeviceConfigurationChanged(config);
                     break;
-                }
-                default: break;
+                } 
+                default:
+                    break;
             }
+
             ++index;
         }
 
-        //notification to client with callsign
-        std::map<string,Exchange::ITextToSpeech::INotification*>::iterator callsignindex(_notificationCallsignClients.find(callsign));
-        if (callsignindex != _notificationCallsignClients.end()) {
-             TTSLOG_INFO("Delivering event to callsign %s \n", (callsignindex->first).c_str());
-             switch(event) {
-                case WILL_SPEAK:        (callsignindex->second)->OnSpeechReady(params.Number()); break;
-                case SPEECH_START:      (callsignindex->second)->OnSpeechStarted(params.Number()); break;
-                case SPEECH_PAUSE:      (callsignindex->second)->OnSpeechPaused(params.Number()); break;
-                case SPEECH_RESUME:     (callsignindex->second)->OnSpeechResumed(params.Number()); break;
-                case SPEECH_INTERRUPT:  (callsignindex->second)->OnSpeechInterrupted(params.Number()); break;
-                case NETWORK_ERROR:     (callsignindex->second)->OnNetworkError(params.Number()); break;
-                case PLAYBACK_ERROR:    (callsignindex->second)->OnPlaybackError(params.Number()); break;
-                case SPEECH_COMPLETE:   (callsignindex->second)->OnSpeechComplete(params.Number()); break;
-                case CONFIG_CHANGED:{
-                    Exchange::ITextToSpeech::DeviceConfiguration config;
-                    config.ttsEndPoint = params.Object()["ttsEndPoint"].String();
-                    config.ttsEndPointSecured = params.Object()["ttsEndPointSecured"].String();
-                    config.language = params.Object()["language"].String();
-                    config.voice =  params.Object()["voice"].String();
-                    config.volume = params.Object()["volume"].Number();
-                    config.rate = params.Object()["rate"].Number();
-                    config.pitch = params.Object()["pitch"].Number();
+        if (callsignClient != nullptr) {
 
-                    (callsignindex->second)->OnDeviceConfigurationChanged(config);
+            TTSLOG_INFO("Delivering event to callsign %s",
+                    callsign.c_str());
+            switch(event) {
+                case WILL_SPEAK:
+                    callsignClient->OnSpeechReady(params.Number());
+                    break;
+                case SPEECH_START:
+                    callsignClient->OnSpeechStarted(params.Number());
+                    break;
+                case SPEECH_PAUSE:
+                    callsignClient->OnSpeechPaused(params.Number());
+                    break;
+                case SPEECH_RESUME:
+                    callsignClient->OnSpeechResumed(params.Number());
+                    break;
+                case SPEECH_INTERRUPT:
+                    callsignClient->OnSpeechInterrupted(params.Number());
+                    break;
+                case NETWORK_ERROR:
+                    callsignClient->OnNetworkError(params.Number());
+                    break;
+                case PLAYBACK_ERROR:
+                    callsignClient->OnPlaybackError(params.Number());
+                    break;
+                case SPEECH_COMPLETE:
+                    callsignClient->OnSpeechComplete(params.Number());
+                    break;
+                case CONFIG_CHANGED: {
+                    Exchange::ITextToSpeech::DeviceConfiguration config;
+
+                    config.ttsEndPoint =
+                        params.Object()["ttsEndPoint"].String();
+                    config.ttsEndPointSecured =
+                        params.Object()["ttsEndPointSecured"].String();
+                    config.language =
+                        params.Object()["language"].String();
+                    config.voice =
+                        params.Object()["voice"].String();
+                    config.volume =
+                        params.Object()["volume"].Number();
+                    config.rate =
+                        params.Object()["rate"].Number();
+                    config.pitch =
+                        params.Object()["pitch"].Number();
+
+                    callsignClient->OnDeviceConfigurationChanged(config);
                     break;
                 }
-                default: break;            
-             }
-         }
+                default:
+                    break;
+            }
+        }
 
-        _adminLock.Unlock();
+        for (auto* client : clients) {
+            client->Release();
+        }
+
+        if (callsignClient != nullptr) {
+            callsignClient->Release();
+        }
     }
-
 
     void TextToSpeechImplementation::OnConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config)
     {
