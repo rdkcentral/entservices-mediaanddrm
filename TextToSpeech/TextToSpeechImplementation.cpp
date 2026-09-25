@@ -243,8 +243,10 @@ namespace Plugin {
 
         _notificationClients.push_back(sink);
         sink->AddRef();
+        const uint32_t clientCount = _notificationClients.size();
 
         _adminLock.Unlock();
+        TTSLOG_INFO("RDKEMW REGISTER notification sink=%p totalClients=%u",sink,clientCount);
 
         TRACE_L1("Registered a sink on the browser %p", sink);
 
@@ -589,13 +591,13 @@ namespace Plugin {
     Core::hresult TextToSpeechImplementation::Speak(const string callsign, const string text, uint32_t &speechid, Exchange::ITextToSpeech::TTSErrorDetail &ttsStatus)
     {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
-
+        TTSLOG_INFO("RDKEMW speak before admin lock\n");
         _adminLock.Lock();
         speechid = nextSpeechId();
         auto status = _ttsManager->speak(speechid,callsign,text);
         ttsStatus = (Exchange::ITextToSpeech::TTSErrorDetail) status;
         _adminLock.Unlock();
-
+         TTSLOG_INFO("RDKEMW speak after admin unlock\n");
         if(status != TTS::TTS_OK)
             speechid = -1;
 #if TTS_TEXT_LOG
@@ -748,7 +750,7 @@ namespace Plugin {
     {
         std::list<Exchange::ITextToSpeech::INotification*> clients;
         Exchange::ITextToSpeech::INotification* callsignClient = nullptr;
-
+        TTSLOG_INFO("RDKEMW Dispatch before  _adminLock.Lock()");
         _adminLock.Lock();
         clients = _notificationClients;
 
@@ -763,9 +765,12 @@ namespace Plugin {
         }
 
         _adminLock.Unlock();
+        TTSLOG_INFO("RDKEMW Dispatch after  _adminLock.Lock()");
         std::list<Exchange::ITextToSpeech::INotification*>::iterator index(clients.begin());
-
+        uint32_t clientNo = 0;
         while (index != clients.end()) {
+            uint64_t start = Core::Time::Now().Ticks();
+            TTSLOG_INFO("RDKEMW NOTIFY START event=%d clientNo=%u sink=%p",event,clientNo,*index);
             switch(event) {
                 case STATE_CHANGED:
                     (*index)->OnTTSStateChanged(params.Boolean());
@@ -820,7 +825,9 @@ namespace Plugin {
                 default:
                     break;
             }
-
+            uint64_t elapsedMs = (Core::Time::Now().Ticks() - start) / 1000;
+            TTSLOG_INFO("RDKEMW NOTIFY END event=%d clientNo=%u sink=%p elapsed=%llu ms",event,clientNo,*index,elapsedMs);
+            ++clientNo;
             ++index;
         }
 

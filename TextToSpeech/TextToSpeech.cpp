@@ -80,6 +80,7 @@ namespace Plugin {
         }
 
         if(_tts != nullptr) {
+            TTSLOG_WARNING("RDKEMW JSONRPC Notification registering sink=%p",&_notification);
             _tts->Register(&_notification);
             RegisterAll();
         } else {
