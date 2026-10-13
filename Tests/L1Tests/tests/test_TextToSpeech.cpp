@@ -324,6 +324,8 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speakwithutterance")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getvoices")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapabilities")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapability")));
 }
 
 /*******************************************************************************************************************
