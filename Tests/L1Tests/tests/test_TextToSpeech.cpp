@@ -324,6 +324,8 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speakwithutterance")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getvoices")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapabilities")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapability")));
 }
 
 /*******************************************************************************************************************
@@ -2098,3 +2100,43 @@ TEST_F(TTSInitializedTest, GetVoicesSetInvalidLanguage) {
                              _T("{\"language\": \"*\"}"),
                              response));
 }
+
+TEST_F(TTSInitializedTest, GetCapabilities) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getcapabilities"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilityRawText) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"RAW_TEXT\"}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilitySSML) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"SSML\"}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilityInvalid) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"INVALID\"}"),
+                             response));
+}
+
