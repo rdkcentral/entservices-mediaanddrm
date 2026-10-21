@@ -256,6 +256,13 @@ bool AudioPlayer::isPlaying()
     return playing;
 }
 
+// True when the player holds a pipeline that is playing or paused (i.e. owns audio resources).
+bool AudioPlayer::isActive()
+{
+    std::lock_guard<std::mutex> lock(m_apiMutex);
+    return (m_pipeline != nullptr) && (state == PLAYING || state == PAUSED);
+}
+
 
 void AudioPlayer::createPipeline(bool smartVolumeEnable)
 {

@@ -148,6 +148,7 @@ class AudioPlayer
     int getObjectIdentifier();
     std::string getUrl();
     bool isPlaying();
+    bool isActive();
     bool configPCMCaps(const std::string format, int rate, int channels, const std::string layout);
     void configWsSecParams(const impl::SecurityParameters& secParams);
 };

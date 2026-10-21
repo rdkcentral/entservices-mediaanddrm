@@ -26,6 +26,9 @@
 #define SAP_MAJOR_VERSION 1
 #define SAP_MINOR_VERSION 0
 
+#define POWERMANAGER_CALLSIGN "org.rdk.PowerManager"
+#define PLAYBACK_STOPPED_POWER_STATE_CHANGE "PLAYBACK_STOPPED_POWER_STATE_CHANGE"
+
 #define GET_STR(map, key, def) ((map.HasLabel(key) && !map[key].String().empty() && map[key].String() != "null") ? map[key].String() : def)
 #define CONVERT_PARAMETERS_TOJSON() JsonObject parameters, response; parameters.FromString(input);
 #define CONVERT_PARAMETERS_FROMJSON() response.ToString(output);
@@ -43,7 +46,12 @@ namespace Plugin {
     SERVICE_REGISTRATION(SystemAudioPlayerImplementation, SAP_MAJOR_VERSION, SAP_MINOR_VERSION);
 
 
-    SystemAudioPlayerImplementation::SystemAudioPlayerImplementation() : _adminLock()
+    SystemAudioPlayerImplementation::SystemAudioPlayerImplementation()
+        : _adminLock()
+        , _powerLock()
+        , _service(nullptr)
+        , _powerManager(nullptr)
+        , _powerStateObserver(*this)
     {
         AudioPlayer::Init(this);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Constructor\n");
@@ -51,13 +59,136 @@ namespace Plugin {
 
     SystemAudioPlayerImplementation::~SystemAudioPlayerImplementation()
     {
+        ReleasePowerMonitoring();
         AudioPlayer::DeInit();
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Destructor\n");
     }
 
     Core::hresult SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
     {
+        ReleasePowerMonitoring();
+
+        if (service == nullptr) {
+            return Core::ERROR_NONE;
+        }
+
+        _powerLock.Lock();
+        _service = service;
+        _service->AddRef();
+        _powerLock.Unlock();
+
+        // Must not hold _powerLock here: the framework may synchronously report already active plugins.
+        _service->Register(&_powerStateObserver);
+        ConnectPowerManager();
+
         return Core::ERROR_NONE;
+    }
+
+    void SystemAudioPlayerImplementation::ReleasePowerMonitoring()
+    {
+        PluginHost::IShell* service = nullptr;
+
+        _powerLock.Lock();
+        service = _service;
+        _service = nullptr;
+        _powerLock.Unlock();
+
+        if (service != nullptr) {
+            service->Unregister(&_powerStateObserver);
+            DisconnectPowerManager();
+            service->Release();
+            SAPLOG_INFO("SAP: Power state monitoring released\n");
+        }
+    }
+
+    void SystemAudioPlayerImplementation::OnPluginActivated(const string& callsign)
+    {
+        if (callsign == POWERMANAGER_CALLSIGN) {
+            SAPLOG_INFO("SAP: %s activated\n", callsign.c_str());
+            ConnectPowerManager();
+        }
+    }
+
+    void SystemAudioPlayerImplementation::OnPluginDeactivated(const string& callsign)
+    {
+        if (callsign == POWERMANAGER_CALLSIGN) {
+            SAPLOG_INFO("SAP: %s deactivated\n", callsign.c_str());
+            DisconnectPowerManager();
+        }
+    }
+
+    void SystemAudioPlayerImplementation::ConnectPowerManager()
+    {
+        _powerLock.Lock();
+        if ((_service != nullptr) && (_powerManager == nullptr)) {
+            Exchange::IPowerManager* powerManager = _service->QueryInterfaceByCallsign<Exchange::IPowerManager>(POWERMANAGER_CALLSIGN);
+            if (powerManager != nullptr) {
+                if (powerManager->Register(&_powerStateObserver) == Core::ERROR_NONE) {
+                    _powerManager = powerManager;
+                    SAPLOG_INFO("SAP: Registered for power mode change notifications\n");
+                } else {
+                    SAPLOG_ERROR("SAP: Failed to register for power mode change notifications\n");
+                    powerManager->Release();
+                }
+            } else {
+                SAPLOG_WARNING("SAP: %s not available, power mode changes will not be handled yet\n", POWERMANAGER_CALLSIGN);
+            }
+        }
+        _powerLock.Unlock();
+    }
+
+    void SystemAudioPlayerImplementation::DisconnectPowerManager()
+    {
+        Exchange::IPowerManager* powerManager = nullptr;
+
+        _powerLock.Lock();
+        powerManager = _powerManager;
+        _powerManager = nullptr;
+        _powerLock.Unlock();
+
+        if (powerManager != nullptr) {
+            powerManager->Unregister(&_powerStateObserver);
+            powerManager->Release();
+            SAPLOG_INFO("SAP: Unregistered from power mode change notifications\n");
+        }
+    }
+
+    void SystemAudioPlayerImplementation::OnPowerModeChanged(const Exchange::IPowerManager::PowerState currentState,
+                                                             const Exchange::IPowerManager::PowerState newState)
+    {
+        SAPLOG_INFO("SAP: Power mode changed from %d to %d\n", static_cast<int>(currentState), static_cast<int>(newState));
+
+        switch (newState) {
+        case Exchange::IPowerManager::POWER_STATE_OFF:
+        case Exchange::IPowerManager::POWER_STATE_STANDBY:
+        case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
+        case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
+            // Stopping pipelines can block; do it off the notification thread.
+            Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERSTANDBY, std::to_string(static_cast<int>(newState))));
+            break;
+        default:
+            break;
+        }
+    }
+
+    void SystemAudioPlayerImplementation::StopActivePlayers()
+    {
+        std::vector<int> stoppedIds;
+
+        _adminLock.Lock();
+        for (auto& entry : objectMap) {
+            AudioPlayer* player = entry.second;
+            if ((player != nullptr) && player->isActive()) {
+                SAPLOG_INFO("SAP: Stopping player id %d due to power state change\n", entry.first);
+                player->Stop();
+                stoppedIds.push_back(entry.first);
+            }
+        }
+        _adminLock.Unlock();
+
+        for (int id : stoppedIds) {
+            onSAPEvent(static_cast<uint32_t>(id), PLAYBACK_STOPPED_POWER_STATE_CHANGE);
+        }
     }
 
     Core::hresult SystemAudioPlayerImplementation::Register(Exchange::ISystemAudioPlayer::INotification* sink)
@@ -482,6 +613,12 @@ namespace Plugin {
 
     void SystemAudioPlayerImplementation::Dispatch(Event event, string data)
     {
+        if (event == ONPOWERSTANDBY) {
+            SAPLOG_INFO("SAP: Handling power state %s, stopping active players\n", data.c_str());
+            StopActivePlayers();
+            return;
+        }
+
         _adminLock.Lock();
         std::list<Exchange::ISystemAudioPlayer::INotification*>::iterator index(_notificationClients.begin());
 

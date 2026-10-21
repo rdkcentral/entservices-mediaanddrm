@@ -28,6 +28,7 @@
 #include "WorkerPoolImplementation.h"
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
+#include "PowerManagerMock.h"
 
 using namespace WPEFramework;
 using ::testing::Test;
@@ -1850,4 +1851,50 @@ TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalidUrl) {
             response
         ));
     EXPECT_EQ(response, _T("{\"success\":false}")); 
+}
+
+/**
+ * @name  : SAPPowerManagerModeChangeHandling
+ * @brief : Registers with PowerManager on Configure, handles a deep sleep transition and
+ *          unregisters when Configure(nullptr) is called.
+ */
+TEST_F(SAPInitializedTest, SAPPowerManagerModeChangeHandling) {
+    Core::ProxyType<PowerManagerMock> powerManagerMock = Core::ProxyType<PowerManagerMock>::Create();
+    Exchange::IPowerManager::IModeChangedNotification* modeChangedNotification = nullptr;
+
+    ON_CALL(service, QueryInterfaceByCallsign(Exchange::IPowerManager::ID, ::testing::StrEq("org.rdk.PowerManager")))
+        .WillByDefault(::testing::Invoke(
+            [&](const uint32_t, const string&) -> void* {
+                powerManagerMock->AddRef();
+                return static_cast<void*>(static_cast<Exchange::IPowerManager*>(&(*powerManagerMock)));
+            }));
+
+    EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
+        .WillOnce(::testing::Invoke(
+            [&](Exchange::IPowerManager::IModeChangedNotification* notification) {
+                modeChangedNotification = notification;
+                return Core::ERROR_NONE;
+            }));
+    EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+
+    EXPECT_EQ(Core::ERROR_NONE, SystemAudioPlayerImplementation->Configure(&service));
+    ASSERT_NE(modeChangedNotification, nullptr);
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
+        _T("{\"audiotype\": \"pcm\", \"sourcetype\": \"data\", \"playmode\": \"system\"}"), response));
+    JsonObject openResponse;
+    openResponse.FromString(response);
+    const int playerId = static_cast<int>(openResponse["id"].Number());
+
+    modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::POWER_STATE_ON,
+                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP);
+    modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+                                                Exchange::IPowerManager::POWER_STATE_ON);
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"),
+        _T("{\"id\": ") + std::to_string(playerId) + _T("}"), response));
+    EXPECT_EQ(response, _T("{\"success\":true}"));
+
+    EXPECT_EQ(Core::ERROR_NONE, SystemAudioPlayerImplementation->Configure(nullptr));
 }

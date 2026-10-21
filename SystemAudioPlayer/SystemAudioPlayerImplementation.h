@@ -24,6 +24,7 @@
 #include "tracing/Logging.h"
 
 #include <interfaces/ISystemAudioPlayer.h>
+#include <interfaces/IPowerManager.h>
 #include "impl/AudioPlayer.h"
 #include "impl/logger.h"
 #include "impl/SecurityParameters.h"
@@ -74,8 +75,59 @@ namespace Plugin {
     class SystemAudioPlayerImplementation : public Exchange::ISystemAudioPlayer, public SAPEventCallback {
     public:
         enum Event {
-                ONSAPEVENT
+                ONSAPEVENT,
+                ONPOWERSTANDBY
             };
+
+        // Tracks org.rdk.PowerManager availability and receives its power mode change events.
+        class PowerStateObserver : public PluginHost::IPlugin::INotification,
+                                   public Exchange::IPowerManager::IModeChangedNotification {
+        public:
+            PowerStateObserver() = delete;
+            PowerStateObserver(const PowerStateObserver&) = delete;
+            PowerStateObserver& operator=(const PowerStateObserver&) = delete;
+
+            explicit PowerStateObserver(SystemAudioPlayerImplementation& parent)
+                : _parent(parent) {
+            }
+            ~PowerStateObserver() = default;
+
+#ifdef USE_THUNDER_R4
+            void Activated(const string& callsign, PluginHost::IShell* /* plugin */) override {
+                _parent.OnPluginActivated(callsign);
+            }
+            void Deactivated(const string& callsign, PluginHost::IShell* /* plugin */) override {
+                _parent.OnPluginDeactivated(callsign);
+            }
+            void Unavailable(const string& callsign, PluginHost::IShell* /* plugin */) override {
+                _parent.OnPluginDeactivated(callsign);
+            }
+#else
+            void StateChange(PluginHost::IShell* plugin) override {
+                if (plugin != nullptr) {
+                    const PluginHost::IShell::state state = plugin->State();
+                    if (state == PluginHost::IShell::ACTIVATED) {
+                        _parent.OnPluginActivated(plugin->Callsign());
+                    } else if (state == PluginHost::IShell::DEACTIVATION) {
+                        _parent.OnPluginDeactivated(plugin->Callsign());
+                    }
+                }
+            }
+#endif /* USE_THUNDER_R4 */
+
+            void OnPowerModeChanged(const Exchange::IPowerManager::PowerState currentState,
+                                    const Exchange::IPowerManager::PowerState newState) override {
+                _parent.OnPowerModeChanged(currentState, newState);
+            }
+
+            BEGIN_INTERFACE_MAP(PowerStateObserver)
+            INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+            INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
+            END_INTERFACE_MAP
+
+        private:
+            SystemAudioPlayerImplementation& _parent;
+        };
 
         class EXTERNAL Job : public Core::IDispatch {
         protected:
@@ -122,6 +174,7 @@ namespace Plugin {
         SystemAudioPlayerImplementation(const SystemAudioPlayerImplementation&) = delete;
         SystemAudioPlayerImplementation& operator=(const SystemAudioPlayerImplementation&) = delete;
 
+        // Configure(service) starts power state monitoring; Configure(nullptr) stops it and releases the shell.
         virtual Core::hresult Configure(PluginHost::IShell* service);
         virtual Core::hresult Register(INotification* sink) override ;
         virtual Core::hresult Unregister(INotification* sink) override ;
@@ -158,6 +211,20 @@ namespace Plugin {
         bool SameModeNotPlaying(AudioPlayer*,int &playerid);
         bool CloseMapping(int key);
         impl::SecurityParameters extractSecurityParams(const JsonObject& params) const;
+
+        void OnPluginActivated(const string& callsign);
+        void OnPluginDeactivated(const string& callsign);
+        void OnPowerModeChanged(const Exchange::IPowerManager::PowerState currentState,
+                                const Exchange::IPowerManager::PowerState newState);
+        void ConnectPowerManager();
+        void DisconnectPowerManager();
+        void ReleasePowerMonitoring();
+        void StopActivePlayers();
+
+        mutable Core::CriticalSection _powerLock;
+        PluginHost::IShell* _service;
+        Exchange::IPowerManager* _powerManager;
+        Core::Sink<PowerStateObserver> _powerStateObserver;
 
     public:
         SystemAudioPlayerImplementation();
