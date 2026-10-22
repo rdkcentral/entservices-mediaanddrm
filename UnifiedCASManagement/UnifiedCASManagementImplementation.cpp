@@ -36,7 +36,7 @@
 #define DBGINFO(fmt, ...)
 #endif
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Plugin {
 
         SERVICE_REGISTRATION(UnifiedCASManagementImplementation, 1, 0);
@@ -274,4 +274,4 @@ namespace WPEFramework {
     }
 
     } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

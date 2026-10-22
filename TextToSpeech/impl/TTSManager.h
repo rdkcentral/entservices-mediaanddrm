@@ -52,7 +52,7 @@ public:
     virtual void onTTSStateChanged(bool enabled) { (void)enabled; }
     virtual void onVoiceChanged(std::string voice) { (void)voice; }
     virtual void onWillSpeak(SpeechData &data) { (void)data; }
-    virtual void OnConfigChanged(const WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration& config) { (void)config; }
+    virtual void OnConfigChanged(const Thunder::Exchange::ITextToSpeech::DeviceConfiguration& config) { (void)config; }
     virtual void onSpeechStart(SpeechData &data) { (void)data; }
     virtual void onSpeechPause(uint32_t speechId,string callsign) { (void)speechId; }
     virtual void onSpeechResume(uint32_t speechId,string callsign) { (void)speechId; }
@@ -73,13 +73,13 @@ public:
     TTS_Error enableTTS(bool enable);
     bool isTTSEnabled();
     void initiateDownload();
-    TTS_Error getVoices(std::string language,std::vector<WPEFramework::Exchange::ITextToSpeech::VoiceInfo>& voices);
+    TTS_Error getVoices(std::string language,std::vector<Thunder::Exchange::ITextToSpeech::VoiceInfo>& voices);
     TTS_Error listVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error listLocalVoices(std::string language, std::vector<std::string> &voices);
     TTS_Error setConfiguration(Configuration &configuration);
-    TTS_Error setDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
+    TTS_Error setDeviceConfiguration(Thunder::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
     TTS_Error getConfiguration(Configuration &configuration);
-    TTS_Error getDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
+    TTS_Error getDeviceConfiguration(Thunder::Exchange::ITextToSpeech::DeviceConfiguration &configuration);
     TTS_Error setFallbackText(FallbackData &data);
     TTS_Error setPrimaryVolDuck(const uint8_t prim);
     TTS_Error setAPIKey(string apikey);
@@ -91,7 +91,7 @@ public:
 
     //Speak APIs
     TTS_Error speak(int speechId, std::string callsign, std::string text);
-    TTS_Error speakWithUtterance(int speechId, std::string callsign, const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text);
+    TTS_Error speakWithUtterance(int speechId, std::string callsign, const Thunder::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text);
     TTS_Error pause(uint32_t id);
     TTS_Error resume(uint32_t id);
     TTS_Error shut(uint32_t id);

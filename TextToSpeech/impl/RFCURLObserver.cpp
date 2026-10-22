@@ -23,7 +23,7 @@
 
 #define SYSTEMSERVICE_CALLSIGN "org.rdk.System"
 
-using namespace WPEFramework;
+using namespace Thunder;
 
 namespace TTS {
 

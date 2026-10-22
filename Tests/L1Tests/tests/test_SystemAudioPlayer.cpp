@@ -29,7 +29,7 @@
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
 
-using namespace WPEFramework;
+using namespace Thunder;
 using ::testing::Test;
 using ::testing::NiceMock;
 
@@ -65,7 +65,7 @@ protected:
                         return &comLinkMock;
                     }));
 
-#ifdef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
 			.WillByDefault(::testing::Invoke(
                   [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
@@ -75,7 +75,7 @@ protected:
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Return(SystemAudioPlayerImplementation));
-#endif /*USE_THUNDER_R4 */
+#endif
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 

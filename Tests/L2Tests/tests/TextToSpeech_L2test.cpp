@@ -26,7 +26,7 @@
 #include <condition_variable>
 #include <fstream>
 #include <mutex>
-#include "WPEFramework/interfaces/IAuthService.h"
+#include "Thunder/interfaces/IAuthService.h"
 #include "mockauthservices.h"
 #include "NetworkManagerMock.h"
 #include <interfaces/ITextToSpeech.h>
@@ -41,7 +41,7 @@
 #define SAMPLEPLUGINL2TEST_CALLSIGN _T("L2tests.1")
 
 using ::testing::NiceMock;
-using namespace WPEFramework;
+using namespace Thunder;
 using testing::StrictMock;
 
 class TextToSpeechTest : public L2TestMocks {
@@ -174,17 +174,17 @@ TextToSpeechTest::TextToSpeechTest()
         .WillByDefault(::testing::Return());
 
     ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
-        .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
+        .WillByDefault(::testing::Invoke( [](Thunder::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
             res.token = "mock_token";
             return Core::ERROR_NONE;
         }));
 
     ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_,  testing::_))
-        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status, string& reason) {
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, Thunder::Exchange::INetworkManager::InternetStatus& status, string& reason) {
 
             ipversion = "IPv4";
             interface = "eth0";
-            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+            status = Thunder::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
             reason = "";
             return Core::ERROR_NONE;
         }));

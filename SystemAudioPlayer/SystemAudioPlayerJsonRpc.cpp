@@ -19,7 +19,7 @@
 
 #include "SystemAudioPlayer.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     void SystemAudioPlayer::RegisterAll()
@@ -194,4 +194,4 @@ namespace Plugin {
     }
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

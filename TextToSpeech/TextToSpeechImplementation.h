@@ -28,7 +28,7 @@
 #include "impl/TTSConfiguration.h"
 #include <vector>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class TextToSpeechImplementation : public Exchange::ITextToSpeech, public PluginHost::IStateControl, public TTS::TTSEventCallback {
@@ -72,7 +72,7 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(TextToSpeechImplementation *tts, Event event,string callsign,JsonValue params) {
-#ifndef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
                 return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
 #else
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(tts, event, callsign, params)));
@@ -163,4 +163,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

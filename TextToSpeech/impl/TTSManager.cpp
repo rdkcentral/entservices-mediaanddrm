@@ -128,7 +128,7 @@ TTS_Error TTSManager::listVoices(std::string language,std::vector<std::string>& 
     return TTS_OK;
 }
 
-TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::Exchange::ITextToSpeech::VoiceInfo>& voices) {
+TTS_Error TTSManager::getVoices(std::string language,std::vector<Thunder::Exchange::ITextToSpeech::VoiceInfo>& voices) {
     std::string key = "voice_for_";
     voices.clear();
     if(language.empty()) {
@@ -143,7 +143,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 std::string lang = it->first.substr(strlen("voice_for_"));
 
                 for(size_t i = 0; i < it->second.size(); ++i) {
-                    WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                    Thunder::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                     voiceInfo.name = it->second[i];
                     voiceInfo.language = lang;
                     voiceInfo.isDefault = (i == 0);
@@ -161,7 +161,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
         }
         else{
             for(size_t i = 0; i < it->second.size(); ++i) {
-                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                Thunder::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = it->second[i];
                 voiceInfo.language = language;
                 voiceInfo.isDefault = (i == 0);
@@ -187,7 +187,7 @@ TTS_Error TTSManager::listLocalVoices(std::string language, std::vector<std::str
     return TTS_OK;
 }
 
-TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
+TTS_Error TTSManager::setDeviceConfiguration(Thunder::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
     std::string v = m_defaultConfiguration.voice();
     
     bool endpointUpdated = false;
@@ -418,7 +418,7 @@ bool TTSManager::checkAccess(const string &method,string &callsign)
     }
 }
 
-TTS_Error TTSManager::getDeviceConfiguration(WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
+TTS_Error TTSManager::getDeviceConfiguration(Thunder::Exchange::ITextToSpeech::DeviceConfiguration &configuration) {
     TTSLOG_TRACE("Getting Default Device Configuration");
 
     configuration.ttsEndPoint = m_defaultConfiguration.endPoint();
@@ -476,7 +476,7 @@ TTS_Error TTSManager::speak(int speechId, std::string callsign, std::string text
     return TTS_OK;
 }
 
-TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text) {
+TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, const Thunder::Exchange::ITextToSpeech::SpeechUtterance &utterance, std::string text) {
     TTSLOG_TRACE("SpeakWithUtterance");
 
     if(!m_defaultConfiguration.isValid()) {

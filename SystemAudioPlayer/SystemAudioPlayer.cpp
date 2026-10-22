@@ -24,7 +24,7 @@
 #define API_VERSION_NUMBER_PATCH 9
 #define API_VERSION_NUMBER 1
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace {
 
@@ -43,7 +43,7 @@ namespace {
 namespace Plugin {
 
     /*
-     *Register SystemAudioPlayer module as wpeframework plugin
+     *Register SystemAudioPlayer module as thunder plugin
      **/
     SERVICE_REGISTRATION(SystemAudioPlayer, API_VERSION_NUMBER_MAJOR, API_VERSION_NUMBER_MINOR, API_VERSION_NUMBER_PATCH);
 
@@ -127,4 +127,4 @@ namespace Plugin {
     }
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

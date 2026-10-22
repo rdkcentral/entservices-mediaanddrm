@@ -68,7 +68,7 @@ const static std::map<std::string, std::regex> patternMap = {
     {"httpsrc", std::regex("^(http|https)://.*")}
 };
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class SystemAudioPlayerImplementation : public Exchange::ISystemAudioPlayer, public SAPEventCallback {
@@ -100,11 +100,11 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(SystemAudioPlayerImplementation *sap, Event event, string data) {
-#ifndef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
                 return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
 #else
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
-#endif /* USE_THUNDER_R4 */
+#endif
             }
 
             virtual void Dispatch() {
@@ -166,4 +166,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

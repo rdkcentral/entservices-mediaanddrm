@@ -33,7 +33,7 @@
 
 #define SERVER_DETAILS  "127.0.0.1:9998"
 
-using namespace WPEFramework;
+using namespace Thunder;
 using namespace std;
 
 namespace Utils
@@ -145,7 +145,7 @@ namespace Utils
     };
 
     // Thunder Plugin Communication
-    std::shared_ptr<WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>> getThunderControllerClient(std::string callsign="")
+    std::shared_ptr<Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement>> getThunderControllerClient(std::string callsign="")
     {
 
         string token;
@@ -153,16 +153,16 @@ namespace Utils
         string query = "token=" + token;
 
         Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T(SERVER_DETAILS)));
-        std::shared_ptr<WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>> thunderClient = make_shared<WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>>(callsign.c_str(), "", false, query);
+        std::shared_ptr<Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement>> thunderClient = make_shared<Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement>>(callsign.c_str(), "", false, query);
 
         return thunderClient;
     }
 
-#ifndef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
     class Job : public Core::IDispatchType<void>
 #else
     class Job : public Core::IDispatch
-#endif /* USE_THUNDER_R4 */
+#endif
     {
     public:
         Job(std::function<void()> work)
@@ -202,13 +202,13 @@ namespace Utils
         uint32_t result = Core::ERROR_ASYNC_FAILED;
         Core::Event event(false, true);
 
-#ifndef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
         Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(Core::ProxyType<Job>::Create([&]()
                                                                                                                      {
 #else
         Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create([&]()
                                                                                                            {
-#endif /* USE_THUNDER_R4 */
+#endif
                     auto interface = shell->QueryInterfaceByCallsign<PluginHost::IShell>(callsign);
                     if (interface == nullptr) {
                         result = Core::ERROR_UNAVAILABLE;

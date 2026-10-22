@@ -29,7 +29,7 @@
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
 #include "RfcApiMock.h"
-#include "WPEFramework/interfaces/IAuthService.h"
+#include "Thunder/interfaces/IAuthService.h"
 #include "mockauthservices.h"
 #include "NetworkManagerMock.h"
 #include <iostream>
@@ -37,16 +37,16 @@
 #include <string>
 #include <regex>
 
-class SpeakResponse : public WPEFramework::Core::JSON::Container {
+class SpeakResponse : public Thunder::Core::JSON::Container {
 public:
     SpeakResponse() {
         Add(_T("speechid"), &speechid);
     }
 
-    WPEFramework::Core::JSON::DecUInt32 speechid;
+    Thunder::Core::JSON::DecUInt32 speechid;
 };
 
-using namespace WPEFramework;
+using namespace Thunder;
 using ::testing::Test;
 using ::testing::NiceMock;
 
@@ -145,7 +145,7 @@ protected:
                         return &comLinkMock;
                     }));
 
-#ifdef USE_THUNDER_R4
+#if defined(THUNDER_VERSION) && (THUNDER_VERSION <= 4)
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_))
 			.WillByDefault(::testing::Invoke(
                   [&](const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId) {
@@ -155,7 +155,7 @@ protected:
 #else
         ON_CALL(comLinkMock, Instantiate(::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
             .WillByDefault(::testing::Return(TextToSpeechImplementation));
-#endif /*USE_THUNDER_R4 */
+#endif
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
 
@@ -227,17 +227,17 @@ protected:
         .WillByDefault(::testing::Return());
 
     ON_CALL(authserviceMock, GetServiceAccessToken(::testing::_)) 
-        .WillByDefault(::testing::Invoke( [](WPEFramework::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
+        .WillByDefault(::testing::Invoke( [](Thunder::Exchange::IAuthService::GetServiceAccessTokenResult& res) {
             res.token = "mock_token";
             return Core::ERROR_NONE;
         }));
 
     ON_CALL(networkManagerMock, IsConnectedToInternet(testing::_, testing::_, testing::_,   testing::_))
-        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, WPEFramework::Exchange::INetworkManager::InternetStatus& status, string& reason) {
+        .WillByDefault(testing::Invoke([](string& ipversion, string& interface, Thunder::Exchange::INetworkManager::InternetStatus& status, string& reason) {
 
             ipversion = "IPv4";
             interface = "eth0";
-            status = WPEFramework::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
+            status = Thunder::Exchange::INetworkManager::InternetStatus::INTERNET_FULLY_CONNECTED;
             reason = "";
 
             return Core::ERROR_NONE;

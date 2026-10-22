@@ -30,7 +30,7 @@
 #include <interfaces/IUnifiedCASManagement.h>
 #include "tracing/Logging.h"
 
-namespace WPEFramework {
+namespace Thunder {
     namespace Plugin {
         class UnifiedCASManagementImplementation : public Exchange::IUnifiedCASManagement {
             public:
@@ -78,6 +78,6 @@ namespace WPEFramework {
 };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder
 
 #endif // UNIFIEDCASMANAGEMENTIMPLEMENTATION_H

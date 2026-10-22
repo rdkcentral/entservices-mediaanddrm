@@ -64,7 +64,7 @@ std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::strin
 }
 
 std::string TTSURLConstructer::constructURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal, \
-    const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& utterance) {
+    const Thunder::Exchange::ITextToSpeech::SpeechUtterance& utterance) {
     TTSConfiguration tmpConfig = config;
     if(!utterance.language.empty()){
         tmpConfig.setLanguage(utterance.language);

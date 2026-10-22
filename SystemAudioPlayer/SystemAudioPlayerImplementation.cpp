@@ -37,7 +37,7 @@
     LOGTRACEMETHODFIN(); \
     return (Core::ERROR_NONE);
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     SERVICE_REGISTRATION(SystemAudioPlayerImplementation, SAP_MAJOR_VERSION, SAP_MINOR_VERSION);
@@ -583,4 +583,4 @@ namespace Plugin {
         return NULL;
     }     
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

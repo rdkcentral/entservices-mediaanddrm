@@ -40,7 +40,7 @@
     LOGTRACEMETHODFIN(); \
     return (Core::ERROR_NONE);
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
 
@@ -981,4 +981,4 @@ namespace Plugin {
     }
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

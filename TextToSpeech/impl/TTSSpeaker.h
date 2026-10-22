@@ -96,7 +96,7 @@ struct SpeechData {
                std::string callsign,
                std::string t,
                int8_t vol,
-               const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& u)
+               const Thunder::Exchange::ITextToSpeech::SpeechUtterance& u)
         : client(c),
           secure(false),
           id(i),
@@ -125,7 +125,7 @@ struct SpeechData {
         std::string text;
         int8_t primVolDuck;
         bool hasUtterance;
-        WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance;
+        Thunder::Exchange::ITextToSpeech::SpeechUtterance utterance;
 };
 
 enum PipelineType
@@ -144,7 +144,7 @@ public:
     // Speak Functions
     int speak(TTSSpeakerClient* client, uint32_t id, std::string callsign, std::string text, bool secure,int8_t primVolDuck); // Formalize data to speak API
     int speakWithUtterance(TTSSpeakerClient *client, uint32_t id, std::string callsign, std::string text, \
-      WPEFramework::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck);
+      Thunder::Exchange::ITextToSpeech::SpeechUtterance utterance, int8_t primVolDuck);
     bool isSpeaking(uint32_t id);
     SpeechState getSpeechState(uint32_t id);
     bool cancelSpeech(uint32_t id=0);
@@ -220,11 +220,11 @@ private:
 
 } // namespace TTS
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 bool _readFromFile(std::string filename, TTS::TTSConfiguration &ttsConfig);
 bool _writeToFile(std::string filename, TTS::TTSConfiguration &ttsConfig);
 }//namespace Plugin
-}//namespace WPEFramework
+}//namespace Thunder
 
 #endif

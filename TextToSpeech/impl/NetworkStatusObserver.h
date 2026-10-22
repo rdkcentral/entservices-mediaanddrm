@@ -19,7 +19,7 @@
 
 #include "TTSCommon.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 namespace TTS {
 
@@ -36,7 +36,7 @@ private:
     string getSecurityToken();
     void onConnectionStatusChangedEventHandler(const JsonObject& parameters);
 
-    WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>* m_networkService{nullptr};
+    Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement>* m_networkService{nullptr};
     bool m_isConnected {false};
     bool m_eventRegistered {false};
 };

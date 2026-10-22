@@ -39,7 +39,7 @@
 #include <mutex>
 #include <map>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class TextToSpeech: public PluginHost::IPlugin, public PluginHost::JSONRPC {
@@ -223,4 +223,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

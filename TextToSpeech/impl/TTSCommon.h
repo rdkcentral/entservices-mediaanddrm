@@ -69,10 +69,10 @@ namespace TTS {
     };
 } // namespace TTS
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
     void logResponse(TTS::TTS_Error X);
-} //namespace WPEFramework
+} //namespace Thunder
 } //namespace Plugin
 
 #define CHECK_TTS_MANAGER_RETURN_ON_FAIL() do {\

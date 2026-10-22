@@ -37,7 +37,7 @@ class TTSURLConstructer
     TTSURLConstructer();
     std::string constructURL(TTSConfiguration &config ,std::string text, bool isFallback, bool isLocal);
     std::string constructURL(TTSConfiguration &config ,std::string text, bool isFallback, bool isLocal, \
-        const WPEFramework::Exchange::ITextToSpeech::SpeechUtterance& utterance);
+        const Thunder::Exchange::ITextToSpeech::SpeechUtterance& utterance);
 
     private:
     std::string httpgetURL(TTSConfiguration &config, std::string text, bool isFallback, bool isLocal);
