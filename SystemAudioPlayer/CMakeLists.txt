@@ -25,10 +25,8 @@ set(PLUGIN_SYSTEMAUDIOPLAYER_MODE "Local" CACHE STRING "Controls if the plugin s
 set(PLUGIN_SYSTEMAUDIOPLAYER_STARTUPORDER "40" CACHE STRING "To configure startup order of SystemAudioPlayer plugin")
 
 find_package(${NAMESPACE}Plugins REQUIRED)
-if (WPEFramework_FOUND)
-    find_package(${NAMESPACE}COM REQUIRED)
-    find_package(${NAMESPACE}WebSocket REQUIRED)
-endif()
+find_package(${NAMESPACE}COM REQUIRED)
+find_package(${NAMESPACE}WebSocket REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 find_package(websocketpp REQUIRED)
@@ -107,10 +105,8 @@ target_link_libraries(${MODULE_NAME} PRIVATE OpenSSL::SSL)
 target_link_libraries(${MODULE_NAME} PRIVATE OpenSSL::Crypto)
 target_link_libraries(${MODULE_NAME} PRIVATE ${Boost_FILESYSTEM_LIBRARY})
 
-if (WPEFramework_FOUND)
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}COM::${NAMESPACE}COM)
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket)
-endif()
 
 install(TARGETS ${MODULE_NAME}
         DESTINATION lib/${STORAGE_DIRECTORY}/plugins)

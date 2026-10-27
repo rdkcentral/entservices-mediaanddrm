@@ -26,9 +26,17 @@ set(PLUGIN_TEXTTOSPEECH_MODE "Local" CACHE STRING "Controls if the plugin should
 
 find_package(${NAMESPACE}Plugins REQUIRED)
 
-find_package(WPEFrameworkSecurityUtil)
-if(NOT WPEFRAMEWORK_SECURITYUTIL_FOUND)
-    add_definitions(-DSECURITY_TOKEN_ENABLED=0)
+# Thunder 5 ships the security agent as ClientSecurityAgent; R4 used WPEFrameworkSecurityUtil.
+find_package(ClientSecurityAgent QUIET)
+if(ClientSecurityAgent_FOUND)
+    set(SECURITYUTIL_LIBRARIES ClientSecurityAgent::ClientSecurityAgent)
+else()
+    find_package(WPEFrameworkSecurityUtil)
+    if(WPEFRAMEWORK_SECURITYUTIL_FOUND)
+        set(SECURITYUTIL_LIBRARIES ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES})
+    else()
+        add_definitions(-DSECURITY_TOKEN_ENABLED=0)
+    endif()
 endif()
 
 #TTS_TEXT_LOG is used to disable unwanted logs in prod build
@@ -96,13 +104,13 @@ if(RDK_SERVICES_L1_TEST OR RDK_SERVICE_L2_TEST)
     target_link_libraries(${MODULE_NAME} PRIVATE
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions
-        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
+        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${SECURITYUTIL_LIBRARIES}
 )
 else()
     target_link_libraries(${MODULE_NAME} PRIVATE
         ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions
-        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${WPEFRAMEWORK_SECURITYUTIL_LIBRARIES}
+        ${CURL_LIBRARY} ${GSTREAMER_LIBRARIES} ${SECURITYUTIL_LIBRARIES}
         systemaudioplatform
     )
 endif()
