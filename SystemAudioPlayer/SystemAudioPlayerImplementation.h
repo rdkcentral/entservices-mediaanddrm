@@ -100,11 +100,11 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(SystemAudioPlayerImplementation *sap, Event event, string data) {
-#ifndef USE_THUNDER_R4
+#if !defined(THUNDER_VERSION) || (THUNDER_VERSION < 4)
                 return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
 #else
                 return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
-#endif /* USE_THUNDER_R4 */
+#endif
             }
 
             virtual void Dispatch() {
