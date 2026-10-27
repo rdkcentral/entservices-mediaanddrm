@@ -975,10 +975,14 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
        
         std::string url = constructURL(config, data);
         // Pipeline may have been destroyed inside constructURL()
-        if (!m_pipeline || !m_source || !m_audioVolume || m_flushed) {
+        if (!m_pipeline || !m_source || !m_audioVolume) {
             TTSLOG_WARNING("Pipeline became invalid during URL construction");
+            m_pipelineError = true;
             return;
-        } 
+        }
+        if (m_flushed) {
+            return;
+        }
         play(url,data,authrequired,token);
 
     } else {
