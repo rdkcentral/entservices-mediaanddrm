@@ -29,7 +29,7 @@
 #include "ThunderPortability.h"
 #include "systemaudioplatformmock.h"
 
-using namespace WPEFramework;
+using namespace Thunder;
 using ::testing::Test;
 using ::testing::NiceMock;
 

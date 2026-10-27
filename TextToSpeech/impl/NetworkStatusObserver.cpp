@@ -23,15 +23,15 @@
 #define GetSecurityToken(a, b) 0
 #define GetToken(a, b, c) 0
 #else
-#include <WPEFramework/securityagent/securityagent.h>
-#include <WPEFramework/securityagent/SecurityTokenUtil.h>
+#include <Thunder/securityagent/securityagent.h>
+#include <Thunder/securityagent/SecurityTokenUtil.h>
 #endif
 
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define NETWORK_CALLSIGN "org.rdk.Network"
 #define NETWORK_CALLSIGN_VER NETWORK_CALLSIGN".1"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 namespace TTS {
 
@@ -54,7 +54,7 @@ string NetworkStatusObserver::getSecurityToken() {
     }
 
     if(endpoint.empty()) {
-        Core::File file("/etc/WPEFramework/config.json");
+        Core::File file("/etc/Thunder/config.json");
         if(file.Open(true)) {
             JsonObject config;
             if(config.IElement::FromFile(file)) {
@@ -95,9 +95,9 @@ bool NetworkStatusObserver::isConnected() {
     if (m_networkService == nullptr) {
         string token = getSecurityToken();
         if(token.empty()) {
-            m_networkService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"");
+            m_networkService = new Thunder::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"");
         } else {
-            m_networkService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"", false, token);
+            m_networkService = new Thunder::JSONRPC::LinkType<Core::JSON::IElement>(_T(NETWORK_CALLSIGN_VER),"", false, token);
         }
 
         JsonObject joGetParams, joGetResult;

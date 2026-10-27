@@ -23,7 +23,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 namespace TTS {
 
@@ -42,7 +42,7 @@ private:
     void serviceAccessTokenChangedEventHandler (const JsonObject& parameters);
     void getServiceAccessToken();
 
-    WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement>* m_authService{nullptr};
+    Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement>* m_authService{nullptr};
     string m_SatToken;
     string m_callsign;
     std::mutex m_mutex;

@@ -23,14 +23,14 @@
 #define GetSecurityToken(a, b) 0
 #define GetToken(a, b, c) 0
 #else
-#include <WPEFramework/securityagent/securityagent.h>
-#include <WPEFramework/securityagent/SecurityTokenUtil.h>
+#include <Thunder/securityagent/securityagent.h>
+#include <Thunder/securityagent/SecurityTokenUtil.h>
 #endif
 
 #define MAX_SECURITY_TOKEN_SIZE 1024
 #define CALLSIGN_VER ".1"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 namespace TTS {
 
@@ -46,9 +46,9 @@ SatToken::SatToken(const string callsign) {
     m_callsign.append(CALLSIGN_VER);
     string token = getSecurityToken();
     if(token.empty()) {
-        m_authService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(m_callsign.c_str()),"");
+        m_authService = new Thunder::JSONRPC::LinkType<Core::JSON::IElement>(_T(m_callsign.c_str()),"");
     } else {
-        m_authService = new WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>(_T(m_callsign.c_str()),"", false, token);
+        m_authService = new Thunder::JSONRPC::LinkType<Core::JSON::IElement>(_T(m_callsign.c_str()),"", false, token);
     }
     getServiceAccessToken();
 }
@@ -65,7 +65,7 @@ string SatToken::getSecurityToken() {
     }
 
     if(endpoint.empty()) {
-        Core::File file("/etc/WPEFramework/config.json");
+        Core::File file("/etc/Thunder/config.json");
         if(file.Open(true)) {
             JsonObject config;
             if(config.IElement::FromFile(file)) {

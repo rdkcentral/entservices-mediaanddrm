@@ -68,7 +68,7 @@ const static std::map<std::string, std::regex> patternMap = {
     {"httpsrc", std::regex("^(http|https)://.*")}
 };
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class SystemAudioPlayerImplementation : public Exchange::ISystemAudioPlayer, public SAPEventCallback {
@@ -166,4 +166,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

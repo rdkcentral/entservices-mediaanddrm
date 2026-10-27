@@ -37,7 +37,7 @@
 #define SAMPLEPLUGINL2TEST_CALLSIGN _T("L2tests.1")
 
 using ::testing::NiceMock;
-using namespace WPEFramework;
+using namespace Thunder;
 using testing::StrictMock;
 
 class TextToSpeechTest : public L2TestMocks {

@@ -21,7 +21,7 @@
 
 #include "../helpers/UtilsInputValidator.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
 using Utils::ExpectedValues;
@@ -87,4 +87,4 @@ struct InputValidation
 };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

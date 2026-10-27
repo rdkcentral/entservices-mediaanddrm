@@ -42,7 +42,7 @@
 #define MAX_STRING_LENGTH 2048
 
 using namespace std;
-using namespace WPEFramework;
+using namespace Thunder;
 
 using namespace TTS;
 
@@ -205,7 +205,7 @@ namespace Handlers {
     }
 }
 int main(int argc, char *argv[]) {
-    std::shared_ptr<WPEFramework::JSONRPC::LinkType<WPEFramework::Core::JSON::IElement> > remoteObject = NULL;
+    std::shared_ptr<Thunder::JSONRPC::LinkType<Thunder::Core::JSON::IElement> > remoteObject = NULL;
     std::string reqPayload;
 
     int choice;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
         {
             string sToken = (char*)buffer;
             string query = "token=" + sToken;
-            remoteObject = make_shared<WPEFramework::JSONRPC::LinkType<Core::JSON::IElement>>(TTSSRV_CALLSIGN, "", false, query);
+            remoteObject = make_shared<Thunder::JSONRPC::LinkType<Core::JSON::IElement>>(TTSSRV_CALLSIGN, "", false, query);
         }
         if (NULL == remoteObject) {
             LOGERR("JSONRPC::Client initialization failed");

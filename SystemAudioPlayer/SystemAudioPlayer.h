@@ -36,7 +36,7 @@
 
 #include "SystemAudioPlayerImplementation.h"
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class SystemAudioPlayer: public PluginHost::IPlugin, public PluginHost::JSONRPC {
@@ -133,4 +133,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

@@ -28,7 +28,7 @@
 #include "impl/TTSConfiguration.h"
 #include <vector>
 
-namespace WPEFramework {
+namespace Thunder {
 namespace Plugin {
 
     class TextToSpeechImplementation : public Exchange::ITextToSpeech, public PluginHost::IStateControl, public TTS::TTSEventCallback {
@@ -154,4 +154,4 @@ namespace Plugin {
     };
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

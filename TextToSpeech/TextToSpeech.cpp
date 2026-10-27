@@ -24,7 +24,7 @@
 #define API_VERSION_NUMBER_PATCH 35
 #define API_VERSION_NUMBER 1
 
-namespace WPEFramework {
+namespace Thunder {
 
 namespace {
 
@@ -43,7 +43,7 @@ namespace {
 namespace Plugin {
 
     /*
-     *Register TextToSpeech module as wpeframework plugin
+     *Register TextToSpeech module as thunder plugin
      **/
     SERVICE_REGISTRATION(TextToSpeech, API_VERSION_NUMBER_MAJOR, API_VERSION_NUMBER_MINOR, API_VERSION_NUMBER_PATCH);
 
@@ -147,4 +147,4 @@ namespace Plugin {
     }
 
 } // namespace Plugin
-} // namespace WPEFramework
+} // namespace Thunder

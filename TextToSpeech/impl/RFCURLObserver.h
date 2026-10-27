@@ -28,7 +28,7 @@ namespace TTS {
 class RFCURLObserver {
 public:
     static RFCURLObserver* getInstance();
-    void triggerRFC(WPEFramework::PluginHost::IShell* service, TTSConfiguration* config);
+    void triggerRFC(Thunder::PluginHost::IShell* service, TTSConfiguration* config);
     ~RFCURLObserver();
 
 private:
@@ -38,7 +38,7 @@ private:
     RFCURLObserver(const RFCURLObserver&) = delete;
     RFCURLObserver& operator=(const RFCURLObserver&) = delete;
 
-    class SystemServicesNotification : public WPEFramework::Exchange::ISystemServices::INotification
+    class SystemServicesNotification : public Thunder::Exchange::ISystemServices::INotification
     {
     private:
         SystemServicesNotification(const SystemServicesNotification&) = delete;
@@ -58,7 +58,7 @@ private:
         }
 
         BEGIN_INTERFACE_MAP(SystemServicesNotification)
-        INTERFACE_ENTRY(WPEFramework::Exchange::ISystemServices::INotification)
+        INTERFACE_ENTRY(Thunder::Exchange::ISystemServices::INotification)
         END_INTERFACE_MAP
 
     private:
@@ -66,11 +66,11 @@ private:
     };
 
     void fetchURLFromConfig();
-    void registerNotification(WPEFramework::PluginHost::IShell* service);
+    void registerNotification(Thunder::PluginHost::IShell* service);
     void onDeviceMgtUpdateReceivedHandler(const string& source, const string& type, const bool success);
 
-    WPEFramework::Core::Sink<SystemServicesNotification> _systemServicesNotification;
-    WPEFramework::Exchange::ISystemServices* _systemServicesPlugin{nullptr};
+    Thunder::Core::Sink<SystemServicesNotification> _systemServicesNotification;
+    Thunder::Exchange::ISystemServices* _systemServicesPlugin{nullptr};
     bool _eventRegistered{false};
     TTSConfiguration* m_defaultConfig{nullptr};
 };

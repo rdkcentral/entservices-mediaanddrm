@@ -263,12 +263,12 @@ void TTSConfiguration::setPreemptiveSpeak(const bool preemptive) {
 
 bool TTSConfiguration::loadFromConfigStore()
 {
-    return WPEFramework::Plugin::_readFromFile(TTS_CONFIGURATION_STORE, *this);
+    return Thunder::Plugin::_readFromFile(TTS_CONFIGURATION_STORE, *this);
 }
 
 bool TTSConfiguration::updateConfigStore()
 {
-    return WPEFramework::Plugin::_writeToFile(TTS_CONFIGURATION_STORE, *this);
+    return Thunder::Plugin::_writeToFile(TTS_CONFIGURATION_STORE, *this);
 }
 
 const std::string TTSConfiguration::voice() {
@@ -449,7 +449,7 @@ int TTSSpeaker::speak(TTSSpeakerClient *client, uint32_t id, std::string callsig
 
 bool TTSSpeaker::shouldUseLocalEndpoint() {
    if(m_defaultConfig.hasValidLocalEndpoint())
-       return !WPEFramework::Plugin::TTS::NetworkStatusObserver::getInstance()->isConnected() || m_remoteError;
+       return !Thunder::Plugin::TTS::NetworkStatusObserver::getInstance()->isConnected() || m_remoteError;
    return false;
 }
 
@@ -911,7 +911,7 @@ void TTSSpeaker::speakText(TTSConfiguration &config, SpeechData &data) {
         string token;
         bool authrequired = (config.endPointType().compare("TTS2") == 0);
         if(authrequired) 
-            token = WPEFramework::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
+            token = Thunder::Plugin::TTS::SatToken::getInstance(config.satPluginCallsign())->getSAT();
         
         play(constructURL(config, data),data,authrequired,token);
 
