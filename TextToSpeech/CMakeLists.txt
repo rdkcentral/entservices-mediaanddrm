@@ -29,6 +29,7 @@ find_package(${NAMESPACE}Plugins REQUIRED)
 find_package(ClientSecurityAgent QUIET)
 if(ClientSecurityAgent_FOUND)
     set(SECURITYUTIL_LIBRARIES ClientSecurityAgent::ClientSecurityAgent)
+    add_definitions(-DSECURITY_TOKEN_ENABLED=0)  # Thunder 5 has no SecurityTokenUtil.h/GetSecurityToken yet
 else()
     find_package(WPEFrameworkSecurityUtil)
     if(WPEFRAMEWORK_SECURITYUTIL_FOUND)
