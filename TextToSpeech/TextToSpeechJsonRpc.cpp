@@ -49,6 +49,8 @@ namespace Plugin {
         Register("setACL", &TextToSpeech::SetACL, this);
         Register("getapiversion", &TextToSpeech::getapiversion, this);
         Register("getinterfaceversion", &TextToSpeech::GetInterfaceVersion, this);
+        Register("getcapability", &TextToSpeech::GetCapability, this);
+        Register("getcapabilities", &TextToSpeech::GetCapabilities, this);
 
         InputValidation::Instance().setLogger([] (const char *log) { TTSLOG_WARNING(log); });
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
