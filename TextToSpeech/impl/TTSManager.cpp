@@ -491,7 +491,7 @@ TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, con
     }
     
     if(m_speaker) {
-        if(checkAccess("speak", callsign))
+        if(callsign.empty() || checkAccess("speak", callsign))
         {
             m_speaker->speakWithUtterance(this, speechId , callsign, text, utterance, m_defaultConfiguration.primVolDuck());
         }
