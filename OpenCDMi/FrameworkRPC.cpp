@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <memory>
 #include <regex>
 #include <string>
 #include <vector>
@@ -335,22 +336,38 @@ namespace Plugin {
                     Sink(const Sink&) = delete;
                     Sink& operator=(const Sink&) = delete;
 
+                    struct CallbackRelease {
+                        void operator()(::OCDM::ISession::ICallback* callback) const
+                        {
+                            callback->Release();
+                        }
+                    };
+                    using Callback = std::unique_ptr<
+                        ::OCDM::ISession::ICallback, CallbackRelease>;
+
                 public:
                     Sink(SessionImplementation* parent, ::OCDM::ISession::ICallback* callback)
                         : _parent(*parent)
                         , _callback(callback)
+                        , _callbackLock()
                     {
                         _callback->AddRef();
                     }
                     Sink(SessionImplementation* parent)
                         : _parent(*parent)
                         , _callback(nullptr)
+                        , _callbackLock()
                     {
                     }
                     virtual ~Sink()
                     {
-                        if (_callback != nullptr) {
-                            Revoke(_callback);
+                        // CDM callbacks must already be drained before this
+                        // sink is destroyed; this lock cannot enforce that.
+                        Callback callback;
+                        {
+                            Core::SafeSyncType<Core::CriticalSection> lock(_callbackLock);
+                            callback.reset(_callback);
+                            _callback = nullptr;
                         }
                     }
 
@@ -362,9 +379,10 @@ namespace Plugin {
                         const char* f_pszUrl) override
                     {
                         TRACE(Trace::Information, ("OnKeyMessage(%s)", f_pszUrl));
-                        if (_callback != nullptr) {
+                        Callback callback = AcquireCallback();
+                        if (callback != nullptr) {
                             std::string url(f_pszUrl, strlen(f_pszUrl));
-                            _callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
+                            callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
                         }
                     }
 
@@ -372,9 +390,10 @@ namespace Plugin {
                     virtual void OnError(int16_t f_nError, CDMi::CDMi_RESULT f_crSysError, const char* errorMessage) override
                     {
                         TRACE(Trace::Information, ("OnKeyError(%d,%s)", f_nError, errorMessage));
-                        if (_callback != nullptr) {
+                        Callback callback = AcquireCallback();
+                        if (callback != nullptr) {
                             std::string message(errorMessage, strlen(errorMessage));
-                            _callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
+                            callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
                         }
                     }
 
@@ -409,28 +428,62 @@ namespace Plugin {
 
                         ASSERT (updated != nullptr);
 
-                        if (_callback != nullptr) {
-                            _callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
+                        Callback callback = AcquireCallback();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
                         }
                     }
                     void Revoke(::OCDM::ISession::ICallback* callback)
                     {
-                        if ((_callback != nullptr) && (_callback == callback)) {
-                            _callback->Release();
-                            _callback = nullptr;
-                        } else {
+                        Callback revoked;
+                        {
+                            Core::SafeSyncType<Core::CriticalSection> lock(_callbackLock);
+                            if ((_callback != nullptr) && (_callback == callback)) {
+                                revoked.reset(_callback);
+                                _callback = nullptr;
+                            }
+                        }
+
+                        if (revoked == nullptr) {
                             TRACE(Trace::Information, (_T("Additional request for Revoking the callback!! %p"), callback));
                         }
+                        // The proxy reference is released outside the lock.
+                        // Revoke does not drain snapshots already acquired.
                     }
 
                     void OnKeyStatusesUpdated() const override
                     {
-                        _callback->OnKeyStatusesUpdated();
+                        Callback callback = AcquireCallback();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusesUpdated();
+                        }
+                    }
+
+                private:
+                    // This protects the server proxy, not the client object.
+                    // Do not use AccessorOCDM::_adminLock: CDM close can wait
+                    // for the thread delivering this notification.
+                    Callback AcquireCallback() const
+                    {
+                        Callback callback;
+                        {
+                            Core::SafeSyncType<Core::CriticalSection> lock(_callbackLock);
+                            if (_callback != nullptr) {
+                                _callback->AddRef();
+                                callback.reset(_callback);
+                            }
+                        }
+
+                        if (callback == nullptr) {
+                            TRACE(Trace::Information, (_T("CDM notification dropped: no callback registered, sink %p"), this));
+                        }
+                        return callback;
                     }
 
                 private:
                     SessionImplementation& _parent;
                     ::OCDM::ISession::ICallback* _callback;
+                    mutable Core::CriticalSection _callbackLock;
                 };
 
             public:
