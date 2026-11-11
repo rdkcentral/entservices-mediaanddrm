@@ -2107,6 +2107,7 @@ TEST_F(TTSInitializedTest, GetCapabilities) {
     EXPECT_EQ(Core::ERROR_GENERAL,
               handler.Invoke(connection,
                              _T("getcapabilities"),
+                              _T(""),
                              response));
 }
 

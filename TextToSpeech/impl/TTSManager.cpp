@@ -132,26 +132,43 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
     std::string key = "voice_for_";
     voices.clear();
     if(language.empty()) {
-        auto it = m_defaultConfiguration.m_others.begin();
-        while(it != m_defaultConfiguration.m_others.end()) {
-            //ignore local language
-            if(it->first.find("voice_for_local_") == 0) {
-                ++it;
-                continue;
+        /* since webapp is using first lang and voice in the list we are adding default lang as first entry */
+        const std::string& defaultLang = m_defaultConfiguration.language();
+        std::string defaultKey = "voice_for_" + defaultLang;
+        auto defaultIt = m_defaultConfiguration.m_others.find(defaultKey);
+        if (defaultIt != m_defaultConfiguration.m_others.end()) {
+            for (size_t i = 0; i < defaultIt->second.size(); ++i) {
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                voiceInfo.name = defaultIt->second[i];
+                voiceInfo.language = defaultLang;
+                voiceInfo.isDefault = (i == 0);
+                voices.push_back(voiceInfo);
             }
-            if(it->first.find("voice_for_") == 0) {
-                std::string lang = it->first.substr(strlen("voice_for_"));
-
-                for(size_t i = 0; i < it->second.size(); ++i) {
-                    WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
-                    voiceInfo.name = it->second[i];
-                    voiceInfo.language = lang;
-                    voiceInfo.isDefault = (i == 0);
-                    voices.push_back(voiceInfo);
-                }
-            }
-            ++it;
         }
+        /* adding remaining entries */
+        for (const auto& entry : m_defaultConfiguration.m_others) {
+
+            if (entry.first.find("voice_for_") != 0)
+                continue;
+
+            if (entry.first.find("voice_for_local_") == 0)
+                continue;
+
+            std::string lang = entry.first.substr(strlen("voice_for_"));
+
+            // Skip default language because it was already processed
+            if (lang == defaultLang)
+                continue;
+
+            for (size_t i = 0; i < entry.second.size(); ++i) {
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                voiceInfo.name = entry.second[i];
+                voiceInfo.language = lang;
+                voiceInfo.isDefault = (i == 0);
+                voices.push_back(voiceInfo);
+            }
+        }
+    }
     } else {
         key += language;
         auto it = m_defaultConfiguration.m_others.find(key);
