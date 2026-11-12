@@ -132,7 +132,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
     std::string key = "voice_for_";
     voices.clear();
     if(language.empty()) {
-        /* since webapp is using first lang and voice in the list we are adding default lang as first entry */
+        /* since webapp is using first lang and voice for speak in the list we are adding default lang as first entry */
         const std::string& defaultLang = m_defaultConfiguration.language();
         std::string defaultKey = "voice_for_" + defaultLang;
         auto defaultIt = m_defaultConfiguration.m_others.find(defaultKey);
@@ -141,7 +141,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = defaultIt->second[i];
                 voiceInfo.language = defaultLang;
-                voiceInfo.isDefault = (i == 0);
+                voiceInfo.isDefault = 1;
                 voices.push_back(voiceInfo);
             }
         }
@@ -164,12 +164,12 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = entry.second[i];
                 voiceInfo.language = lang;
-                voiceInfo.isDefault = (i == 0);
+                voiceInfo.isDefault = (i == 0); /* since voice is array now. we are making first voice as default */
                 voices.push_back(voiceInfo);
             }
         }
     }
-    } else {
+    else {
         key += language;
         auto it = m_defaultConfiguration.m_others.find(key);
         if(it == m_defaultConfiguration.m_others.end()) {
@@ -181,7 +181,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = it->second[i];
                 voiceInfo.language = language;
-                voiceInfo.isDefault = (i == 0);
+                voiceInfo.isDefault = (i == 0); /* since voice is array now. we are making first voice as default */
                 voices.push_back(voiceInfo);
             }
         }
