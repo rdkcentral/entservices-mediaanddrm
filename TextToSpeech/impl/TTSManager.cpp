@@ -221,7 +221,6 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
     bool languageUpdated = false;
     /* Set default voice for the language only when voice is empty*/
     if(!configuration.language.empty() && configuration.voice.empty()) {
-        printf("kykumar voice empty\n");
         std::vector<std::string> voices;
         listVoices(configuration.language, voices);
         if(voices.empty()) {
@@ -235,14 +234,10 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
         }
     }
     else if(!configuration.language.empty()) {
-        printf("kykumar lang not  empty\n");
         m_needsConfigStoreUpdate |= m_defaultConfiguration.setVoice(configuration.voice);
         languageUpdated = m_defaultConfiguration.setLanguage(configuration.language);
         m_needsConfigStoreUpdate |= languageUpdated;
     }
-    else
-    printf("kykumar lang empty\n");
-
 
     if( m_defaultConfiguration.hasValidLocalEndpoint() && languageUpdated ) {
         std::vector<std::string> localVoices;
