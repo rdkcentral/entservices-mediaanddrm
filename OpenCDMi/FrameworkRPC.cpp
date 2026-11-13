@@ -349,9 +349,7 @@ namespace Plugin {
                     }
                     virtual ~Sink()
                     {
-                        if (_callback != nullptr) {
-                            Revoke(_callback);
-                        }
+                        Revoke(Callback());
                     }
 
                 public:
@@ -362,9 +360,11 @@ namespace Plugin {
                         const char* f_pszUrl) override
                     {
                         TRACE(Trace::Information, ("OnKeyMessage(%s)", f_pszUrl));
-                        if (_callback != nullptr) {
+                        ::OCDM::ISession::ICallback* callback = Acquire();
+                        if (callback != nullptr) {
                             std::string url(f_pszUrl, strlen(f_pszUrl));
-                            _callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
+                            callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
+                            callback->Release();
                         }
                     }
 
@@ -372,9 +372,11 @@ namespace Plugin {
                     virtual void OnError(int16_t f_nError, CDMi::CDMi_RESULT f_crSysError, const char* errorMessage) override
                     {
                         TRACE(Trace::Information, ("OnKeyError(%d,%s)", f_nError, errorMessage));
-                        if (_callback != nullptr) {
+                        ::OCDM::ISession::ICallback* callback = Acquire();
+                        if (callback != nullptr) {
                             std::string message(errorMessage, strlen(errorMessage));
-                            _callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
+                            callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
+                            callback->Release();
                         }
                     }
 
@@ -409,28 +411,64 @@ namespace Plugin {
 
                         ASSERT (updated != nullptr);
 
-                        if (_callback != nullptr) {
-                            _callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
+                        ::OCDM::ISession::ICallback* callback = Acquire();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
+                            callback->Release();
                         }
                     }
                     void Revoke(::OCDM::ISession::ICallback* callback)
                     {
+                        ::OCDM::ISession::ICallback* detached = nullptr;
+
+                        _callbackLock.Lock();
                         if ((_callback != nullptr) && (_callback == callback)) {
-                            _callback->Release();
+                            detached = _callback;
                             _callback = nullptr;
-                        } else {
+                        }
+                        _callbackLock.Unlock();
+
+                        if (detached != nullptr) {
+                            // Released outside the lock; in-flight notifications hold their own reference.
+                            detached->Release();
+                        } else if (callback != nullptr) {
                             TRACE(Trace::Information, (_T("Additional request for Revoking the callback!! %p"), callback));
                         }
                     }
 
                     void OnKeyStatusesUpdated() const override
                     {
-                        _callback->OnKeyStatusesUpdated();
+                        ::OCDM::ISession::ICallback* callback = Acquire();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusesUpdated();
+                            callback->Release();
+                        }
+                    }
+
+                private:
+                    // Returns the callback with an added reference (or nullptr); caller must Release().
+                    ::OCDM::ISession::ICallback* Acquire() const
+                    {
+                        _callbackLock.Lock();
+                        ::OCDM::ISession::ICallback* callback = _callback;
+                        if (callback != nullptr) {
+                            callback->AddRef();
+                        }
+                        _callbackLock.Unlock();
+                        return (callback);
+                    }
+                    ::OCDM::ISession::ICallback* Callback() const
+                    {
+                        _callbackLock.Lock();
+                        ::OCDM::ISession::ICallback* callback = _callback;
+                        _callbackLock.Unlock();
+                        return (callback);
                     }
 
                 private:
                     SessionImplementation& _parent;
                     ::OCDM::ISession::ICallback* _callback;
+                    mutable Core::CriticalSection _callbackLock;
                 };
 
             public:
