@@ -233,7 +233,7 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
             m_needsConfigStoreUpdate |= languageUpdated;
         }
     }
-    else {
+    else if(!configuration.voice.empty()) {
         m_needsConfigStoreUpdate |= m_defaultConfiguration.setVoice(configuration.voice);
         languageUpdated = m_defaultConfiguration.setLanguage(configuration.language);
         m_needsConfigStoreUpdate |= languageUpdated;
