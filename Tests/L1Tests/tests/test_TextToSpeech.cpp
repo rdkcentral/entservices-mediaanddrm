@@ -2162,7 +2162,7 @@ TEST_F(TTSInitializedTest, DefaultDeviceConfiguration) {
     EXPECT_EQ(response,
         _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
             "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
-            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1.0,\"volume\":\"1.0\",\"pitch\":\"1.0\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1,\"volume\":\"1\",\"pitch\":\"1\","
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
@@ -2186,7 +2186,7 @@ TEST_F(TTSInitializedTest, SetDeviceConfigurationOnlyLanguage) {
     EXPECT_EQ(response,
         _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
             "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
-            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1.0,\"volume\":\"1.0\",\"pitch\":\"1.0\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1,\"volume\":\"1\",\"pitch\":\"1\","
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
@@ -2210,7 +2210,7 @@ TEST_F(TTSInitializedTest, SetDeviceConfigurationNoLanguage) {
     EXPECT_EQ(response,
         _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
             "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
-            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1.0,\"volume\":\"1.0\",\"pitch\":\"1.0\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1,\"volume\":\"1\",\"pitch\":\"1\","
             "\"TTS_Status\":0,\"success\":true}"
         ));
 }
