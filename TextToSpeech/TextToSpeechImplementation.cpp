@@ -658,7 +658,7 @@ namespace Plugin {
                 break;
 
             default:
-                break;
+                return Core::ERROR_GENERAL;
         }
 
         return Core::ERROR_NONE;

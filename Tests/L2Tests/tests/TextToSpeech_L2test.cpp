@@ -1584,4 +1584,3 @@ TEST_F(TextToSpeechTest, playbackError)
     enableTTS(false);
     jsonrpc.Unsubscribe(JSON_TIMEOUT, _T("onspeechstart"));
 }
-

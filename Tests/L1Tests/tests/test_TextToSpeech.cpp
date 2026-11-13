@@ -324,6 +324,10 @@ TEST_F(TTSInitializedTest,RegisteredMethods) {
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setACL")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("speakwithutterance")));
     EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getvoices")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapabilities")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getcapability")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("setdeviceconfiguration")));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Exists(_T("getdeviceconfiguration")));
 }
 
 /*******************************************************************************************************************
@@ -2097,4 +2101,151 @@ TEST_F(TTSInitializedTest, GetVoicesSetInvalidLanguage) {
                              _T("getvoices"),
                              _T("{\"language\": \"*\"}"),
                              response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilities) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection,
+                             _T("getcapabilities"),
+                              _T(""),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilityRawText) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"RAW_TEXT\"}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilitySSML) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"SSML\"}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, GetCapabilityInvalid) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL,
+              handler.Invoke(connection,
+                             _T("getcapability"),
+                             _T("{\"capability\": \"INVALID\"}"),
+                             response));
+}
+
+TEST_F(TTSInitializedTest, DefaultDeviceConfiguration) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"1.0\",\"volume\":\"1.0\",\"pitch\":\"1.0\"}"
+        ),
+        response
+    ));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getdeviceconfiguration"), _T(""), response));
+
+    EXPECT_EQ(response,
+        _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1,\"volume\":1,\"pitch\":1,"
+            "\"TTS_Status\":0,\"success\":true}"
+        ));
+}
+
+TEST_F(TTSInitializedTest, SetDeviceConfigurationOnlyLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"language\": \"en-us\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"1.0\",\"volume\":\"1.0\",\"pitch\":\"1.0\"}"
+        ),
+        response
+    ));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getdeviceconfiguration"), _T(""), response));
+
+    EXPECT_EQ(response,
+        _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"language\":\"en-us\",\"voice\":\"carol\",\"rate\":1,\"volume\":1,\"pitch\":1,"
+            "\"TTS_Status\":0,\"success\":true}"
+        ));
+}
+
+TEST_F(TTSInitializedTest, SetDeviceConfigurationNoLanguage) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"1.0\",\"volume\":\"1.0\",\"pitch\":\"1.0\"}"
+        ),
+        response
+    ));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("getdeviceconfiguration"), _T(""), response));
+
+    EXPECT_EQ(response,
+        _T("{\"ttsendpoint\":\"http:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"ttsendpointsecured\":\"https:\\/\\/example-tts-dummy.net\\/tts\\/v1\\/cdn\\/location?\","
+            "\"language\":\"en-us\",\"voice\":\"\",\"rate\":1,\"volume\":1,\"pitch\":1,"
+            "\"TTS_Status\":0,\"success\":true}"
+        ));
+}
+
+TEST_F(TTSInitializedTest, InvalidDeviceConfiguration) {
+    EXPECT_EQ(string(""), plugin->Initialize(&service));
+
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"15\",\"volume\":\"1.0\",\"pitch\":\"1.0\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"1.0\",\"volume\":\"50\",\"pitch\":\"1.0\"}"
+        ),
+        response
+    ));
+    EXPECT_EQ(Core::ERROR_GENERAL, handler.Invoke(
+        connection,
+        _T("setdeviceconfiguration"),
+        _T("{\"language\": \"en-us\",\"voice\": \"carol\","
+            "\"ttsendpoint\":\"http://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"ttsendpointsecured\":\"https://example-tts-dummy.net/tts/v1/cdn/location?\","
+            "\"rate\": \"1.0\",\"volume\":\"1.0\",\"pitch\":\"17\"}"
+        ),
+        response
+    ));
 }
