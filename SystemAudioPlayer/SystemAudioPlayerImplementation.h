@@ -30,6 +30,9 @@
 #include "impl/SecurityParameters.h"
 #include <vector>
 #include <regex>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 #define CHECK_SAP_PARAMETER_RETURN_ON_FAIL(param) do {\
     if(!parameters.HasLabel(param)) { \
@@ -79,9 +82,9 @@ namespace Plugin {
                 ONPOWERSTANDBY
             };
 
-        // Tracks org.rdk.PowerManager availability and receives its power mode change events.
+        // Tracks org.rdk.PowerManager availability and receives its power mode pre-change events.
         class PowerStateObserver : public PluginHost::IPlugin::INotification,
-                                   public Exchange::IPowerManager::IModeChangedNotification {
+                                   public Exchange::IPowerManager::IModePreChangeNotification {
         public:
             PowerStateObserver() = delete;
             PowerStateObserver(const PowerStateObserver&) = delete;
@@ -115,14 +118,15 @@ namespace Plugin {
             }
 #endif /* USE_THUNDER_R4 */
 
-            void OnPowerModeChanged(const Exchange::IPowerManager::PowerState currentState,
-                                    const Exchange::IPowerManager::PowerState newState) override {
-                _parent.OnPowerModeChanged(currentState, newState);
+            void OnPowerModePreChange(const Exchange::IPowerManager::PowerState currentState,
+                                     const Exchange::IPowerManager::PowerState newState,
+                                     const int transactionId, const int stateChangeAfter) override {
+                _parent.OnPowerModePreChange(currentState, newState, transactionId, stateChangeAfter);
             }
 
             BEGIN_INTERFACE_MAP(PowerStateObserver)
             INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
-            INTERFACE_ENTRY(Exchange::IPowerManager::IModeChangedNotification)
+            INTERFACE_ENTRY(Exchange::IPowerManager::IModePreChangeNotification)
             END_INTERFACE_MAP
 
         private:
@@ -131,10 +135,13 @@ namespace Plugin {
 
         class EXTERNAL Job : public Core::IDispatch {
         protected:
-             Job(SystemAudioPlayerImplementation *sap, Event event, string &data)
+             Job(SystemAudioPlayerImplementation *sap, Event event, string &data,
+                 const int transactionId, const uint64_t powerManagerGeneration)
                 : _sap(sap)
                 , _event(event)
-                , _data(data) {
+                , _data(data)
+                , _transactionId(transactionId)
+                , _powerManagerGeneration(powerManagerGeneration) {
                 if (_sap != nullptr) {
                     _sap->AddRef();
                 }
@@ -151,22 +158,25 @@ namespace Plugin {
             }
 
        public:
-            static Core::ProxyType<Core::IDispatch> Create(SystemAudioPlayerImplementation *sap, Event event, string data) {
+            static Core::ProxyType<Core::IDispatch> Create(SystemAudioPlayerImplementation *sap, Event event, string data,
+                                                        const int transactionId = 0, const uint64_t powerManagerGeneration = 0) {
 #ifndef USE_THUNDER_R4
-                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
+                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerManagerGeneration)));
 #else
-                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data)));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerManagerGeneration)));
 #endif /* USE_THUNDER_R4 */
             }
 
             virtual void Dispatch() {
-                _sap->Dispatch(_event, _data);
+                _sap->Dispatch(_event, _data, _transactionId, _powerManagerGeneration);
             }
 
         private:
             SystemAudioPlayerImplementation *_sap;
             const Event _event;
             const string _data;
+            const int _transactionId;
+            const uint64_t _powerManagerGeneration;
         };
 
     public:
@@ -205,7 +215,7 @@ namespace Plugin {
         std::list<Exchange::ISystemAudioPlayer::INotification*> _notificationClients;
 
         void dispatchEvent(Event, JsonObject &params);
-        void Dispatch(Event event, string data);
+        void Dispatch(Event event, string data, int transactionId, uint64_t powerManagerGeneration);
         void OpenMapping(AudioType audioType,SourceType sourceType,PlayMode mode,int &playerid);
         bool GetSessionFromUrl(string url,int &playerid);
         bool SameModeNotPlaying(AudioPlayer*,int &playerid);
@@ -214,17 +224,32 @@ namespace Plugin {
 
         void OnPluginActivated(const string& callsign);
         void OnPluginDeactivated(const string& callsign);
-        void OnPowerModeChanged(const Exchange::IPowerManager::PowerState currentState,
-                                const Exchange::IPowerManager::PowerState newState);
+        void OnPowerModePreChange(const Exchange::IPowerManager::PowerState currentState,
+                                  const Exchange::IPowerManager::PowerState newState,
+                                  int transactionId, int stateChangeAfter);
         void ConnectPowerManager();
         void DisconnectPowerManager();
         void ReleasePowerMonitoring();
         void StopActivePlayers();
+        void CompletePowerModePreChange(int transactionId, uint64_t generation);
+        void RequestPowerModeChangeDelay(int transactionId, uint64_t generation, int delaySec);
+        void PowerDelayMonitor(int transactionId, uint64_t generation);
+        void StopPowerDelayMonitor();
 
         mutable Core::CriticalSection _powerLock;
         PluginHost::IShell* _service;
         Exchange::IPowerManager* _powerManager;
         Core::Sink<PowerStateObserver> _powerStateObserver;
+        uint32_t _powerPreChangeClientId{0};
+        uint64_t _powerManagerGeneration{0};
+        int _powerTransactionId{0};
+        std::mutex _powerDelayControlMutex;
+        std::mutex _powerDelayMutex;
+        std::condition_variable _powerDelayCv;
+        std::thread _powerDelayThread;
+        bool _powerDelayDone{true};
+        int _powerDelayTransactionId{0};
+        uint64_t _powerDelayGeneration{0};
 
     public:
         SystemAudioPlayerImplementation();

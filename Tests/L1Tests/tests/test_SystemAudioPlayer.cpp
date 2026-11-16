@@ -20,6 +20,10 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <chrono>
+#include <condition_variable>
+#include <future>
+#include <mutex>
 #include "SystemAudioPlayer.h"
 #include "SystemAudioPlayerImplementation.h"
 
@@ -1854,56 +1858,335 @@ TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalidUrl) {
     EXPECT_EQ(response, _T("{\"success\":false}")); 
 }
 
-/**
- * @name  : SAPPowerManagerModeChangeHandling
- * @brief : Uses the initialized plugin's interface to register with PowerManager, handles a deep sleep transition and
- *          unregisters when Configure(nullptr) is called.
- */
-TEST_F(SAPInitializedTest, SAPPowerManagerModeChangeHandling) {
-    auto releaseInterface = [](Exchange::ISystemAudioPlayer* interface) {
-        interface->Release();
+class SAPWorkerBlocker {
+private:
+    struct State {
+        std::mutex mutex;
+        std::condition_variable cv;
+        unsigned int started{0};
+        bool released{false};
     };
-    std::unique_ptr<Exchange::ISystemAudioPlayer, decltype(releaseInterface)> sap(
-        static_cast<Exchange::ISystemAudioPlayer*>(plugin->QueryInterface(Exchange::ISystemAudioPlayer::ID)),
-        releaseInterface);
-    ASSERT_NE(sap, nullptr);
+
+    class BlockingJob : public Core::IDispatch {
+    public:
+        explicit BlockingJob(const std::shared_ptr<State>& state) : _state(state) {}
+        void Dispatch() override {
+            std::unique_lock<std::mutex> lock(_state->mutex);
+            ++_state->started;
+            _state->cv.notify_all();
+            _state->cv.wait(lock, [this] { return _state->released; });
+        }
+    private:
+        std::shared_ptr<State> _state;
+    };
+
+public:
+    SAPWorkerBlocker() : _state(std::make_shared<State>()) {
+        for (unsigned int i = 0; i < 2; ++i) {
+#ifdef USE_THUNDER_R4
+            Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(_state)));
+#else
+            Core::IWorkerPool::Instance().Submit(Core::proxy_cast<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(_state)));
+#endif
+        }
+    }
+
+    ~SAPWorkerBlocker() { Release(); }
+
+    bool WaitUntilBlocked() {
+        std::unique_lock<std::mutex> lock(_state->mutex);
+        return _state->cv.wait_for(lock, std::chrono::seconds(2), [this] { return _state->started == 2; });
+    }
+
+    void Release() {
+        {
+            std::lock_guard<std::mutex> lock(_state->mutex);
+            _state->released = true;
+        }
+        _state->cv.notify_all();
+    }
+
+private:
+    std::shared_ptr<State> _state;
+};
+
+class SAPPowerManagerTest : public SAPInitializedTest {
+protected:
+    struct InterfaceRelease {
+        void operator()(Exchange::ISystemAudioPlayer* interface) const { interface->Release(); }
+    };
 
     Core::ProxyType<PowerManagerMock> powerManagerMock = Core::ProxyType<PowerManagerMock>::Create();
-    Exchange::IPowerManager::IModeChangedNotification* modeChangedNotification = nullptr;
+    std::unique_ptr<Exchange::ISystemAudioPlayer, InterfaceRelease> sap;
+    Exchange::IPowerManager::IModePreChangeNotification* preChangeNotification{nullptr};
+    const uint32_t clientId{42};
 
-    ON_CALL(service, QueryInterfaceByCallsign(Exchange::IPowerManager::ID, ::testing::StrEq("org.rdk.PowerManager")))
-        .WillByDefault(::testing::Invoke(
-            [&](const uint32_t, const string&) -> void* {
-                powerManagerMock->AddRef();
-                return static_cast<void*>(static_cast<Exchange::IPowerManager*>(&(*powerManagerMock)));
-            }));
+    void SetUp() override {
+        sap.reset(static_cast<Exchange::ISystemAudioPlayer*>(plugin->QueryInterface(Exchange::ISystemAudioPlayer::ID)));
+        ASSERT_NE(sap, nullptr);
+        ON_CALL(service, QueryInterfaceByCallsign(Exchange::IPowerManager::ID, ::testing::StrEq("org.rdk.PowerManager")))
+            .WillByDefault(::testing::Invoke(
+                [this](const uint32_t, const string&) -> void* {
+                    powerManagerMock->AddRef();
+                    return static_cast<void*>(static_cast<Exchange::IPowerManager*>(&(*powerManagerMock)));
+                }));
+    }
 
-    EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
-        .WillOnce(::testing::Invoke(
-            [&](Exchange::IPowerManager::IModeChangedNotification* notification) {
-                modeChangedNotification = notification;
+    void TearDown() override {
+        if (sap != nullptr) {
+            EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+            workerPool->Stop();
+            sap.reset();
+        }
+    }
+
+    void ConfigurePowerManager() {
+        ::testing::InSequence sequence;
+        EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
+            .WillOnce(::testing::Invoke([this](Exchange::IPowerManager::IModePreChangeNotification* notification) {
+                preChangeNotification = notification;
                 return Core::ERROR_NONE;
             }));
-    EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
+        EXPECT_CALL(*powerManagerMock, AddPowerModePreChangeClient("SystemAudioPlayer", ::testing::_))
+            .WillOnce(::testing::DoAll(::testing::SetArgReferee<1>(clientId), ::testing::Return(Core::ERROR_NONE)));
+        EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(clientId))
+            .WillOnce(::testing::Return(Core::ERROR_NONE));
+        EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
+            .WillOnce(::testing::Return(Core::ERROR_NONE));
+        EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
+    }
+};
+
+TEST_F(SAPPowerManagerTest, StopsActivePipelineBeforeCompletingDeepSleepPreChange) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    std::shared_ptr<GstElement> pipeline;
+    EXPECT_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_,
+        ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillOnce(::testing::Invoke([&pipeline](GstElement** playerPipeline, GstElement** source, GstElement*,
+            GstElement** sink, GstElement**, AudioType, PlayMode, SourceType, bool) {
+            *sink = gst_element_factory_make("fakesink", nullptr);
+            if (*sink == nullptr) {
+                ADD_FAILURE() << "GStreamer fakesink is required for the active-player test";
+                return false;
+            }
+            g_object_set(*source, "is-live", TRUE, nullptr);
+            g_object_set(*sink, "async", FALSE, "sync", FALSE, nullptr);
+            gst_bin_add_many(GST_BIN(*playerPipeline), *source, *sink, nullptr);
+            pipeline = std::shared_ptr<GstElement>(GST_ELEMENT(gst_object_ref(*playerPipeline)),
+                [](GstElement* element) { gst_object_unref(element); });
+            return gst_element_link(*source, *sink) != FALSE;
+        }));
+    auto completed = std::make_shared<std::promise<void>>();
+    auto completion = completed->get_future();
+    ::testing::Sequence powerSequence;
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 17, 5))
+        .InSequence(powerSequence)
         .WillOnce(::testing::Return(Core::ERROR_NONE));
-
-    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
-    ASSERT_NE(modeChangedNotification, nullptr);
-
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
         _T("{\"audiotype\": \"pcm\", \"sourcetype\": \"data\", \"playmode\": \"system\"}"), response));
     JsonObject openResponse;
     openResponse.FromString(response);
     const int playerId = static_cast<int>(openResponse["id"].Number());
+    const string playerParameters = _T("{\"id\": ") + std::to_string(playerId) + _T("}");
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("playbuffer"),
+        _T("{\"id\": ") + std::to_string(playerId) + _T(",\"data\":\"AAAAAA==\"}"), response));
+    const auto playingDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+    do {
+        EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), playerParameters, response));
+        if (response == _T("{\"success\":true}")) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    } while (std::chrono::steady_clock::now() < playingDeadline);
+    EXPECT_EQ(response, _T("{\"success\":true}"));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 17))
+        .InSequence(powerSequence)
+        .WillOnce(::testing::Invoke([completed, pipeline](const uint32_t, const int) {
+            EXPECT_NE(pipeline, nullptr);
+            if (pipeline != nullptr) {
+                GstState state = GST_STATE_VOID_PENDING;
+                EXPECT_NE(GST_STATE_CHANGE_FAILURE, gst_element_get_state(pipeline.get(), &state, nullptr, 0));
+                EXPECT_EQ(GST_STATE_NULL, state);
+            }
+            completed->set_value();
+            return Core::ERROR_NONE;
+        }));
 
-    modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::POWER_STATE_ON,
-                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP);
-    modeChangedNotification->OnPowerModeChanged(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
-                                                Exchange::IPowerManager::POWER_STATE_ON);
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 17, 1);
+    EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("isspeaking"), playerParameters, response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"),
         _T("{\"id\": ") + std::to_string(playerId) + _T("}"), response));
     EXPECT_EQ(response, _T("{\"success\":true}"));
 
     EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+}
+
+TEST_F(SAPPowerManagerTest, AcknowledgesOtherPowerStates) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    const Exchange::IPowerManager::PowerState states[] = {
+        Exchange::IPowerManager::POWER_STATE_ON,
+        Exchange::IPowerManager::POWER_STATE_STANDBY,
+        Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
+        Exchange::IPowerManager::POWER_STATE_OFF
+    };
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 4, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    int transactionId = 0;
+    for (auto state : states) {
+        ++transactionId;
+        auto completed = std::make_shared<std::promise<void>>();
+        auto completion = completed->get_future();
+        EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, transactionId))
+            .WillOnce(::testing::Invoke([completed](const uint32_t, const int) {
+                completed->set_value();
+                return Core::ERROR_NONE;
+            }));
+        preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON, state, transactionId, 1);
+        ASSERT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
+    }
+}
+
+TEST_F(SAPPowerManagerTest, RenewsPendingShutdownWithoutExceedingThirtySeconds) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    auto firstExtension = std::make_shared<std::promise<void>>();
+    auto lastExtension = std::make_shared<std::promise<void>>();
+    auto completed = std::make_shared<std::promise<void>>();
+    auto first = firstExtension->get_future();
+    auto last = lastExtension->get_future();
+    auto completion = completed->get_future();
+    auto extensions = std::make_shared<int>(0);
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 23, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 23, 3))
+        .Times(12)
+        .WillRepeatedly(::testing::Invoke([extensions, firstExtension, start](const uint32_t, const int, const int) {
+            if (++(*extensions) == 1) {
+                EXPECT_GE(std::chrono::steady_clock::now() - start, std::chrono::seconds(4));
+                firstExtension->set_value();
+            }
+            return Core::ERROR_NONE;
+        }));
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 23, 2))
+        .WillOnce(::testing::Invoke([lastExtension](const uint32_t, const int, const int) {
+            lastExtension->set_value();
+            return Core::ERROR_NONE;
+        }));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 23))
+        .WillOnce(::testing::Invoke([completed](const uint32_t, const int) {
+            completed->set_value();
+            return Core::ERROR_NONE;
+        }));
+
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 23, 1);
+    EXPECT_EQ(std::future_status::timeout, completion.wait_for(std::chrono::milliseconds(0)));
+    EXPECT_EQ(std::future_status::ready, first.wait_for(std::chrono::seconds(10)));
+    EXPECT_EQ(std::future_status::ready, last.wait_for(std::chrono::seconds(27)));
+    std::this_thread::sleep_until(start + std::chrono::seconds(31));
+    EXPECT_EQ(std::future_status::timeout, completion.wait_for(std::chrono::milliseconds(0)));
+    blocker.Release();
+    EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
+}
+
+TEST_F(SAPPowerManagerTest, DisconnectCancelsMonitorAndQueuedCompletion) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 31, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(::testing::_, ::testing::_)).Times(0);
+
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 31, 1);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+    blocker.Release();
+    workerPool->Stop();
+}
+
+TEST_F(SAPPowerManagerTest, RollsBackFailedPreChangeClientRegistration) {
+    ::testing::InSequence sequence;
+    EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, AddPowerModePreChangeClient("SystemAudioPlayer", ::testing::_))
+        .WillOnce(::testing::Return(Core::ERROR_GENERAL));
+    EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(::testing::_)).Times(0);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
+}
+
+TEST_F(SAPPowerManagerTest, FailedNotificationRegistrationDoesNotAddClient) {
+    EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
+        .WillOnce(::testing::Return(Core::ERROR_GENERAL));
+    EXPECT_CALL(*powerManagerMock, AddPowerModePreChangeClient(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(::testing::_)).Times(0);
+    EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_))).Times(0);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
+}
+
+TEST_F(SAPPowerManagerTest, ReconnectionDiscardsPreviousConnectionsQueuedWork) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 37, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 37)).Times(0);
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 37, 1);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 38))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+                                               Exchange::IPowerManager::POWER_STATE_ON, 38, 1);
+    blocker.Release();
+    workerPool->Stop();
+}
+
+TEST_F(SAPPowerManagerTest, WakeupCancelsSupersededDeepSleepWork) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 39, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 39)).Times(0);
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 40))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 39, 1);
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+                                               Exchange::IPowerManager::POWER_STATE_ON, 40, 1);
+    blocker.Release();
+    workerPool->Stop();
+}
+
+TEST_F(SAPPowerManagerTest, CompletesEvenWhenDelayRequestFails) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    auto completed = std::make_shared<std::promise<void>>();
+    auto completion = completed->get_future();
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 41, 5))
+        .WillOnce(::testing::Return(Core::ERROR_GENERAL));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 41))
+        .WillOnce(::testing::Invoke([completed](const uint32_t, const int) {
+            completed->set_value();
+            return Core::ERROR_NONE;
+        }));
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 41, 1);
+    EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
 }
