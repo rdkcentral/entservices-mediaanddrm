@@ -19,6 +19,7 @@
 
 
 #include <gtest/gtest.h>
+#include <memory>
 #include "SystemAudioPlayer.h"
 #include "SystemAudioPlayerImplementation.h"
 
@@ -1855,10 +1856,18 @@ TEST_F(SAPInitializedTest, SAPGetPlayerSessionIdInvalidUrl) {
 
 /**
  * @name  : SAPPowerManagerModeChangeHandling
- * @brief : Registers with PowerManager on Configure, handles a deep sleep transition and
+ * @brief : Uses the initialized plugin's interface to register with PowerManager, handles a deep sleep transition and
  *          unregisters when Configure(nullptr) is called.
  */
 TEST_F(SAPInitializedTest, SAPPowerManagerModeChangeHandling) {
+    auto releaseInterface = [](Exchange::ISystemAudioPlayer* interface) {
+        interface->Release();
+    };
+    std::unique_ptr<Exchange::ISystemAudioPlayer, decltype(releaseInterface)> sap(
+        static_cast<Exchange::ISystemAudioPlayer*>(plugin->QueryInterface(Exchange::ISystemAudioPlayer::ID)),
+        releaseInterface);
+    ASSERT_NE(sap, nullptr);
+
     Core::ProxyType<PowerManagerMock> powerManagerMock = Core::ProxyType<PowerManagerMock>::Create();
     Exchange::IPowerManager::IModeChangedNotification* modeChangedNotification = nullptr;
 
@@ -1878,7 +1887,7 @@ TEST_F(SAPInitializedTest, SAPPowerManagerModeChangeHandling) {
     EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModeChangedNotification*>(::testing::_)))
         .WillOnce(::testing::Return(Core::ERROR_NONE));
 
-    EXPECT_EQ(Core::ERROR_NONE, SystemAudioPlayerImplementation->Configure(&service));
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
     ASSERT_NE(modeChangedNotification, nullptr);
 
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
@@ -1896,5 +1905,5 @@ TEST_F(SAPInitializedTest, SAPPowerManagerModeChangeHandling) {
         _T("{\"id\": ") + std::to_string(playerId) + _T("}"), response));
     EXPECT_EQ(response, _T("{\"success\":true}"));
 
-    EXPECT_EQ(Core::ERROR_NONE, SystemAudioPlayerImplementation->Configure(nullptr));
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
 }
