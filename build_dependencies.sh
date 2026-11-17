@@ -39,9 +39,9 @@ cd Thunder
 git checkout $THUNDER_COMMIT_SHA
 cd ..
 
-git clone --branch main https://github.com/rdkcentral/entservices-apis.git
+git clone --branch develop https://github.com/rdkcentral/entservices-apis.git
 
-git clone --branch feature/RDKEMW-25013 https://github.com/rdkcentral/entservices-testframework.git
+git clone --branch develop https://github.com/rdkcentral/entservices-testframework.git
 
 ############################
 # Build Thunder-Tools

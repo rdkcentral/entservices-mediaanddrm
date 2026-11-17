@@ -115,7 +115,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: feature/RDKEMW-25013
+          ref: develop
 
       - name: Checkout rdk-halif-device_settings
         uses: actions/checkout@v3
@@ -188,7 +188,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-apis
           path: entservices-apis
-          ref: 007616201bb3b0c5f90b4d168c0bb91d1951e27d
+          ref: develop
       - name: Remove unused DTV API definition
         run: rm -f "$GITHUB_WORKSPACE/entservices-apis/jsonrpc/DTV.json"
 
