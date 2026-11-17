@@ -33,6 +33,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <atomic>
 
 #define CHECK_SAP_PARAMETER_RETURN_ON_FAIL(param) do {\
     if(!parameters.HasLabel(param)) { \
@@ -248,6 +249,8 @@ namespace Plugin {
         std::condition_variable _powerDelayCv;
         std::thread _powerDelayThread;
         bool _powerDelayDone{true};
+        std::mutex _playbackLock;
+        std::atomic<bool> _playbackAllowed{true};
 
     public:
         SystemAudioPlayerImplementation();

@@ -212,6 +212,20 @@ namespace Plugin {
             powerRequestToken = ++_powerRequestToken;
             _powerLock.Unlock();
 
+            switch (newState) {
+            case Exchange::IPowerManager::POWER_STATE_ON:
+                _playbackAllowed = true;
+                break;
+            case Exchange::IPowerManager::POWER_STATE_OFF:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
+                _playbackAllowed = false;
+                break;
+            default:
+                break;
+            }
+
             if ((newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP) ||
                 (newState == Exchange::IPowerManager::POWER_STATE_OFF)) {
                 RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
@@ -466,6 +480,11 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Play\n");
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: Play rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         int id = -1;
         string url;
         AudioPlayer *player;
@@ -505,6 +524,11 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got PlayBuffer request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: PlayBuffer rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         AudioPlayer *player;
         int id = -1;
         std::string data;
@@ -557,6 +581,7 @@ namespace Plugin {
         int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Close\n");
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
         _adminLock.Lock();
         
           if(CloseMapping(id))
@@ -674,6 +699,11 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Resume request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: Resume rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         AudioPlayer *player;
         int id = -1;
         bool ret = false;
@@ -747,6 +777,8 @@ namespace Plugin {
     void SystemAudioPlayerImplementation::Dispatch(Event event, string data, int transactionId, uint64_t powerRequestToken)
     {
         if (event == ONPOWERSTANDBY) {
+            // Wait for the full start operation, not just its individual AudioPlayer API locks.
+            std::lock_guard<std::mutex> playbackLock(_playbackLock);
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
                 if ((_powerManager == nullptr) || (_powerRequestToken != powerRequestToken)) {

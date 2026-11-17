@@ -21,6 +21,10 @@ SystemAudioPlayer registers as a PowerManager pre-change client and stops active
 players before acknowledging standby, light sleep, deep sleep, or OFF transitions.
 Player shutdown runs on the worker pool, not the PowerManager notification thread.
 Other power states are acknowledged immediately.
+Standby and OFF pre-change callbacks immediately block new play, buffer-play, and
+resume requests until an ON callback is received. Power-driven stops serialize
+with complete playback-start operations, so an already-running start finishes
+before cleanup and cannot restart its pipeline after the stop.
 
 For deep sleep and OFF, it reserves 5 seconds before queuing shutdown. A separate
 monitor thread requests 2-second extensions one second before each reservation
