@@ -2009,7 +2009,7 @@ protected:
     }
 };
 
-TEST_F(SAPPowerManagerTest, DestructorReleasesPowerMonitoring) {
+TEST_F(SAPPowerManagerTest, DeinitializeReleasesPowerMonitoring) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     SAPWorkerBlocker barrier;
@@ -2026,7 +2026,6 @@ TEST_F(SAPPowerManagerTest, DestructorReleasesPowerMonitoring) {
 TEST_F(SAPPowerManagerTest, ConfigureDoesNotReleaseExistingMonitoring) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
-    EXPECT_EQ(Core::ERROR_INVALID_PARAMETER, sap->Configure(nullptr));
     EXPECT_EQ(Core::ERROR_ILLEGAL_STATE, sap->Configure(&service));
 
     EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 44))
@@ -2382,6 +2381,39 @@ TEST_F(SAPPowerManagerTest, DisconnectCancelsMonitorAndQueuedCompletion) {
                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 31, 1);
     DeactivatePowerManager();
     EXPECT_TRUE(blocker.ReleaseAndDrain());
+}
+
+TEST_F(SAPPowerManagerTest, ExplicitShutdownCancelsMonitoringWhilePowerJobRetainsImplementation) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 66, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(::testing::_, ::testing::_)).Times(0);
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
+        _T("{\"audiotype\":\"pcm\",\"sourcetype\":\"data\",\"playmode\":\"system\"}"), response));
+    JsonObject openResponse;
+    openResponse.FromString(response);
+    const string id = std::to_string(static_cast<int>(openResponse["id"].Number()));
+
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 66, 1);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+    EXPECT_TRUE(::testing::Mock::VerifyAndClearExpectations(&(*powerManagerMock)));
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(::testing::_, ::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(::testing::_)).Times(0);
+    EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_))).Times(0);
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+    // A callback already in transit must not reopen playback or restart monitoring.
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+                                               Exchange::IPowerManager::POWER_STATE_ON, 67, 1);
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
+        _T("{\"id\":") + id + _T(",\"url\":\"data://blocked\"}"), response));
+    EXPECT_EQ(response, _T("{\"success\":false}"));
+    EXPECT_TRUE(blocker.ReleaseAndDrain());
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"), _T("{\"id\":") + id + _T("}"), response));
 }
 
 TEST_F(SAPPowerManagerTest, RollsBackFailedPreChangeClientRegistration) {

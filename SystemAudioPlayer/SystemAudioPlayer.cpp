@@ -85,6 +85,10 @@ namespace Plugin {
         if (!_sap)
             return;
 
+        const Core::hresult shutdownResult = _sap->Configure(nullptr);
+        if (shutdownResult != Core::ERROR_NONE) {
+            SAPLOG_ERROR("SAP: Failed to shut down power monitoring: %u\n", shutdownResult);
+        }
         _sap->Unregister(&_notification);
         _service->Unregister(&_notification);
 

@@ -74,8 +74,8 @@ namespace Plugin {
     Core::hresult SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
     {
         if (service == nullptr) {
-            SAPLOG_ERROR("SAP: Cannot configure without a service\n");
-            return Core::ERROR_INVALID_PARAMETER;
+            ReleasePowerMonitoring();
+            return Core::ERROR_NONE;
         }
 
         _powerLock.Lock();
@@ -100,6 +100,7 @@ namespace Plugin {
         PluginHost::IShell* service = nullptr;
 
         _powerLock.Lock();
+        _playbackAllowed = false;
         service = _service;
         _service = nullptr;
         _powerLock.Unlock();
@@ -174,6 +175,9 @@ namespace Plugin {
             clientId = _powerPreChangeClientId;
             _powerManager = nullptr;
             _powerPreChangeClientId = 0;
+            if (_service == nullptr) {
+                _playbackAllowed = false;
+            }
             ++_powerRequestToken;
             _powerLock.Unlock();
         }

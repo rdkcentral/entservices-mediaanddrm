@@ -185,7 +185,7 @@ namespace Plugin {
         SystemAudioPlayerImplementation(const SystemAudioPlayerImplementation&) = delete;
         SystemAudioPlayerImplementation& operator=(const SystemAudioPlayerImplementation&) = delete;
 
-        // Starts power state monitoring; the destructor releases it.
+        // Starts monitoring; Configure(nullptr) stops it before release. The destructor also cleans up.
         virtual Core::hresult Configure(PluginHost::IShell* service);
         virtual Core::hresult Register(INotification* sink) override ;
         virtual Core::hresult Unregister(INotification* sink) override ;

@@ -32,13 +32,15 @@ expires, up to a total budget of 30 seconds (the final extension is capped at
 1 second to stay within that budget). Fast
 shutdown cancels the monitor and acknowledges completion immediately; a hung
 shutdown cannot request delays indefinitely. PowerManager disconnection or
-implementation destruction stops and joins the monitor, removes the pre-change client, and
+explicit monitoring shutdown stops and joins the monitor, removes the pre-change client, and
 unregisters notifications. Queued work from a previous PowerManager connection
 cannot acknowledge transactions on a new connection.
 Superseding power requests also cancel the previous monitor and discard its queued
 shutdown work, so a wakeup does not execute a still-queued deep-sleep stop.
 
-`Configure()` only initializes monitoring. Plugin deinitialization releases its
-implementation reference; cleanup runs automatically in the implementation
-destructor after all outstanding job references are released. The implementation
-retains a shell reference until that cleanup finishes.
+`Configure(service)` initializes monitoring. Plugin deinitialization calls
+`Configure(nullptr)` before releasing the implementation or terminating its
+remote connection. This blocks new playback, joins the monitor, removes the
+pre-change client, invalidates queued power work, and releases the retained shell
+reference even when jobs still hold implementation references. Cleanup is
+idempotent and also runs in the destructor as a safety net.
