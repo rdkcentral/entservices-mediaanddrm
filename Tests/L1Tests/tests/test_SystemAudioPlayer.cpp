@@ -2039,6 +2039,62 @@ TEST_F(SAPPowerManagerTest, StopsActivePipelineBeforeCompletingDeepSleepPreChang
     EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
 }
 
+TEST_F(SAPPowerManagerTest, StopsStartingPipelineBeforeCompletingStandbyPreChange) {
+    ConfigurePowerManager();
+    ASSERT_NE(preChangeNotification, nullptr);
+    std::shared_ptr<GstElement> pipeline;
+    EXPECT_CALL(*p_systemAudioPlatformMock, systemAudioGeneratePipeline(::testing::_, ::testing::_, ::testing::_,
+        ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillOnce(::testing::Invoke([&pipeline](GstElement** playerPipeline, GstElement** source, GstElement*,
+            GstElement** sink, GstElement**, AudioType, PlayMode, SourceType, bool) {
+            *sink = gst_element_factory_make("fakesink", nullptr);
+            if (*sink == nullptr) {
+                ADD_FAILURE() << "GStreamer fakesink is required for the starting-player test";
+                return false;
+            }
+            // Without input, a non-live appsrc cannot finish preroll.
+            g_object_set(*source, "is-live", FALSE, nullptr);
+            g_object_set(*sink, "async", TRUE, "sync", FALSE, nullptr);
+            gst_bin_add_many(GST_BIN(*playerPipeline), *source, *sink, nullptr);
+            pipeline = std::shared_ptr<GstElement>(GST_ELEMENT(gst_object_ref(*playerPipeline)),
+                [](GstElement* element) { gst_object_unref(element); });
+            return gst_element_link(*source, *sink) != FALSE;
+        }));
+
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
+        _T("{\"audiotype\":\"pcm\",\"sourcetype\":\"data\",\"playmode\":\"system\"}"), response));
+    JsonObject openResponse;
+    openResponse.FromString(response);
+    const string playerId = std::to_string(static_cast<int>(openResponse["id"].Number()));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
+        _T("{\"id\":") + playerId + _T(",\"url\":\"data://pending\"}"), response));
+    ASSERT_NE(pipeline, nullptr);
+    GstState current = GST_STATE_VOID_PENDING;
+    GstState pending = GST_STATE_VOID_PENDING;
+    EXPECT_EQ(GST_STATE_CHANGE_ASYNC, gst_element_get_state(pipeline.get(), &current, &pending, 0));
+    EXPECT_EQ(GST_STATE_READY, current);
+    EXPECT_EQ(GST_STATE_PLAYING, pending);
+
+    auto completed = std::make_shared<std::promise<void>>();
+    auto completion = completed->get_future();
+    EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 43))
+        .WillOnce(::testing::Invoke([completed, pipeline](const uint32_t, const int) {
+            GstState current = GST_STATE_VOID_PENDING;
+            GstState pending = GST_STATE_VOID_PENDING;
+            EXPECT_EQ(GST_STATE_CHANGE_SUCCESS, gst_element_get_state(pipeline.get(), &current, &pending, 0));
+            EXPECT_EQ(GST_STATE_NULL, current);
+            EXPECT_EQ(GST_STATE_VOID_PENDING, pending);
+            completed->set_value();
+            return Core::ERROR_NONE;
+        }));
+    preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY, 43, 1);
+    EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
+    EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"),
+        _T("{\"id\":") + playerId + _T("}"), response));
+    EXPECT_EQ(response, _T("{\"success\":true}"));
+}
+
 TEST_F(SAPPowerManagerTest, AcknowledgesOtherPowerStates) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);

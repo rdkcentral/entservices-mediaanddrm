@@ -256,11 +256,22 @@ bool AudioPlayer::isPlaying()
     return playing;
 }
 
-// True when the player holds a pipeline that is playing or paused (i.e. owns audio resources).
+// Include pending transitions: bus notifications may not have updated the cached state yet.
 bool AudioPlayer::isActive()
 {
     std::lock_guard<std::mutex> lock(m_apiMutex);
-    return (m_pipeline != nullptr) && (state == PLAYING || state == PAUSED);
+    if (m_pipeline == nullptr) {
+        return false;
+    }
+
+    GstState current = GST_STATE_NULL;
+    GstState pending = GST_STATE_VOID_PENDING;
+    if (gst_element_get_state(m_pipeline, &current, &pending, 0) == GST_STATE_CHANGE_FAILURE) {
+        SAPLOG_ERROR("SAP: Failed to query pipeline state for player %d; including it in cleanup\n", getObjectIdentifier());
+        return true;
+    }
+    return current == GST_STATE_PLAYING || current == GST_STATE_PAUSED ||
+           pending == GST_STATE_PLAYING || pending == GST_STATE_PAUSED;
 }
 
 
@@ -1052,4 +1063,3 @@ void AudioPlayer::SetSmartVolControl(bool smartVolumeEnable, double threshold, i
     }
     return;
 }
-
