@@ -136,12 +136,12 @@ namespace Plugin {
         class EXTERNAL Job : public Core::IDispatch {
         protected:
              Job(SystemAudioPlayerImplementation *sap, Event event, string &data,
-                 const int transactionId, const uint64_t powerManagerGeneration)
+                 const int transactionId, const uint64_t powerRequestToken)
                 : _sap(sap)
                 , _event(event)
                 , _data(data)
                 , _transactionId(transactionId)
-                , _powerManagerGeneration(powerManagerGeneration) {
+                , _powerRequestToken(powerRequestToken) {
                 if (_sap != nullptr) {
                     _sap->AddRef();
                 }
@@ -159,16 +159,16 @@ namespace Plugin {
 
        public:
             static Core::ProxyType<Core::IDispatch> Create(SystemAudioPlayerImplementation *sap, Event event, string data,
-                                                        const int transactionId = 0, const uint64_t powerManagerGeneration = 0) {
+                                                        const int transactionId = 0, const uint64_t powerRequestToken = 0) {
 #ifndef USE_THUNDER_R4
-                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerManagerGeneration)));
+                return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerRequestToken)));
 #else
-                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerManagerGeneration)));
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType<Job>::Create(sap, event, data, transactionId, powerRequestToken)));
 #endif /* USE_THUNDER_R4 */
             }
 
             virtual void Dispatch() {
-                _sap->Dispatch(_event, _data, _transactionId, _powerManagerGeneration);
+                _sap->Dispatch(_event, _data, _transactionId, _powerRequestToken);
             }
 
         private:
@@ -176,7 +176,7 @@ namespace Plugin {
             const Event _event;
             const string _data;
             const int _transactionId;
-            const uint64_t _powerManagerGeneration;
+            const uint64_t _powerRequestToken;
         };
 
     public:
@@ -215,7 +215,7 @@ namespace Plugin {
         std::list<Exchange::ISystemAudioPlayer::INotification*> _notificationClients;
 
         void dispatchEvent(Event, JsonObject &params);
-        void Dispatch(Event event, string data, int transactionId, uint64_t powerManagerGeneration);
+        void Dispatch(Event event, string data, int transactionId, uint64_t powerRequestToken);
         void OpenMapping(AudioType audioType,SourceType sourceType,PlayMode mode,int &playerid);
         bool GetSessionFromUrl(string url,int &playerid);
         bool SameModeNotPlaying(AudioPlayer*,int &playerid);
@@ -231,9 +231,9 @@ namespace Plugin {
         void DisconnectPowerManager();
         void ReleasePowerMonitoring();
         void StopActivePlayers();
-        void CompletePowerModePreChange(int transactionId, uint64_t generation);
-        void RequestPowerModeChangeDelay(int transactionId, uint64_t generation, int delaySec);
-        void PowerDelayMonitor(int transactionId, uint64_t generation);
+        void CompletePowerModePreChange(int transactionId, uint64_t powerRequestToken);
+        void RequestPowerModeChangeDelay(int transactionId, uint64_t powerRequestToken, int delaySec);
+        void PowerDelayMonitor(int transactionId, uint64_t powerRequestToken);
         void StopPowerDelayMonitor();
 
         mutable Core::CriticalSection _powerLock;
@@ -241,15 +241,13 @@ namespace Plugin {
         Exchange::IPowerManager* _powerManager;
         Core::Sink<PowerStateObserver> _powerStateObserver;
         uint32_t _powerPreChangeClientId{0};
-        uint64_t _powerManagerGeneration{0};
-        int _powerTransactionId{0};
+        // Incremented for each pre-change or disconnect to invalidate older queued work.
+        uint64_t _powerRequestToken{0};
         std::mutex _powerDelayControlMutex;
         std::mutex _powerDelayMutex;
         std::condition_variable _powerDelayCv;
         std::thread _powerDelayThread;
         bool _powerDelayDone{true};
-        int _powerDelayTransactionId{0};
-        uint64_t _powerDelayGeneration{0};
 
     public:
         SystemAudioPlayerImplementation();

@@ -1863,7 +1863,7 @@ private:
     struct State {
         std::mutex mutex;
         std::condition_variable cv;
-        unsigned int started{0};
+        bool started{false};
         bool released{false};
     };
 
@@ -1872,7 +1872,7 @@ private:
         explicit BlockingJob(const std::shared_ptr<State>& state) : _state(state) {}
         void Dispatch() override {
             std::unique_lock<std::mutex> lock(_state->mutex);
-            ++_state->started;
+            _state->started = true;
             _state->cv.notify_all();
             _state->cv.wait(lock, [this] { return _state->released; });
         }
@@ -1880,22 +1880,25 @@ private:
         std::shared_ptr<State> _state;
     };
 
+    static void Submit(const std::shared_ptr<State>& state) {
+#ifdef USE_THUNDER_R4
+        Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(state)));
+#else
+        Core::IWorkerPool::Instance().Submit(Core::proxy_cast<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(state)));
+#endif
+    }
+
 public:
     SAPWorkerBlocker() : _state(std::make_shared<State>()) {
-        for (unsigned int i = 0; i < 2; ++i) {
-#ifdef USE_THUNDER_R4
-            Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(_state)));
-#else
-            Core::IWorkerPool::Instance().Submit(Core::proxy_cast<Core::IDispatch>(Core::ProxyType<BlockingJob>::Create(_state)));
-#endif
-        }
+        // The fixture runs one internal worker; the second slot requires an external Join().
+        Submit(_state);
     }
 
     ~SAPWorkerBlocker() { Release(); }
 
     bool WaitUntilBlocked() {
         std::unique_lock<std::mutex> lock(_state->mutex);
-        return _state->cv.wait_for(lock, std::chrono::seconds(2), [this] { return _state->started == 2; });
+        return _state->cv.wait_for(lock, std::chrono::seconds(2), [this] { return _state->started; });
     }
 
     void Release() {
@@ -1904,6 +1907,16 @@ public:
             _state->released = true;
         }
         _state->cv.notify_all();
+    }
+
+    bool ReleaseAndDrain() {
+        // A FIFO barrier proves queued power work ran; stopping the pool could discard it.
+        auto barrier = std::make_shared<State>();
+        barrier->released = true;
+        Submit(barrier);
+        Release();
+        std::unique_lock<std::mutex> lock(barrier->mutex);
+        return barrier->cv.wait_for(lock, std::chrono::seconds(2), [barrier] { return barrier->started; });
     }
 
 private:
@@ -2110,8 +2123,7 @@ TEST_F(SAPPowerManagerTest, DisconnectCancelsMonitorAndQueuedCompletion) {
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 31, 1);
     EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
-    blocker.Release();
-    workerPool->Stop();
+    EXPECT_TRUE(blocker.ReleaseAndDrain());
 }
 
 TEST_F(SAPPowerManagerTest, RollsBackFailedPreChangeClientRegistration) {
@@ -2152,8 +2164,7 @@ TEST_F(SAPPowerManagerTest, ReconnectionDiscardsPreviousConnectionsQueuedWork) {
         .WillOnce(::testing::Return(Core::ERROR_NONE));
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
                                                Exchange::IPowerManager::POWER_STATE_ON, 38, 1);
-    blocker.Release();
-    workerPool->Stop();
+    EXPECT_TRUE(blocker.ReleaseAndDrain());
 }
 
 TEST_F(SAPPowerManagerTest, WakeupCancelsSupersededDeepSleepWork) {
@@ -2170,8 +2181,7 @@ TEST_F(SAPPowerManagerTest, WakeupCancelsSupersededDeepSleepWork) {
                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 39, 1);
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
                                                Exchange::IPowerManager::POWER_STATE_ON, 40, 1);
-    blocker.Release();
-    workerPool->Stop();
+    EXPECT_TRUE(blocker.ReleaseAndDrain());
 }
 
 TEST_F(SAPPowerManagerTest, CompletesEvenWhenDelayRequestFails) {

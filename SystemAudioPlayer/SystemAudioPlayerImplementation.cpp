@@ -137,7 +137,6 @@ namespace Plugin {
                     if ((result == Core::ERROR_NONE) && (clientId != 0)) {
                         _powerManager = powerManager;
                         _powerPreChangeClientId = clientId;
-                        ++_powerManagerGeneration;
                         SAPLOG_INFO("SAP: Registered power mode pre-change client %u\n", clientId);
                     } else {
                         SAPLOG_ERROR("SAP: AddPowerModePreChangeClient failed: %u, client id %u\n", result, clientId);
@@ -171,8 +170,7 @@ namespace Plugin {
             clientId = _powerPreChangeClientId;
             _powerManager = nullptr;
             _powerPreChangeClientId = 0;
-            _powerTransactionId = 0;
-            ++_powerManagerGeneration;
+            ++_powerRequestToken;
             _powerLock.Unlock();
         }
 
@@ -197,7 +195,7 @@ namespace Plugin {
         SAPLOG_INFO("SAP: Power mode pre-change from %d to %d, transaction %d, stateChangeAfter %d\n",
                     static_cast<int>(currentState), static_cast<int>(newState), transactionId, stateChangeAfter);
 
-        uint64_t generation;
+        uint64_t powerRequestToken;
         {
             std::lock_guard<std::mutex> control(_powerDelayControlMutex);
             StopPowerDelayMonitor();
@@ -207,20 +205,17 @@ namespace Plugin {
                 SAPLOG_WARNING("SAP: Ignoring power mode pre-change after PowerManager disconnected\n");
                 return;
             }
-            generation = _powerManagerGeneration;
-            _powerTransactionId = transactionId;
+            powerRequestToken = ++_powerRequestToken;
             _powerLock.Unlock();
 
             if ((newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP) ||
                 (newState == Exchange::IPowerManager::POWER_STATE_OFF)) {
-                RequestPowerModeChangeDelay(transactionId, generation, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
+                RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
                 {
                     std::lock_guard<std::mutex> lock(_powerDelayMutex);
                     _powerDelayDone = false;
                 }
-                _powerDelayTransactionId = transactionId;
-                _powerDelayGeneration = generation;
-                _powerDelayThread = std::thread(&SystemAudioPlayerImplementation::PowerDelayMonitor, this, transactionId, generation);
+                _powerDelayThread = std::thread(&SystemAudioPlayerImplementation::PowerDelayMonitor, this, transactionId, powerRequestToken);
             }
         }
         switch (newState) {
@@ -230,18 +225,18 @@ namespace Plugin {
         case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
             // Stopping pipelines can block; do it off the notification thread.
             Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERSTANDBY, std::to_string(static_cast<int>(newState)),
-                                                           transactionId, generation));
+                                                           transactionId, powerRequestToken));
             break;
         default:
-            CompletePowerModePreChange(transactionId, generation);
+            CompletePowerModePreChange(transactionId, powerRequestToken);
             break;
         }
     }
 
-    void SystemAudioPlayerImplementation::RequestPowerModeChangeDelay(int transactionId, uint64_t generation, int delaySec)
+    void SystemAudioPlayerImplementation::RequestPowerModeChangeDelay(int transactionId, uint64_t powerRequestToken, int delaySec)
     {
         Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
-        if ((_powerManager != nullptr) && (_powerManagerGeneration == generation) && (_powerTransactionId == transactionId)) {
+        if ((_powerManager != nullptr) && (_powerRequestToken == powerRequestToken)) {
             const Core::hresult result = _powerManager->DelayPowerModeChangeBy(_powerPreChangeClientId, transactionId, delaySec);
             if (result != Core::ERROR_NONE) {
                 SAPLOG_ERROR("SAP: DelayPowerModeChangeBy failed for transaction %d: %u\n", transactionId, result);
@@ -251,7 +246,7 @@ namespace Plugin {
         }
     }
 
-    void SystemAudioPlayerImplementation::PowerDelayMonitor(int transactionId, uint64_t generation)
+    void SystemAudioPlayerImplementation::PowerDelayMonitor(int transactionId, uint64_t powerRequestToken)
     {
         const auto start = std::chrono::steady_clock::now();
         int reservedSec = DEEP_SLEEP_TEARDOWN_BUDGET_SEC;
@@ -268,7 +263,7 @@ namespace Plugin {
                            transactionId, extensionSec);
             lock.unlock();
             // PowerManager measures each delay from now, not from the previous deadline.
-            RequestPowerModeChangeDelay(transactionId, generation, DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC + extensionSec);
+            RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC + extensionSec);
             lock.lock();
             reservedSec += extensionSec;
         }
@@ -287,14 +282,15 @@ namespace Plugin {
         }
     }
 
-    void SystemAudioPlayerImplementation::CompletePowerModePreChange(int transactionId, uint64_t generation)
+    void SystemAudioPlayerImplementation::CompletePowerModePreChange(int transactionId, uint64_t powerRequestToken)
     {
         std::lock_guard<std::mutex> control(_powerDelayControlMutex);
-        if ((_powerDelayTransactionId == transactionId) && (_powerDelayGeneration == generation)) {
-            StopPowerDelayMonitor();
+        if (_powerRequestToken != powerRequestToken) {
+            return;
         }
+        StopPowerDelayMonitor();
         Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
-        if ((_powerManager != nullptr) && (_powerManagerGeneration == generation) && (_powerTransactionId == transactionId)) {
+        if (_powerManager != nullptr) {
             const Core::hresult result = _powerManager->PowerModePreChangeComplete(_powerPreChangeClientId, transactionId);
             if (result != Core::ERROR_NONE) {
                 SAPLOG_ERROR("SAP: PowerModePreChangeComplete failed for transaction %d: %u\n", transactionId, result);
@@ -744,20 +740,19 @@ namespace Plugin {
         Core::IWorkerPool::Instance().Submit(Job::Create(this, event, data));
     }
 
-    void SystemAudioPlayerImplementation::Dispatch(Event event, string data, int transactionId, uint64_t powerManagerGeneration)
+    void SystemAudioPlayerImplementation::Dispatch(Event event, string data, int transactionId, uint64_t powerRequestToken)
     {
         if (event == ONPOWERSTANDBY) {
             {
                 Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
-                if ((_powerManager == nullptr) || (_powerManagerGeneration != powerManagerGeneration) ||
-                    (_powerTransactionId != transactionId)) {
+                if ((_powerManager == nullptr) || (_powerRequestToken != powerRequestToken)) {
                     SAPLOG_WARNING("SAP: Discarding stale queued power pre-change transaction %d\n", transactionId);
                     return;
                 }
             }
             SAPLOG_INFO("SAP: Handling power state %s, stopping active players\n", data.c_str());
             StopActivePlayers();
-            CompletePowerModePreChange(transactionId, powerManagerGeneration);
+            CompletePowerModePreChange(transactionId, powerRequestToken);
             return;
         }
 
