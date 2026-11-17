@@ -345,7 +345,11 @@ namespace Plugin {
                             : _sink(sink)
                             , _callback(nullptr)
                         {
-                            auto lock = _sink.LockCallback();
+                            auto lock = _sink.LockCallback(false);
+                            if (!lock.owns_lock())
+                            {
+                                return;
+                            }
                             _callback = _sink._callback;
                             if (_callback != nullptr)
                             {
@@ -356,7 +360,7 @@ namespace Plugin {
                         {
                             if (_callback != nullptr)
                             {
-                                auto lock = _sink.LockCallback();
+                                auto lock = _sink.LockCallback(true);
                                 if (--_sink._notifications == 0)
                                 {
                                     _sink._idle.notify_all();
@@ -376,16 +380,27 @@ namespace Plugin {
                         ::OCDM::ISession::ICallback* _callback;
                     };
 
-                    std::unique_lock<std::timed_mutex> LockCallback() const
+                    // Only admission may time out; completion must drain.
+                    std::unique_lock<std::timed_mutex> LockCallback(
+                        const bool waitForCompletion) const
                     {
                         std::unique_lock<std::timed_mutex> lock(
                             _callbackLock, std::defer_lock);
                         if (!lock.try_lock_for(std::chrono::milliseconds(100)))
                         {
-                            TRACE(Trace::Warning,
-                                (_T("Callback lock wait exceeded 100 ms; ")
-                                 _T("waiting for safe completion")));
-                            lock.lock();
+                            if (waitForCompletion)
+                            {
+                                TRACE(Trace::Warning,
+                                    (_T("Callback lock wait exceeded 100 ms; ")
+                                     _T("waiting for safe completion")));
+                                lock.lock();
+                            }
+                            else
+                            {
+                                TRACE(Trace::Warning,
+                                    (_T("Callback lock wait exceeded 100 ms; ")
+                                     _T("skipping DRM notification")));
+                            }
                         }
                         return lock;
                     }
@@ -395,7 +410,7 @@ namespace Plugin {
                     {
                         ::OCDM::ISession::ICallback* revoked = nullptr;
                         {
-                            auto lock = LockCallback();
+                            auto lock = LockCallback(true);
                             if (unconditional || (_callback == expected))
                             {
                                 revoked = _callback;
