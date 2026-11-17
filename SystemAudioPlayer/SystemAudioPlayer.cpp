@@ -85,8 +85,6 @@ namespace Plugin {
         if (!_sap)
             return;
 
-        // Stop power state monitoring while the shell is still valid.
-        _sap->Configure(nullptr);
         _sap->Unregister(&_notification);
         _service->Unregister(&_notification);
 

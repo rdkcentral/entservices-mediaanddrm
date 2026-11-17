@@ -73,13 +73,17 @@ namespace Plugin {
 
     Core::hresult SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
     {
-        ReleasePowerMonitoring();
-
         if (service == nullptr) {
-            return Core::ERROR_NONE;
+            SAPLOG_ERROR("SAP: Cannot configure without a service\n");
+            return Core::ERROR_INVALID_PARAMETER;
         }
 
         _powerLock.Lock();
+        if (_service != nullptr) {
+            _powerLock.Unlock();
+            SAPLOG_ERROR("SAP: SystemAudioPlayerImplementation is already configured\n");
+            return Core::ERROR_ILLEGAL_STATE;
+        }
         _service = service;
         _service->AddRef();
         _powerLock.Unlock();
