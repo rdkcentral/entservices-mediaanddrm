@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <vector>
@@ -335,23 +338,118 @@ namespace Plugin {
                     Sink(const Sink&) = delete;
                     Sink& operator=(const Sink&) = delete;
 
+                    class Notification
+                    {
+                    public:
+                        explicit Notification(const Sink& sink)
+                            : _sink(sink)
+                            , _callback(nullptr)
+                        {
+                            auto lock = _sink.LockCallback();
+                            _callback = _sink._callback;
+                            if (_callback != nullptr)
+                            {
+                                ++_sink._notifications;
+                            }
+                        }
+                        ~Notification()
+                        {
+                            if (_callback != nullptr)
+                            {
+                                auto lock = _sink.LockCallback();
+                                if (--_sink._notifications == 0)
+                                {
+                                    _sink._idle.notify_all();
+                                }
+                            }
+                        }
+                        Notification(const Notification&) = delete;
+                        Notification& operator=(const Notification&) = delete;
+
+                        ::OCDM::ISession::ICallback* Callback() const
+                        {
+                            return _callback;
+                        }
+
+                    private:
+                        const Sink& _sink;
+                        ::OCDM::ISession::ICallback* _callback;
+                    };
+
+                    std::unique_lock<std::timed_mutex> LockCallback() const
+                    {
+                        std::unique_lock<std::timed_mutex> lock(
+                            _callbackLock, std::defer_lock);
+                        if (!lock.try_lock_for(std::chrono::milliseconds(100)))
+                        {
+                            TRACE(Trace::Warning,
+                                (_T("Callback lock wait exceeded 100 ms; ")
+                                 _T("waiting for safe completion")));
+                            lock.lock();
+                        }
+                        return lock;
+                    }
+
+                    void Detach(::OCDM::ISession::ICallback* expected,
+                        const bool unconditional)
+                    {
+                        ::OCDM::ISession::ICallback* revoked = nullptr;
+                        {
+                            auto lock = LockCallback();
+                            if (unconditional || (_callback == expected))
+                            {
+                                revoked = _callback;
+                                _callback = nullptr;
+                            }
+                            else if (_callback != nullptr)
+                            {
+                                TRACE(Trace::Information,
+                                    (_T("Ignoring unmatched callback revoke")));
+                                return;
+                            }
+                            // Repeated revocations must also drain admitted calls.
+                            if (!_idle.wait_for(lock,
+                                    std::chrono::milliseconds(100),
+                                    [this] { return _notifications == 0; }))
+                            {
+                                TRACE(Trace::Warning,
+                                    (_T("Callback drain exceeded 100 ms; ")
+                                     _T("waiting for safe completion")));
+                                _idle.wait(lock,
+                                    [this] { return _notifications == 0; });
+                            }
+                        }
+                        if (revoked != nullptr)
+                        {
+                            revoked->Release();
+                        }
+                    }
+
                 public:
                     Sink(SessionImplementation* parent, ::OCDM::ISession::ICallback* callback)
                         : _parent(*parent)
                         , _callback(callback)
+                        , _notifications(0)
                     {
-                        _callback->AddRef();
+                        if (_callback != nullptr)
+                        {
+                            _callback->AddRef();
+                        }
+                        else
+                        {
+                            TRACE(Trace::Warning,
+                                (_T("Session created without a callback")));
+                        }
                     }
                     Sink(SessionImplementation* parent)
                         : _parent(*parent)
                         , _callback(nullptr)
+                        , _notifications(0)
                     {
                     }
                     virtual ~Sink()
                     {
-                        if (_callback != nullptr) {
-                            Revoke(_callback);
-                        }
+                        Detach(nullptr, true);
                     }
 
                 public:
@@ -362,9 +460,11 @@ namespace Plugin {
                         const char* f_pszUrl) override
                     {
                         TRACE(Trace::Information, ("OnKeyMessage(%s)", f_pszUrl));
-                        if (_callback != nullptr) {
+                        const Notification notification(*this);
+                        auto* callback = notification.Callback();
+                        if (callback != nullptr) {
                             std::string url(f_pszUrl, strlen(f_pszUrl));
-                            _callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
+                            callback->OnKeyMessage(f_pbKeyMessage, f_cbKeyMessage, url);
                         }
                     }
 
@@ -372,9 +472,11 @@ namespace Plugin {
                     virtual void OnError(int16_t f_nError, CDMi::CDMi_RESULT f_crSysError, const char* errorMessage) override
                     {
                         TRACE(Trace::Information, ("OnKeyError(%d,%s)", f_nError, errorMessage));
-                        if (_callback != nullptr) {
+                        const Notification notification(*this);
+                        auto* callback = notification.Callback();
+                        if (callback != nullptr) {
                             std::string message(errorMessage, strlen(errorMessage));
-                            _callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
+                            callback->OnError(f_nError, (::OCDM::OCDM_RESULT)f_crSysError, message);
                         }
                     }
 
@@ -409,28 +511,32 @@ namespace Plugin {
 
                         ASSERT (updated != nullptr);
 
-                        if (_callback != nullptr) {
-                            _callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
+                        const Notification notification(*this);
+                        auto* callback = notification.Callback();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusUpdate(updated->Id(), updated->Length(), key);
                         }
                     }
                     void Revoke(::OCDM::ISession::ICallback* callback)
                     {
-                        if ((_callback != nullptr) && (_callback == callback)) {
-                            _callback->Release();
-                            _callback = nullptr;
-                        } else {
-                            TRACE(Trace::Information, (_T("Additional request for Revoking the callback!! %p"), callback));
-                        }
+                        Detach(callback, false);
                     }
 
                     void OnKeyStatusesUpdated() const override
                     {
-                        _callback->OnKeyStatusesUpdated();
+                        const Notification notification(*this);
+                        auto* callback = notification.Callback();
+                        if (callback != nullptr) {
+                            callback->OnKeyStatusesUpdated();
+                        }
                     }
 
                 private:
                     SessionImplementation& _parent;
                     ::OCDM::ISession::ICallback* _callback;
+                    mutable std::timed_mutex _callbackLock;
+                    mutable std::condition_variable_any _idle;
+                    mutable uint32_t _notifications;
                 };
 
             public:
@@ -502,13 +608,23 @@ namespace Plugin {
                     // the parent to lock handing out new entries before we clear.
                     _parent.Remove(this, _keySystem, _mediaKeySession);
 
-                    delete _buffer;
-
                     TRACE(Trace::Information, ("Server::Session::~Session(%s,%s) => %p", _keySystem.c_str(), _sessionId.c_str(), this));
                     TRACE(Trace::Information, (_T("Destructed the Session Server side: %p"), this));
                 }
 
             public:
+                /** Stop and join decrypt work before destroying its backend. */
+                void StopBuffer()
+                {
+                    DataExchange* buffer;
+                    {
+                        Core::SafeSyncType<Core::CriticalSection> lock(_adminLock);
+                        buffer = _buffer;
+                        _buffer = nullptr;
+                    }
+                    delete buffer;
+                }
+
                 inline bool IsSupported(const CommonEncryptionData& keyIds, const string& keySystem) const
                 {
                     return ((keySystem == _keySystem) && (_cencData.IsSupported(keyIds) == true));
@@ -555,9 +671,9 @@ namespace Plugin {
                             TRACE(Trace::Error, ("Failed to create buffer for Server::Session::CreateSessionBuffer(%s,%s) => %p", _keySystem.c_str(), _sessionId.c_str(), this));
                         }
                    } else {
-                        _adminLock.Unlock();
-                        TRACE(Trace::Information, ("Buffer already created Server::Session::CreateSessionBuffer(%s,%s,%s) => %p", _keySystem.c_str(), _sessionId.c_str(), BufferId().c_str(), this));
                         bufferID = _buffer->Name();
+                        _adminLock.Unlock();
+                        TRACE(Trace::Information, ("Buffer already created Server::Session::CreateSessionBuffer(%s,%s,%s) => %p", _keySystem.c_str(), _sessionId.c_str(), bufferID.c_str(), this));
                         result = ::OCDM::OCDM_S_FALSE;
                     }
 
@@ -569,8 +685,8 @@ namespace Plugin {
                     std::string bufferid;
                     _adminLock.Lock();
                     if( _buffer != nullptr ) {
-                        _adminLock.Unlock();
                         bufferid = _buffer->Name();
+                        _adminLock.Unlock();
                     }
                     else {
                         _adminLock.Unlock();
@@ -761,6 +877,7 @@ namespace Plugin {
                                  _adminLock.Lock();
 
                                  _sessionList.push_front(newEntry);
+                                 _adminLock.Unlock();
                                 
                                 if(false == keyIds.IsEmpty())
                                 {
@@ -770,7 +887,6 @@ namespace Plugin {
                                         callback->OnKeyStatusUpdate( entry.Id(), entry.Length(), ::OCDM::ISession::StatusPending);
                                     }
                                 }
-                                _adminLock.Unlock();
                          }
                      }
                  }
@@ -967,25 +1083,10 @@ namespace Plugin {
 
                 ASSERT(session != nullptr);
 
-                if (mediaKeySession != nullptr) {
-
-                    mediaKeySession->Run(nullptr);
-
-                    CDMi::IMediaKeys* system = _parent.KeySystem(keySystem);
-                    if (system != nullptr) {
-                        system->DestroyMediaKeySession(mediaKeySession);
-                    } else {
-                        TRACE(Trace::Warning, (_T("No system to handle session = %p\n"), session));
-                    }
-                }
-
+                string bufferid;
                 if (session != nullptr) {
 
-                    string bufferid = session->BufferId();
-
-                    if( bufferid.empty() == false ) {
-                        _administrator.ReleaseBuffer(bufferid);
-                    }
+                    bufferid = session->BufferId();
 
                     std::list<SessionImplementation*>::iterator index(_sessionList.begin());
 
@@ -1003,6 +1104,24 @@ namespace Plugin {
                 }
 
                 _adminLock.Unlock();
+
+                // Never drain callbacks or close the CDM under the list lock.
+                if (session != nullptr) {
+                    session->StopBuffer();
+                }
+                if (mediaKeySession != nullptr) {
+                    mediaKeySession->Run(nullptr);
+                    CDMi::IMediaKeys* system = _parent.KeySystem(keySystem);
+                    if (system != nullptr) {
+                        system->DestroyMediaKeySession(mediaKeySession);
+                    } else {
+                        TRACE(Trace::Warning,
+                            (_T("No system to handle session = %p"), session));
+                    }
+                }
+                if (!bufferid.empty()) {
+                    _administrator.ReleaseBuffer(bufferid);
+                }
             }
 
         private:
