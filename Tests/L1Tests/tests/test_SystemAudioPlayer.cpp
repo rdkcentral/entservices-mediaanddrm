@@ -2011,7 +2011,7 @@ TEST_F(SAPPowerManagerTest, ConfigureDoesNotReleaseExistingMonitoring) {
                                                Exchange::IPowerManager::POWER_STATE_ON, 44, 1);
 }
 
-TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepCleanupAndAllowsPlaybackAfterWakeup) {
+TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepOrOffCleanupAndAllowsPlaybackAfterWakeup) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
@@ -2023,11 +2023,14 @@ TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepCleanupAndAllowsPlayback
     const Exchange::IPowerManager::PowerState wakeStates[] = {
         Exchange::IPowerManager::POWER_STATE_ON,
         Exchange::IPowerManager::POWER_STATE_STANDBY,
-        Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
-        Exchange::IPowerManager::POWER_STATE_OFF
+        Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP
     };
     int transactionId = 50;
-    for (const auto wakeState : wakeStates) {
+    for (int transition = 0; transition < 6; ++transition) {
+        const auto wakeState = wakeStates[transition / 2];
+        const auto shutdownState = transition % 2 == 0
+            ? Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP
+            : Exchange::IPowerManager::POWER_STATE_OFF;
         SAPWorkerBlocker blocker;
         ASSERT_TRUE(blocker.WaitUntilBlocked());
         const int standbyTransaction = ++transactionId;
@@ -2041,7 +2044,7 @@ TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepCleanupAndAllowsPlayback
                 return Core::ERROR_NONE;
             }));
         preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
-                                                   Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, standbyTransaction, 1);
+                                                   shutdownState, standbyTransaction, 1);
         const auto expectStartsRejected = [&] {
             EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
                 _T("{\"id\":") + id + _T(",\"url\":\"data://blocked\"}"), response));
@@ -2059,7 +2062,7 @@ TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepCleanupAndAllowsPlayback
 
         EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, ++transactionId))
             .WillOnce(::testing::Return(Core::ERROR_NONE));
-        preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+        preChangeNotification->OnPowerModePreChange(shutdownState,
                                                    wakeState, transactionId, 1);
         EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
             _T("{\"id\":") + id + _T(",\"url\":\"data://allowed\"}"), response));
@@ -2198,8 +2201,7 @@ TEST_F(SAPPowerManagerTest, StopsActivePipelineBeforeCompletingDeepSleepPreChang
         ASSERT_TRUE(blocker.WaitUntilBlocked());
         const Exchange::IPowerManager::PowerState states[] = {
             Exchange::IPowerManager::POWER_STATE_STANDBY,
-            Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
-            Exchange::IPowerManager::POWER_STATE_OFF
+            Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP
         };
         int transactionId = 70;
         for (const auto state : states) {
@@ -2305,8 +2307,7 @@ TEST_F(SAPPowerManagerTest, AcknowledgesOtherPowerStates) {
     const Exchange::IPowerManager::PowerState states[] = {
         Exchange::IPowerManager::POWER_STATE_ON,
         Exchange::IPowerManager::POWER_STATE_STANDBY,
-        Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
-        Exchange::IPowerManager::POWER_STATE_OFF
+        Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP
     };
     SAPWorkerBlocker blocker;
     ASSERT_TRUE(blocker.WaitUntilBlocked());

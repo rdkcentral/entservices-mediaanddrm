@@ -202,9 +202,9 @@ namespace Plugin {
             case Exchange::IPowerManager::POWER_STATE_ON:
             case Exchange::IPowerManager::POWER_STATE_STANDBY:
             case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
-            case Exchange::IPowerManager::POWER_STATE_OFF:
                 _playbackAllowed = true;
                 break;
+            case Exchange::IPowerManager::POWER_STATE_OFF:
             case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
                 _playbackAllowed = false;
                 break;
@@ -212,7 +212,8 @@ namespace Plugin {
                 break;
             }
 
-            if (newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP) {
+            if (newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP ||
+                newState == Exchange::IPowerManager::POWER_STATE_OFF) {
                 RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
                 {
                     std::lock_guard<std::mutex> lock(_powerDelayMutex);
@@ -222,6 +223,7 @@ namespace Plugin {
             }
         }
         switch (newState) {
+        case Exchange::IPowerManager::POWER_STATE_OFF:
         case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
             // Stopping pipelines can block; do it off the notification thread.
             Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERDEEPSLEEP, std::to_string(static_cast<int>(newState)),

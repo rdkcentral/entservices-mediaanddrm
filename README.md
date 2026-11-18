@@ -18,16 +18,16 @@ Ongoing release changes for `8.0`, `8.1`, `8.2`, `8.3`, and `8.4` branches shoul
 ## SystemAudioPlayer power transitions
 
 SystemAudioPlayer registers as a PowerManager pre-change client and stops active
-players before acknowledging deep sleep transitions only.
+players before acknowledging deep sleep or OFF transitions.
 Player shutdown runs on the worker pool, not the PowerManager notification thread.
 Other power states are acknowledged immediately.
-Standby, light sleep, and OFF leave playback unchanged and do not request delays.
-Deep sleep pre-change callbacks immediately block new play, buffer-play, and
-resume requests until a non-deep-sleep callback is received. Power-driven stops serialize
+Standby and light sleep leave playback unchanged and do not request delays.
+Deep sleep and OFF pre-change callbacks immediately block new play, buffer-play, and
+resume requests until an ON, standby, or light sleep callback is received. Power-driven stops serialize
 with complete playback-start operations, so an already-running start finishes
 before cleanup and cannot restart its pipeline after the stop.
 
-For deep sleep, it reserves 5 seconds before queuing shutdown. A separate
+For deep sleep and OFF, it reserves 5 seconds before queuing shutdown. A separate
 monitor thread requests 2-second extensions one second before each reservation
 expires, up to a total budget of 30 seconds (the final extension is capped at
 1 second to stay within that budget). Fast
