@@ -54,7 +54,6 @@ protected:
     PLUGINHOST_DISPATCHER* dispatcher;
     Core::ProxyType<WorkerPoolImplementation> workerPool;
     NiceMock<FactoriesImplementation> factoriesImplementation;
-    PluginHost::IPlugin::INotification* pluginNotification{nullptr};
     bool pluginInitialized{false};
 
     SAPTest()
@@ -86,9 +85,6 @@ protected:
 #endif /*USE_THUNDER_R4 */
 
         PluginHost::IFactories::Assign(&factoriesImplementation);
-
-        ON_CALL(service, Register(::testing::Matcher<PluginHost::IPlugin::INotification*>(::testing::_)))
-            .WillByDefault(::testing::SaveArg<0>(&pluginNotification));
 
         Core::IWorkerPool::Assign(&(*workerPool));
         workerPool->Run();
@@ -1951,6 +1947,9 @@ protected:
     void SetUp() override {
         sap.reset(static_cast<Exchange::ISystemAudioPlayer*>(plugin->QueryInterface(Exchange::ISystemAudioPlayer::ID)));
         ASSERT_NE(sap, nullptr);
+        ASSERT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
+        EXPECT_CALL(service, Register(::testing::Matcher<PluginHost::IPlugin::INotification*>(::testing::_))).Times(0);
+        EXPECT_CALL(service, Unregister(::testing::Matcher<PluginHost::IPlugin::INotification*>(::testing::_))).Times(0);
         ON_CALL(service, QueryInterfaceByCallsign(Exchange::IPowerManager::ID, ::testing::StrEq("org.rdk.PowerManager")))
             .WillByDefault(::testing::Invoke(
                 [this](const uint32_t, const string&) -> void* {
@@ -1970,28 +1969,6 @@ protected:
         }
     }
 
-    void ActivatePowerManager() {
-        ASSERT_NE(pluginNotification, nullptr);
-#ifdef USE_THUNDER_R4
-        pluginNotification->Activated("org.rdk.PowerManager", &service);
-#else
-        ON_CALL(service, Callsign()).WillByDefault(::testing::Return("org.rdk.PowerManager"));
-        ON_CALL(service, State()).WillByDefault(::testing::Return(PluginHost::IShell::ACTIVATED));
-        pluginNotification->StateChange(&service);
-#endif
-    }
-
-    void DeactivatePowerManager() {
-        ASSERT_NE(pluginNotification, nullptr);
-#ifdef USE_THUNDER_R4
-        pluginNotification->Deactivated("org.rdk.PowerManager", &service);
-#else
-        ON_CALL(service, Callsign()).WillByDefault(::testing::Return("org.rdk.PowerManager"));
-        ON_CALL(service, State()).WillByDefault(::testing::Return(PluginHost::IShell::DEACTIVATION));
-        pluginNotification->StateChange(&service);
-#endif
-    }
-
     void ConfigurePowerManager() {
         ::testing::InSequence sequence;
         EXPECT_CALL(*powerManagerMock, Register(::testing::Matcher<Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
@@ -2005,7 +1982,7 @@ protected:
             .WillOnce(::testing::Return(Core::ERROR_NONE));
         EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
             .WillOnce(::testing::Return(Core::ERROR_NONE));
-        ActivatePowerManager();
+        EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
     }
 };
 
@@ -2034,7 +2011,7 @@ TEST_F(SAPPowerManagerTest, ConfigureDoesNotReleaseExistingMonitoring) {
                                                Exchange::IPowerManager::POWER_STATE_ON, 44, 1);
 }
 
-TEST_F(SAPPowerManagerTest, RejectsStartsBeforeStandbyCleanupAndAllowsPlaybackAfterWakeup) {
+TEST_F(SAPPowerManagerTest, RejectsStartsBeforeDeepSleepCleanupAndAllowsPlaybackAfterWakeup) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("open"),
@@ -2043,31 +2020,28 @@ TEST_F(SAPPowerManagerTest, RejectsStartsBeforeStandbyCleanupAndAllowsPlaybackAf
     openResponse.FromString(response);
     const string id = std::to_string(static_cast<int>(openResponse["id"].Number()));
     const string parameters = _T("{\"id\":") + id + _T("}");
-    const Exchange::IPowerManager::PowerState states[] = {
+    const Exchange::IPowerManager::PowerState wakeStates[] = {
+        Exchange::IPowerManager::POWER_STATE_ON,
         Exchange::IPowerManager::POWER_STATE_STANDBY,
         Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
-        Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
         Exchange::IPowerManager::POWER_STATE_OFF
     };
     int transactionId = 50;
-    for (const auto state : states) {
+    for (const auto wakeState : wakeStates) {
         SAPWorkerBlocker blocker;
         ASSERT_TRUE(blocker.WaitUntilBlocked());
         const int standbyTransaction = ++transactionId;
         auto completed = std::make_shared<std::promise<void>>();
         auto completion = completed->get_future();
-        if (state == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP ||
-            state == Exchange::IPowerManager::POWER_STATE_OFF) {
-            EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, standbyTransaction, 5))
-                .WillOnce(::testing::Return(Core::ERROR_NONE));
-        }
+        EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, standbyTransaction, 5))
+            .WillOnce(::testing::Return(Core::ERROR_NONE));
         EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, standbyTransaction))
             .WillOnce(::testing::Invoke([completed](const uint32_t, const int) {
                 completed->set_value();
                 return Core::ERROR_NONE;
             }));
         preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
-                                                   state, standbyTransaction, 1);
+                                                   Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, standbyTransaction, 1);
         const auto expectStartsRejected = [&] {
             EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
                 _T("{\"id\":") + id + _T(",\"url\":\"data://blocked\"}"), response));
@@ -2085,7 +2059,8 @@ TEST_F(SAPPowerManagerTest, RejectsStartsBeforeStandbyCleanupAndAllowsPlaybackAf
 
         EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, ++transactionId))
             .WillOnce(::testing::Return(Core::ERROR_NONE));
-        preChangeNotification->OnPowerModePreChange(state, Exchange::IPowerManager::POWER_STATE_ON, transactionId, 1);
+        preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP,
+                                                   wakeState, transactionId, 1);
         EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("play"),
             _T("{\"id\":") + id + _T(",\"url\":\"data://allowed\"}"), response));
         EXPECT_EQ(response, _T("{\"success\":true}"));
@@ -2153,6 +2128,8 @@ TEST_F(SAPPowerManagerTest, PowerStopWaitsForInFlightPlayToFinish) {
             completed->set_value();
             return Core::ERROR_NONE;
         }));
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 65, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
     auto play = std::async(std::launch::async, [this, id] {
         string output;
         EXPECT_EQ(Core::ERROR_NONE, sap->Play(_T("{\"id\":") + id + _T(",\"url\":\"data://inflight\"}"), output));
@@ -2160,7 +2137,7 @@ TEST_F(SAPPowerManagerTest, PowerStopWaitsForInFlightPlayToFinish) {
     });
     EXPECT_EQ(std::future_status::ready, entered.wait_for(std::chrono::seconds(2)));
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
-                                               Exchange::IPowerManager::POWER_STATE_STANDBY, 65, 1);
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 65, 1);
     EXPECT_EQ(std::future_status::timeout, completion.wait_for(std::chrono::milliseconds(100)));
     release.set_value();
     play.get();
@@ -2216,6 +2193,30 @@ TEST_F(SAPPowerManagerTest, StopsActivePipelineBeforeCompletingDeepSleepPreChang
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     } while (std::chrono::steady_clock::now() < playingDeadline);
     EXPECT_EQ(response, _T("{\"success\":true}"));
+    {
+        SAPWorkerBlocker blocker;
+        ASSERT_TRUE(blocker.WaitUntilBlocked());
+        const Exchange::IPowerManager::PowerState states[] = {
+            Exchange::IPowerManager::POWER_STATE_STANDBY,
+            Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
+            Exchange::IPowerManager::POWER_STATE_OFF
+        };
+        int transactionId = 70;
+        for (const auto state : states) {
+            ++transactionId;
+            EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, transactionId))
+                .WillOnce(::testing::Return(Core::ERROR_NONE));
+            preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
+                                                       state, transactionId, 1);
+            EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("playbuffer"),
+                _T("{\"id\": ") + std::to_string(playerId) + _T(",\"data\":\"AAAAAA==\"}"), response));
+            EXPECT_EQ(response, _T("{\"success\":true}"));
+        }
+        EXPECT_TRUE(blocker.ReleaseAndDrain());
+        GstState state = GST_STATE_VOID_PENDING;
+        EXPECT_EQ(GST_STATE_CHANGE_SUCCESS, gst_element_get_state(pipeline.get(), &state, nullptr, 0));
+        EXPECT_EQ(GST_STATE_PLAYING, state);
+    }
     EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 17))
         .InSequence(powerSequence)
         .WillOnce(::testing::Invoke([completed, pipeline](const uint32_t, const int) {
@@ -2240,7 +2241,7 @@ TEST_F(SAPPowerManagerTest, StopsActivePipelineBeforeCompletingDeepSleepPreChang
     EXPECT_EQ(response, _T("{\"success\":true}"));
 }
 
-TEST_F(SAPPowerManagerTest, StopsStartingPipelineBeforeCompletingStandbyPreChange) {
+TEST_F(SAPPowerManagerTest, StopsStartingPipelineBeforeCompletingDeepSleepPreChange) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     std::shared_ptr<GstElement> pipeline;
@@ -2278,6 +2279,8 @@ TEST_F(SAPPowerManagerTest, StopsStartingPipelineBeforeCompletingStandbyPreChang
 
     auto completed = std::make_shared<std::promise<void>>();
     auto completion = completed->get_future();
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 43, 5))
+        .WillOnce(::testing::Return(Core::ERROR_NONE));
     EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 43))
         .WillOnce(::testing::Invoke([completed, pipeline](const uint32_t, const int) {
             GstState current = GST_STATE_VOID_PENDING;
@@ -2289,7 +2292,7 @@ TEST_F(SAPPowerManagerTest, StopsStartingPipelineBeforeCompletingStandbyPreChang
             return Core::ERROR_NONE;
         }));
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
-                                               Exchange::IPowerManager::POWER_STATE_STANDBY, 43, 1);
+                                               Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 43, 1);
     EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
     EXPECT_EQ(Core::ERROR_NONE, handler.Invoke(connection, _T("close"),
         _T("{\"id\":") + playerId + _T("}"), response));
@@ -2305,8 +2308,9 @@ TEST_F(SAPPowerManagerTest, AcknowledgesOtherPowerStates) {
         Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP,
         Exchange::IPowerManager::POWER_STATE_OFF
     };
-    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(clientId, 4, 5))
-        .WillOnce(::testing::Return(Core::ERROR_NONE));
+    SAPWorkerBlocker blocker;
+    ASSERT_TRUE(blocker.WaitUntilBlocked());
+    EXPECT_CALL(*powerManagerMock, DelayPowerModeChangeBy(::testing::_, ::testing::_, ::testing::_)).Times(0);
     int transactionId = 0;
     for (auto state : states) {
         ++transactionId;
@@ -2368,7 +2372,7 @@ TEST_F(SAPPowerManagerTest, RenewsPendingShutdownWithoutExceedingThirtySeconds) 
     EXPECT_EQ(std::future_status::ready, completion.wait_for(std::chrono::seconds(2)));
 }
 
-TEST_F(SAPPowerManagerTest, DisconnectCancelsMonitorAndQueuedCompletion) {
+TEST_F(SAPPowerManagerTest, MonitoringShutdownCancelsMonitorAndQueuedCompletion) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     SAPWorkerBlocker blocker;
@@ -2379,7 +2383,7 @@ TEST_F(SAPPowerManagerTest, DisconnectCancelsMonitorAndQueuedCompletion) {
 
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 31, 1);
-    DeactivatePowerManager();
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
     EXPECT_TRUE(blocker.ReleaseAndDrain());
 }
 
@@ -2425,7 +2429,7 @@ TEST_F(SAPPowerManagerTest, RollsBackFailedPreChangeClientRegistration) {
     EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_)))
         .WillOnce(::testing::Return(Core::ERROR_NONE));
     EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(::testing::_)).Times(0);
-    ActivatePowerManager();
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
 }
 
 TEST_F(SAPPowerManagerTest, FailedNotificationRegistrationDoesNotAddClient) {
@@ -2434,10 +2438,10 @@ TEST_F(SAPPowerManagerTest, FailedNotificationRegistrationDoesNotAddClient) {
     EXPECT_CALL(*powerManagerMock, AddPowerModePreChangeClient(::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(*powerManagerMock, RemovePowerModePreChangeClient(::testing::_)).Times(0);
     EXPECT_CALL(*powerManagerMock, Unregister(::testing::Matcher<const Exchange::IPowerManager::IModePreChangeNotification*>(::testing::_))).Times(0);
-    ActivatePowerManager();
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(&service));
 }
 
-TEST_F(SAPPowerManagerTest, ReconnectionDiscardsPreviousConnectionsQueuedWork) {
+TEST_F(SAPPowerManagerTest, ReconfigurationDiscardsPreviousConfigurationsQueuedWork) {
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     SAPWorkerBlocker blocker;
@@ -2447,7 +2451,7 @@ TEST_F(SAPPowerManagerTest, ReconnectionDiscardsPreviousConnectionsQueuedWork) {
     EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 37)).Times(0);
     preChangeNotification->OnPowerModePreChange(Exchange::IPowerManager::POWER_STATE_ON,
                                                Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP, 37, 1);
-    DeactivatePowerManager();
+    EXPECT_EQ(Core::ERROR_NONE, sap->Configure(nullptr));
     ConfigurePowerManager();
     ASSERT_NE(preChangeNotification, nullptr);
     EXPECT_CALL(*powerManagerMock, PowerModePreChangeComplete(clientId, 38))

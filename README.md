@@ -18,25 +18,31 @@ Ongoing release changes for `8.0`, `8.1`, `8.2`, `8.3`, and `8.4` branches shoul
 ## SystemAudioPlayer power transitions
 
 SystemAudioPlayer registers as a PowerManager pre-change client and stops active
-players before acknowledging standby, light sleep, deep sleep, or OFF transitions.
+players before acknowledging deep sleep transitions only.
 Player shutdown runs on the worker pool, not the PowerManager notification thread.
 Other power states are acknowledged immediately.
-Standby and OFF pre-change callbacks immediately block new play, buffer-play, and
-resume requests until an ON callback is received. Power-driven stops serialize
+Standby, light sleep, and OFF leave playback unchanged and do not request delays.
+Deep sleep pre-change callbacks immediately block new play, buffer-play, and
+resume requests until a non-deep-sleep callback is received. Power-driven stops serialize
 with complete playback-start operations, so an already-running start finishes
 before cleanup and cannot restart its pipeline after the stop.
 
-For deep sleep and OFF, it reserves 5 seconds before queuing shutdown. A separate
+For deep sleep, it reserves 5 seconds before queuing shutdown. A separate
 monitor thread requests 2-second extensions one second before each reservation
 expires, up to a total budget of 30 seconds (the final extension is capped at
 1 second to stay within that budget). Fast
 shutdown cancels the monitor and acknowledges completion immediately; a hung
-shutdown cannot request delays indefinitely. PowerManager disconnection or
-explicit monitoring shutdown stops and joins the monitor, removes the pre-change client, and
+shutdown cannot request delays indefinitely. Explicit monitoring shutdown
+stops and joins the monitor, removes the pre-change client, and
 unregisters notifications. Queued work from a previous PowerManager connection
 cannot acknowledge transactions on a new connection.
 Superseding power requests also cancel the previous monitor and discard its queued
 shutdown work, so a wakeup does not execute a still-queued deep-sleep stop.
+
+Deployment must provide a systemd dependency that ensures PowerManager is available
+before SystemAudioPlayer is configured and remains available until its monitoring
+is shut down. SystemAudioPlayer does not monitor PowerManager activation or
+deactivation and does not reconnect automatically.
 
 `Configure(service)` initializes monitoring. Plugin deinitialization calls
 `Configure(nullptr)` before releasing the implementation or terminating its

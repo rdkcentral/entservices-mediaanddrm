@@ -80,12 +80,10 @@ namespace Plugin {
     public:
         enum Event {
                 ONSAPEVENT,
-                ONPOWERSTANDBY
+                ONPOWERDEEPSLEEP
             };
 
-        // Tracks org.rdk.PowerManager availability and receives its power mode pre-change events.
-        class PowerStateObserver : public PluginHost::IPlugin::INotification,
-                                   public Exchange::IPowerManager::IModePreChangeNotification {
+        class PowerStateObserver : public Exchange::IPowerManager::IModePreChangeNotification {
         public:
             PowerStateObserver() = delete;
             PowerStateObserver(const PowerStateObserver&) = delete;
@@ -96,29 +94,6 @@ namespace Plugin {
             }
             ~PowerStateObserver() = default;
 
-#ifdef USE_THUNDER_R4
-            void Activated(const string& callsign, PluginHost::IShell* /* plugin */) override {
-                _parent.OnPluginActivated(callsign);
-            }
-            void Deactivated(const string& callsign, PluginHost::IShell* /* plugin */) override {
-                _parent.OnPluginDeactivated(callsign);
-            }
-            void Unavailable(const string& callsign, PluginHost::IShell* /* plugin */) override {
-                _parent.OnPluginDeactivated(callsign);
-            }
-#else
-            void StateChange(PluginHost::IShell* plugin) override {
-                if (plugin != nullptr) {
-                    const PluginHost::IShell::state state = plugin->State();
-                    if (state == PluginHost::IShell::ACTIVATED) {
-                        _parent.OnPluginActivated(plugin->Callsign());
-                    } else if (state == PluginHost::IShell::DEACTIVATION) {
-                        _parent.OnPluginDeactivated(plugin->Callsign());
-                    }
-                }
-            }
-#endif /* USE_THUNDER_R4 */
-
             void OnPowerModePreChange(const Exchange::IPowerManager::PowerState currentState,
                                      const Exchange::IPowerManager::PowerState newState,
                                      const int transactionId, const int stateChangeAfter) override {
@@ -126,7 +101,6 @@ namespace Plugin {
             }
 
             BEGIN_INTERFACE_MAP(PowerStateObserver)
-            INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
             INTERFACE_ENTRY(Exchange::IPowerManager::IModePreChangeNotification)
             END_INTERFACE_MAP
 
@@ -223,8 +197,6 @@ namespace Plugin {
         bool CloseMapping(int key);
         impl::SecurityParameters extractSecurityParams(const JsonObject& params) const;
 
-        void OnPluginActivated(const string& callsign);
-        void OnPluginDeactivated(const string& callsign);
         void OnPowerModePreChange(const Exchange::IPowerManager::PowerState currentState,
                                   const Exchange::IPowerManager::PowerState newState,
                                   int transactionId, int stateChangeAfter);

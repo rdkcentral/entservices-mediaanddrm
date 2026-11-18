@@ -30,7 +30,7 @@
 
 #define POWERMANAGER_CALLSIGN "org.rdk.PowerManager"
 #define PLAYBACK_STOPPED_POWER_STATE_CHANGE "PLAYBACK_STOPPED_POWER_STATE_CHANGE"
-#define POWER_PRECHANGE_CLIENT_NAME "SystemAudioPlayer"
+#define SYSTEM_AUDIO_PLAYER_POWER_PRECHANGE_CLIENT_NAME "SystemAudioPlayer"
 #define DEEP_SLEEP_TEARDOWN_BUDGET_SEC 5
 #define DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC 1
 #define DEEP_SLEEP_DELAY_EXTENSION_SEC 2
@@ -86,10 +86,9 @@ namespace Plugin {
         }
         _service = service;
         _service->AddRef();
+        _playbackAllowed = true;
         _powerLock.Unlock();
 
-        // Must not hold _powerLock here: the framework may synchronously report already active plugins.
-        _service->Register(&_powerStateObserver);
         ConnectPowerManager();
 
         return Core::ERROR_NONE;
@@ -106,26 +105,9 @@ namespace Plugin {
         _powerLock.Unlock();
 
         if (service != nullptr) {
-            service->Unregister(&_powerStateObserver);
             DisconnectPowerManager();
             service->Release();
             SAPLOG_INFO("SAP: Power state monitoring released\n");
-        }
-    }
-
-    void SystemAudioPlayerImplementation::OnPluginActivated(const string& callsign)
-    {
-        if (callsign == POWERMANAGER_CALLSIGN) {
-            SAPLOG_INFO("SAP: %s activated\n", callsign.c_str());
-            ConnectPowerManager();
-        }
-    }
-
-    void SystemAudioPlayerImplementation::OnPluginDeactivated(const string& callsign)
-    {
-        if (callsign == POWERMANAGER_CALLSIGN) {
-            SAPLOG_INFO("SAP: %s deactivated\n", callsign.c_str());
-            DisconnectPowerManager();
         }
     }
 
@@ -138,7 +120,7 @@ namespace Plugin {
             if (powerManager != nullptr) {
                 if (powerManager->Register(&_powerStateObserver) == Core::ERROR_NONE) {
                     uint32_t clientId = 0;
-                    const Core::hresult result = powerManager->AddPowerModePreChangeClient(POWER_PRECHANGE_CLIENT_NAME, clientId);
+                    const Core::hresult result = powerManager->AddPowerModePreChangeClient(SYSTEM_AUDIO_PLAYER_POWER_PRECHANGE_CLIENT_NAME, clientId);
                     if ((result == Core::ERROR_NONE) && (clientId != 0)) {
                         _powerManager = powerManager;
                         _powerPreChangeClientId = clientId;
@@ -156,7 +138,7 @@ namespace Plugin {
                     powerManager->Release();
                 }
             } else {
-                SAPLOG_WARNING("SAP: %s not available, power mode pre-changes will not be handled yet\n", POWERMANAGER_CALLSIGN);
+                SAPLOG_ERROR("SAP: %s must be available before configuring SystemAudioPlayer; power mode pre-changes will not be handled\n", POWERMANAGER_CALLSIGN);
             }
         }
         _powerLock.Unlock();
@@ -218,11 +200,11 @@ namespace Plugin {
 
             switch (newState) {
             case Exchange::IPowerManager::POWER_STATE_ON:
-                _playbackAllowed = true;
-                break;
-            case Exchange::IPowerManager::POWER_STATE_OFF:
             case Exchange::IPowerManager::POWER_STATE_STANDBY:
             case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
+            case Exchange::IPowerManager::POWER_STATE_OFF:
+                _playbackAllowed = true;
+                break;
             case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
                 _playbackAllowed = false;
                 break;
@@ -230,8 +212,7 @@ namespace Plugin {
                 break;
             }
 
-            if ((newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP) ||
-                (newState == Exchange::IPowerManager::POWER_STATE_OFF)) {
+            if (newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP) {
                 RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
                 {
                     std::lock_guard<std::mutex> lock(_powerDelayMutex);
@@ -241,12 +222,9 @@ namespace Plugin {
             }
         }
         switch (newState) {
-        case Exchange::IPowerManager::POWER_STATE_OFF:
-        case Exchange::IPowerManager::POWER_STATE_STANDBY:
-        case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
         case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
             // Stopping pipelines can block; do it off the notification thread.
-            Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERSTANDBY, std::to_string(static_cast<int>(newState)),
+            Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERDEEPSLEEP, std::to_string(static_cast<int>(newState)),
                                                            transactionId, powerRequestToken));
             break;
         default:
@@ -780,7 +758,7 @@ namespace Plugin {
 
     void SystemAudioPlayerImplementation::Dispatch(Event event, string data, int transactionId, uint64_t powerRequestToken)
     {
-        if (event == ONPOWERSTANDBY) {
+        if (event == ONPOWERDEEPSLEEP) {
             // Wait for the full start operation, not just its individual AudioPlayer API locks.
             std::lock_guard<std::mutex> playbackLock(_playbackLock);
             {
