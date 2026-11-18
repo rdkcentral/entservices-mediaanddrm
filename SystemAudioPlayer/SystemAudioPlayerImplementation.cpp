@@ -617,6 +617,7 @@ namespace Plugin {
 
     Core::hresult SystemAudioPlayerImplementation::SetSmartVolControl(const string &input, string &output)
     {
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
         SAPLOG_INFO("SystemAudioPlayerImplementation Got SetSmartVolControl request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
