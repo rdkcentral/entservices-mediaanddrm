@@ -132,27 +132,44 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
     std::string key = "voice_for_";
     voices.clear();
     if(language.empty()) {
-        auto it = m_defaultConfiguration.m_others.begin();
-        while(it != m_defaultConfiguration.m_others.end()) {
-            //ignore local language
-            if(it->first.find("voice_for_local_") == 0) {
-                ++it;
-                continue;
+        /* since webapp is using first lang and voice for speak in the list we are adding default lang as first entry */
+        const std::string& defaultLang = m_defaultConfiguration.language();
+        std::string defaultKey = "voice_for_" + defaultLang;
+        auto defaultIt = m_defaultConfiguration.m_others.find(defaultKey);
+        if (defaultIt != m_defaultConfiguration.m_others.end()) {
+            for (size_t i = 0; i < defaultIt->second.size(); ++i) {
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                voiceInfo.name = defaultIt->second[i];
+                voiceInfo.language = defaultLang;
+                voiceInfo.isDefault = 1;
+                voices.push_back(voiceInfo);
             }
-            if(it->first.find("voice_for_") == 0) {
-                std::string lang = it->first.substr(strlen("voice_for_"));
-
-                for(size_t i = 0; i < it->second.size(); ++i) {
-                    WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
-                    voiceInfo.name = it->second[i];
-                    voiceInfo.language = lang;
-                    voiceInfo.isDefault = (i == 0);
-                    voices.push_back(voiceInfo);
-                }
-            }
-            ++it;
         }
-    } else {
+        /* adding remaining entries */
+        for (const auto& entry : m_defaultConfiguration.m_others) {
+
+            if (entry.first.find("voice_for_") != 0)
+                continue;
+
+            if (entry.first.find("voice_for_local_") == 0)
+                continue;
+
+            std::string lang = entry.first.substr(strlen("voice_for_"));
+
+            // Skip default language because it was already processed
+            if (lang == defaultLang)
+                continue;
+
+            for (size_t i = 0; i < entry.second.size(); ++i) {
+                WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
+                voiceInfo.name = entry.second[i];
+                voiceInfo.language = lang;
+                voiceInfo.isDefault = (i == 0); /* since voice is array now. we are making first voice as default */
+                voices.push_back(voiceInfo);
+            }
+        }
+    }
+    else {
         key += language;
         auto it = m_defaultConfiguration.m_others.find(key);
         if(it == m_defaultConfiguration.m_others.end()) {
@@ -164,7 +181,7 @@ TTS_Error TTSManager::getVoices(std::string language,std::vector<WPEFramework::E
                 WPEFramework::Exchange::ITextToSpeech::VoiceInfo voiceInfo;
                 voiceInfo.name = it->second[i];
                 voiceInfo.language = language;
-                voiceInfo.isDefault = (i == 0);
+                voiceInfo.isDefault = (i == 0); /* since voice is array now. we are making first voice as default */
                 voices.push_back(voiceInfo);
             }
         }
@@ -216,12 +233,11 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
             m_needsConfigStoreUpdate |= languageUpdated;
         }
     }
-    else {
+    else if(!configuration.language.empty()) {
         m_needsConfigStoreUpdate |= m_defaultConfiguration.setVoice(configuration.voice);
         languageUpdated = m_defaultConfiguration.setLanguage(configuration.language);
         m_needsConfigStoreUpdate |= languageUpdated;
     }
-
 
     if( m_defaultConfiguration.hasValidLocalEndpoint() && languageUpdated ) {
         std::vector<std::string> localVoices;
@@ -491,7 +507,7 @@ TTS_Error TTSManager::speakWithUtterance(int speechId, std::string callsign, con
     }
     
     if(m_speaker) {
-        if(checkAccess("speak", callsign))
+        if(callsign.empty() || checkAccess("speak", callsign))
         {
             m_speaker->speakWithUtterance(this, speechId , callsign, text, utterance, m_defaultConfiguration.primVolDuck());
         }
