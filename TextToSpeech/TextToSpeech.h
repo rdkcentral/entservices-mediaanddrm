@@ -80,6 +80,16 @@ namespace Plugin {
                     _parent.Notify("onwillspeak", params);
                 }
 
+                virtual void OnVoicesChanged() {
+                    JsonObject params;
+                    _parent.Notify("onvoiceschanged", params); 
+                }
+
+                virtual void OnCapabilitiesChanged() {
+                    JsonObject params;
+                    _parent.Notify("oncapabilitieschanged", params); 
+                }
+
                 virtual void OnDeviceConfigurationChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) { 
                     JsonObject params; 
                     params["ttsEndPoint"] = JsonValue(config.ttsEndPoint); 
@@ -89,7 +99,7 @@ namespace Plugin {
                     params["volume"] = JsonValue(config.volume); 
                     params["rate"] = JsonValue(config.rate); 
                     params["pitch"] = JsonValue(config.pitch); 
-                    _parent.Notify("onconfigchanged", params); 
+                    _parent.Notify("ondeviceconfigurationchanged", params); 
                 }
 
                 virtual void OnSpeechStarted(const uint32_t speechid) {

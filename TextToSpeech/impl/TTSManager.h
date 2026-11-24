@@ -52,7 +52,7 @@ public:
     virtual void onTTSStateChanged(bool enabled) { (void)enabled; }
     virtual void onVoiceChanged(std::string voice) { (void)voice; }
     virtual void onWillSpeak(SpeechData &data) { (void)data; }
-    virtual void OnConfigChanged(const WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration& config) { (void)config; }
+    virtual void onConfigChanged(const WPEFramework::Exchange::ITextToSpeech::DeviceConfiguration& config) { (void)config; }
     virtual void onSpeechStart(SpeechData &data) { (void)data; }
     virtual void onSpeechPause(uint32_t speechId,string callsign) { (void)speechId; }
     virtual void onSpeechResume(uint32_t speechId,string callsign) { (void)speechId; }
@@ -61,6 +61,7 @@ public:
     virtual void onNetworkError(uint32_t speechId, string callsign) { (void)speechId; }
     virtual void onPlaybackError(uint32_t speechId, string callsign) { (void)speechId; }
     virtual void onSpeechComplete(SpeechData &data) { (void)data; }
+    virtual void onVoicesChanged(){}
 };
 
 class TTSManager : public TTSSpeakerClient{
