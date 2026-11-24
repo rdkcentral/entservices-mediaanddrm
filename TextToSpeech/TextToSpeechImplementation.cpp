@@ -352,11 +352,12 @@ namespace Plugin {
         auto status = TTS::TTS_FAIL;
 
         if(InputValidation::Instance().validate("language", toLower(language))) {
+            printf("kykumar lan validate fail");
             _adminLock.Lock();
             status = _ttsManager->listVoices(language, voice);
             _adminLock.Unlock();
         }
-
+        printf("kykumar lan validate success");
         voices = (Core::Service<RPC::StringIterator>::Create<RPC::IStringIterator>(voice));
         logResponse(status);
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
