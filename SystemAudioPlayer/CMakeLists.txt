@@ -29,6 +29,7 @@ if (USE_THUNDER_R4)
     find_package(${NAMESPACE}COM REQUIRED)
     find_package(${NAMESPACE}WebSocket REQUIRED)
 endif (USE_THUNDER_R4)
+find_package(${NAMESPACE}Helpers CONFIG REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 find_package(websocketpp REQUIRED)
@@ -111,6 +112,7 @@ if (USE_THUNDER_R4)
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}COM::${NAMESPACE}COM)
 target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket)
 endif (USE_THUNDER_R4)
+target_link_libraries(${MODULE_NAME} PRIVATE ${NAMESPACE}::${NAMESPACE}Helpers)
 
 install(TARGETS ${MODULE_NAME}
         DESTINATION lib/${STORAGE_DIRECTORY}/plugins)
