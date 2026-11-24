@@ -45,6 +45,7 @@ namespace Plugin {
                 NETWORK_ERROR,
                 PLAYBACK_ERROR,
                 SPEECH_COMPLETE,
+                VOICES_CHANGED,
                 CONFIG_CHANGED
             };
 
@@ -128,9 +129,10 @@ namespace Plugin {
         virtual Core::hresult Resume(const uint32_t speechid, Exchange::ITextToSpeech::TTSErrorDetail &status /* @out */) override;
         virtual Core::hresult GetSpeechState(const  uint32_t speechid, Exchange::ITextToSpeech::SpeechState &state/* @out */) override;
 
-        virtual void OnConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) override;
+        virtual void onConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config) override;
         virtual void onTTSStateChanged(bool enabled) override;
         virtual void onVoiceChanged(std::string voice) override;
+        virtual void onVoicesChanged() override;
         virtual void onWillSpeak(TTS::SpeechData &data) override;
         virtual void onSpeechStart(TTS::SpeechData &data) override;
         virtual void onSpeechPause(uint32_t speechId, string callsign) override;

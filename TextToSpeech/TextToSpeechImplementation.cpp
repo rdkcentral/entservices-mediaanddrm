@@ -440,9 +440,6 @@ namespace Plugin {
         TTSLOG_INFO("Rate : %lf", config.rate);
 
         logResponse(status);
-        if (status == TTS::TTS_OK) {
-            OnConfigChanged(object);
-         }
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);
     }
 
@@ -762,6 +759,7 @@ namespace Plugin {
                 case NETWORK_ERROR:     (*index)->OnNetworkError(params.Number()); break;
                 case PLAYBACK_ERROR:    (*index)->OnPlaybackError(params.Number()); break;
                 case SPEECH_COMPLETE:   (*index)->OnSpeechComplete(params.Number()); break;
+                case VOICES_CHANGED:    (*index)->OnVoicesChanged(); break;
                 case CONFIG_CHANGED:{
                     Exchange::ITextToSpeech::DeviceConfiguration config;
                     config.ttsEndPoint = params.Object()["ttsEndPoint"].String();
@@ -814,7 +812,7 @@ namespace Plugin {
     }
 
 
-    void TextToSpeechImplementation::OnConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config)
+    void TextToSpeechImplementation::onConfigChanged(const Exchange::ITextToSpeech::DeviceConfiguration& config)
     {
         TTSLOG_INFO("Notify OnDeviceConfigurationChanged");
         JsonObject params; 
@@ -838,6 +836,12 @@ namespace Plugin {
     {
         TTSLOG_INFO("Notify onvoicechanged, voice: %s", voice.c_str());
         dispatchEvent(VOICE_CHANGED, " ", JsonValue((std::string)voice));
+    }
+
+    void TextToSpeechImplementation::onVoicesChanged()
+    {
+        TTSLOG_INFO("Notify onvoiceschanged");
+        dispatchEvent(VOICES_CHANGED, " ",  JsonValue{});
     }
 
     void TextToSpeechImplementation::onWillSpeak(TTS::SpeechData &data)

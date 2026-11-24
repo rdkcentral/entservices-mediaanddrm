@@ -264,7 +264,7 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
             m_defaultConfiguration.pitch());
 
     if(v !=  m_defaultConfiguration.voice())
-        m_callback->onVoiceChanged(m_defaultConfiguration.voice());
+        m_callback->onVoicesChanged();
     //if any of the configuration attribute changes..config store gets updated
     if(m_needsConfigStoreUpdate)
     {
@@ -273,6 +273,7 @@ TTS_Error TTSManager::setDeviceConfiguration(WPEFramework::Exchange::ITextToSpee
             initiateDownload();
         }
         m_defaultConfiguration.updateConfigStore();
+        m_callback->onConfigChanged(configuration);
         m_needsConfigStoreUpdate = false;
     }
     return TTS_OK;
