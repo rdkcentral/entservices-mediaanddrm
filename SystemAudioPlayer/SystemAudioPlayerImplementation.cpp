@@ -22,9 +22,19 @@
 #include "impl/Helper.h"
 #include "base64.h"
 #include "UtilsJsonRpc.h"
+#include <algorithm>
+#include <chrono>
 
 #define SAP_MAJOR_VERSION 1
 #define SAP_MINOR_VERSION 0
+
+#define POWERMANAGER_CALLSIGN "org.rdk.PowerManager"
+#define PLAYBACK_STOPPED_POWER_STATE_CHANGE "PLAYBACK_STOPPED_POWER_STATE_CHANGE"
+#define SYSTEM_AUDIO_PLAYER_POWER_PRECHANGE_CLIENT_NAME "SystemAudioPlayer"
+#define DEEP_SLEEP_TEARDOWN_BUDGET_SEC 5
+#define DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC 1
+#define DEEP_SLEEP_DELAY_EXTENSION_SEC 2
+#define DEEP_SLEEP_MAX_DELAY_SEC 30
 
 #define GET_STR(map, key, def) ((map.HasLabel(key) && !map[key].String().empty() && map[key].String() != "null") ? map[key].String() : def)
 #define CONVERT_PARAMETERS_TOJSON() JsonObject parameters, response; parameters.FromString(input);
@@ -43,7 +53,12 @@ namespace Plugin {
     SERVICE_REGISTRATION(SystemAudioPlayerImplementation, SAP_MAJOR_VERSION, SAP_MINOR_VERSION);
 
 
-    SystemAudioPlayerImplementation::SystemAudioPlayerImplementation() : _adminLock()
+    SystemAudioPlayerImplementation::SystemAudioPlayerImplementation()
+        : _adminLock()
+        , _powerLock()
+        , _service(nullptr)
+        , _powerManager(nullptr)
+        , _powerStateObserver(*this)
     {
         AudioPlayer::Init(this);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Constructor\n");
@@ -51,13 +66,260 @@ namespace Plugin {
 
     SystemAudioPlayerImplementation::~SystemAudioPlayerImplementation()
     {
+        ReleasePowerMonitoring();
         AudioPlayer::DeInit();
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Destructor\n");
     }
 
     Core::hresult SystemAudioPlayerImplementation::Configure(PluginHost::IShell* service)
     {
+        if (service == nullptr) {
+            ReleasePowerMonitoring();
+            return Core::ERROR_NONE;
+        }
+
+        _powerLock.Lock();
+        if (_service != nullptr) {
+            _powerLock.Unlock();
+            SAPLOG_ERROR("SAP: SystemAudioPlayerImplementation is already configured\n");
+            return Core::ERROR_ILLEGAL_STATE;
+        }
+        _service = service;
+        _service->AddRef();
+        _playbackAllowed = true;
+        _powerLock.Unlock();
+
+        ConnectPowerManager();
+
         return Core::ERROR_NONE;
+    }
+
+    void SystemAudioPlayerImplementation::ReleasePowerMonitoring()
+    {
+        PluginHost::IShell* service = nullptr;
+
+        _powerLock.Lock();
+        _playbackAllowed = false;
+        service = _service;
+        _service = nullptr;
+        _powerLock.Unlock();
+
+        if (service != nullptr) {
+            DisconnectPowerManager();
+            service->Release();
+            SAPLOG_INFO("SAP: Power state monitoring released\n");
+        }
+    }
+
+    void SystemAudioPlayerImplementation::ConnectPowerManager()
+    {
+        std::lock_guard<std::mutex> control(_powerDelayControlMutex);
+        _powerLock.Lock();
+        if ((_service != nullptr) && (_powerManager == nullptr)) {
+            Exchange::IPowerManager* powerManager = _service->QueryInterfaceByCallsign<Exchange::IPowerManager>(POWERMANAGER_CALLSIGN);
+            if (powerManager != nullptr) {
+                if (powerManager->Register(&_powerStateObserver) == Core::ERROR_NONE) {
+                    uint32_t clientId = 0;
+                    const Core::hresult result = powerManager->AddPowerModePreChangeClient(SYSTEM_AUDIO_PLAYER_POWER_PRECHANGE_CLIENT_NAME, clientId);
+                    if ((result == Core::ERROR_NONE) && (clientId != 0)) {
+                        _powerManager = powerManager;
+                        _powerPreChangeClientId = clientId;
+                        SAPLOG_INFO("SAP: Registered power mode pre-change client %u\n", clientId);
+                    } else {
+                        SAPLOG_ERROR("SAP: AddPowerModePreChangeClient failed: %u, client id %u\n", result, clientId);
+                        const Core::hresult unregisterResult = powerManager->Unregister(&_powerStateObserver);
+                        if (unregisterResult != Core::ERROR_NONE) {
+                            SAPLOG_ERROR("SAP: Failed to unregister power mode pre-change notifications: %u\n", unregisterResult);
+                        }
+                        powerManager->Release();
+                    }
+                } else {
+                    SAPLOG_ERROR("SAP: Failed to register for power mode pre-change notifications\n");
+                    powerManager->Release();
+                }
+            } else {
+                SAPLOG_ERROR("SAP: %s must be available before configuring SystemAudioPlayer; power mode pre-changes will not be handled\n", POWERMANAGER_CALLSIGN);
+            }
+        }
+        _powerLock.Unlock();
+    }
+
+    void SystemAudioPlayerImplementation::DisconnectPowerManager()
+    {
+        Exchange::IPowerManager* powerManager = nullptr;
+        uint32_t clientId = 0;
+
+        {
+            std::lock_guard<std::mutex> control(_powerDelayControlMutex);
+            StopPowerDelayMonitor();
+            _powerLock.Lock();
+            powerManager = _powerManager;
+            clientId = _powerPreChangeClientId;
+            _powerManager = nullptr;
+            _powerPreChangeClientId = 0;
+            if (_service == nullptr) {
+                _playbackAllowed = false;
+            }
+            ++_powerRequestToken;
+            _powerLock.Unlock();
+        }
+
+        if (powerManager != nullptr) {
+            const Core::hresult removeResult = powerManager->RemovePowerModePreChangeClient(clientId);
+            if (removeResult != Core::ERROR_NONE) {
+                SAPLOG_ERROR("SAP: RemovePowerModePreChangeClient failed: %u\n", removeResult);
+            }
+            const Core::hresult unregisterResult = powerManager->Unregister(&_powerStateObserver);
+            if (unregisterResult != Core::ERROR_NONE) {
+                SAPLOG_ERROR("SAP: Failed to unregister power mode pre-change notifications: %u\n", unregisterResult);
+            }
+            powerManager->Release();
+            SAPLOG_INFO("SAP: Unregistered from power mode pre-change notifications\n");
+        }
+    }
+
+    void SystemAudioPlayerImplementation::OnPowerModePreChange(const Exchange::IPowerManager::PowerState currentState,
+                                                              const Exchange::IPowerManager::PowerState newState,
+                                                              int transactionId, int stateChangeAfter)
+    {
+        SAPLOG_INFO("SAP: Power mode pre-change from %d to %d, transaction %d, stateChangeAfter %d\n",
+                    static_cast<int>(currentState), static_cast<int>(newState), transactionId, stateChangeAfter);
+
+        uint64_t powerRequestToken;
+        {
+            std::lock_guard<std::mutex> control(_powerDelayControlMutex);
+            StopPowerDelayMonitor();
+            _powerLock.Lock();
+            if (_powerManager == nullptr) {
+                _powerLock.Unlock();
+                SAPLOG_WARNING("SAP: Ignoring power mode pre-change after PowerManager disconnected\n");
+                return;
+            }
+            powerRequestToken = ++_powerRequestToken;
+            _powerLock.Unlock();
+
+            switch (newState) {
+            case Exchange::IPowerManager::POWER_STATE_ON:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY_LIGHT_SLEEP:
+                _playbackAllowed = true;
+                break;
+            case Exchange::IPowerManager::POWER_STATE_OFF:
+            case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
+                _playbackAllowed = false;
+                break;
+            default:
+                break;
+            }
+
+            if (newState == Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP ||
+                newState == Exchange::IPowerManager::POWER_STATE_OFF) {
+                RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_TEARDOWN_BUDGET_SEC);
+                {
+                    std::lock_guard<std::mutex> lock(_powerDelayMutex);
+                    _powerDelayDone = false;
+                }
+                _powerDelayThread = std::thread(&SystemAudioPlayerImplementation::PowerDelayMonitor, this, transactionId, powerRequestToken);
+            }
+        }
+        switch (newState) {
+        case Exchange::IPowerManager::POWER_STATE_OFF:
+        case Exchange::IPowerManager::POWER_STATE_STANDBY_DEEP_SLEEP:
+            // Stopping pipelines can block; do it off the notification thread.
+            Core::IWorkerPool::Instance().Submit(Job::Create(this, ONPOWERDEEPSLEEP, std::to_string(static_cast<int>(newState)),
+                                                           transactionId, powerRequestToken));
+            break;
+        default:
+            CompletePowerModePreChange(transactionId, powerRequestToken);
+            break;
+        }
+    }
+
+    void SystemAudioPlayerImplementation::RequestPowerModeChangeDelay(int transactionId, uint64_t powerRequestToken, int delaySec)
+    {
+        Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
+        if ((_powerManager != nullptr) && (_powerRequestToken == powerRequestToken)) {
+            const Core::hresult result = _powerManager->DelayPowerModeChangeBy(_powerPreChangeClientId, transactionId, delaySec);
+            if (result != Core::ERROR_NONE) {
+                SAPLOG_ERROR("SAP: DelayPowerModeChangeBy failed for transaction %d: %u\n", transactionId, result);
+            } else {
+                SAPLOG_INFO("SAP: Reserved %d seconds for power pre-change transaction %d\n", delaySec, transactionId);
+            }
+        }
+    }
+
+    void SystemAudioPlayerImplementation::PowerDelayMonitor(int transactionId, uint64_t powerRequestToken)
+    {
+        const auto start = std::chrono::steady_clock::now();
+        int reservedSec = DEEP_SLEEP_TEARDOWN_BUDGET_SEC;
+        std::unique_lock<std::mutex> lock(_powerDelayMutex);
+        while (!_powerDelayCv.wait_until(lock, start + std::chrono::seconds(reservedSec - DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC),
+                                        [this] { return _powerDelayDone; })) {
+            if (reservedSec >= DEEP_SLEEP_MAX_DELAY_SEC) {
+                SAPLOG_ERROR("SAP: Shutdown still pending with a %d-second delay budget for transaction %d; no further delay requested\n",
+                             DEEP_SLEEP_MAX_DELAY_SEC, transactionId);
+                break;
+            }
+            const int extensionSec = std::min(DEEP_SLEEP_DELAY_EXTENSION_SEC, DEEP_SLEEP_MAX_DELAY_SEC - reservedSec);
+            SAPLOG_WARNING("SAP: Shutdown still pending for transaction %d; extending reservation by %d seconds\n",
+                           transactionId, extensionSec);
+            lock.unlock();
+            // PowerManager measures each delay from now, not from the previous deadline.
+            RequestPowerModeChangeDelay(transactionId, powerRequestToken, DEEP_SLEEP_DELAY_RENEW_MARGIN_SEC + extensionSec);
+            lock.lock();
+            reservedSec += extensionSec;
+        }
+    }
+
+    // Caller holds _powerDelayControlMutex, never _powerLock: the monitor may be requesting a delay.
+    void SystemAudioPlayerImplementation::StopPowerDelayMonitor()
+    {
+        if (_powerDelayThread.joinable()) {
+            {
+                std::lock_guard<std::mutex> lock(_powerDelayMutex);
+                _powerDelayDone = true;
+            }
+            _powerDelayCv.notify_all();
+            _powerDelayThread.join();
+        }
+    }
+
+    void SystemAudioPlayerImplementation::CompletePowerModePreChange(int transactionId, uint64_t powerRequestToken)
+    {
+        std::lock_guard<std::mutex> control(_powerDelayControlMutex);
+        if (_powerRequestToken != powerRequestToken) {
+            return;
+        }
+        StopPowerDelayMonitor();
+        Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
+        if (_powerManager != nullptr) {
+            const Core::hresult result = _powerManager->PowerModePreChangeComplete(_powerPreChangeClientId, transactionId);
+            if (result != Core::ERROR_NONE) {
+                SAPLOG_ERROR("SAP: PowerModePreChangeComplete failed for transaction %d: %u\n", transactionId, result);
+            } else {
+                SAPLOG_INFO("SAP: Completed power mode pre-change transaction %d\n", transactionId);
+            }
+        }
+    }
+
+    void SystemAudioPlayerImplementation::StopActivePlayers()
+    {
+        std::vector<int> stoppedIds;
+
+        _adminLock.Lock();
+        for (auto& entry : objectMap) {
+            AudioPlayer* player = entry.second;
+            if ((player != nullptr) && player->isActive()) {
+                SAPLOG_INFO("SAP: Stopping player id %d due to power state change\n", entry.first);
+                player->Stop();
+                stoppedIds.push_back(entry.first);
+            }
+        }
+        _adminLock.Unlock();
+
+        for (int id : stoppedIds) {
+            onSAPEvent(static_cast<uint32_t>(id), PLAYBACK_STOPPED_POWER_STATE_CHANGE);
+        }
     }
 
     Core::hresult SystemAudioPlayerImplementation::Register(Exchange::ISystemAudioPlayer::INotification* sink)
@@ -202,6 +464,11 @@ namespace Plugin {
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("url");
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Play\n");
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: Play rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         int id = -1;
         string url;
         AudioPlayer *player;
@@ -241,6 +508,11 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got PlayBuffer request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: PlayBuffer rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         AudioPlayer *player;
         int id = -1;
         std::string data;
@@ -293,6 +565,7 @@ namespace Plugin {
         int id = -1;
         getNumberParameter("id", id);
         SAPLOG_INFO("SAP: SystemAudioPlayerImplementation Close\n");
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
         _adminLock.Lock();
         
           if(CloseMapping(id))
@@ -346,6 +619,7 @@ namespace Plugin {
 
     Core::hresult SystemAudioPlayerImplementation::SetSmartVolControl(const string &input, string &output)
     {
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
         SAPLOG_INFO("SystemAudioPlayerImplementation Got SetSmartVolControl request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
         CHECK_SAP_PARAMETER_RETURN_ON_FAIL("id");
@@ -410,6 +684,11 @@ namespace Plugin {
     {
         SAPLOG_INFO("SystemAudioPlayerImplementation Got Resume request :%s\n",input.c_str());
         CONVERT_PARAMETERS_TOJSON();
+        std::lock_guard<std::mutex> playbackLock(_playbackLock);
+        if (!_playbackAllowed) {
+            SAPLOG_WARNING("SAP: Resume rejected while power state disallows playback\n");
+            returnResponse(false);
+        }
         AudioPlayer *player;
         int id = -1;
         bool ret = false;
@@ -480,8 +759,24 @@ namespace Plugin {
         Core::IWorkerPool::Instance().Submit(Job::Create(this, event, data));
     }
 
-    void SystemAudioPlayerImplementation::Dispatch(Event event, string data)
+    void SystemAudioPlayerImplementation::Dispatch(Event event, string data, int transactionId, uint64_t powerRequestToken)
     {
+        if (event == ONPOWERDEEPSLEEP) {
+            // Wait for the full start operation, not just its individual AudioPlayer API locks.
+            std::lock_guard<std::mutex> playbackLock(_playbackLock);
+            {
+                Core::SafeSyncType<Core::CriticalSection> lock(_powerLock);
+                if ((_powerManager == nullptr) || (_powerRequestToken != powerRequestToken)) {
+                    SAPLOG_WARNING("SAP: Discarding stale queued power pre-change transaction %d\n", transactionId);
+                    return;
+                }
+            }
+            SAPLOG_INFO("SAP: Handling power state %s, stopping active players\n", data.c_str());
+            StopActivePlayers();
+            CompletePowerModePreChange(transactionId, powerRequestToken);
+            return;
+        }
+
         _adminLock.Lock();
         std::list<Exchange::ISystemAudioPlayer::INotification*>::iterator index(_notificationClients.begin());
 
