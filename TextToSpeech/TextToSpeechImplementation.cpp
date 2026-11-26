@@ -350,14 +350,15 @@ namespace Plugin {
         CHECK_TTS_MANAGER_RETURN_ON_FAIL();
         std::vector<std::string> voice;
         auto status = TTS::TTS_FAIL;
-
+        printf("kykumar validating lan param\n");
         if(InputValidation::Instance().validate("language", toLower(language))) {
-            printf("kykumar lan validate fail");
+            printf("kykumar lan validate success\n");
             _adminLock.Lock();
             status = _ttsManager->listVoices(language, voice);
             _adminLock.Unlock();
         }
-        printf("kykumar lan validate success");
+        else
+            printf("kykumar lan validate failed\n");
         voices = (Core::Service<RPC::StringIterator>::Create<RPC::IStringIterator>(voice));
         logResponse(status);
         return (status == TTS::TTS_OK) ? (Core::ERROR_NONE) : (Core::ERROR_GENERAL);

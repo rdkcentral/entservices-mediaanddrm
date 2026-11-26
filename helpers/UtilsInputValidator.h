@@ -260,6 +260,7 @@ public:
     template <typename T>
     inline void addValidator(std::string name, ExpectedValues<T> &&expectedValues)
     {
+        printf("kykumar adding validator for %s\n", name.c_str());
         addValidator(name, Validator<T>::create(std::forward<ExpectedValues<T>>(expectedValues)));
     }
 
