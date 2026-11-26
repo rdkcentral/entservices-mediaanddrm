@@ -36,10 +36,10 @@
 #undef returnResponse
 #define returnResponse(success) \
     response["success"] = success; \
-    printf("returnResponse: success = %d\n", success); \
+    printf("kykumar returnResponse: success = %d\n", success); \
     CONVERT_PARAMETERS_FROMJSON(); \
     LOGTRACEMETHODFIN(); \
-    printf("Returning Core::ERROR_NONE\n"); \
+    printf("kykumar Returning Core::ERROR_NONE\n"); \
     return (Core::ERROR_NONE);
 
 namespace WPEFramework {

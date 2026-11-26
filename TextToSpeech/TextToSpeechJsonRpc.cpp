@@ -150,8 +150,10 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
         if(_tts) {
             CHECK_TTS_PARAMETER_RETURN_ON_FAIL("language");
             RPC::IStringIterator* voices = nullptr;
+            printf("kykumar Listing voices for language: %s\n", parameters["language"].String().c_str());
             auto status = _tts->ListVoices(parameters["language"].String(), voices);
             if (voices == nullptr || status != TTS::TTS_OK) {
+            printf("kykumar status no ok\n");
                response["TTS_Status"] = status;
                response["message"] = "Failed to list voices";
                if (voices) {
