@@ -122,7 +122,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-testframework
           path: entservices-testframework
-          ref: 2.0.10
+          ref: 89f3adf760b28ebbf448c01da569d70ec4c36533
 
       - name: Checkout entservices-mediaanddrm
         if: ${{ inputs.caller_source == 'local' }}
@@ -317,7 +317,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-helpers
           path: entservices-helpers
-          ref: 55799f4801c9e37f84be1ebc16c7ecfbc53769ba
+          ref: a302e5e74c222c0c381b4eb94d364519392b2a0c
 
       - name: Build entservices-helpers
         run: >
