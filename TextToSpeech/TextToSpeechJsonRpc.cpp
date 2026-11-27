@@ -49,6 +49,8 @@ namespace Plugin {
         Register("setACL", &TextToSpeech::SetACL, this);
         Register("getapiversion", &TextToSpeech::getapiversion, this);
         Register("getinterfaceversion", &TextToSpeech::GetInterfaceVersion, this);
+        Register("getcapability", &TextToSpeech::GetCapability, this);
+        Register("getcapabilities", &TextToSpeech::GetCapabilities, this);
 
         InputValidation::Instance().setLogger([] (const char *log) { TTSLOG_WARNING(log); });
         InputValidation::Instance().addValidator("double_str", ExpectedValues<std::string>("^-?[0-9]+(\\.[0-9]+)?"));
@@ -148,13 +150,16 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
         if(_tts) {
             CHECK_TTS_PARAMETER_RETURN_ON_FAIL("language");
             RPC::IStringIterator* voices = nullptr;
+            printf("kykumar Listing voices for language: %s\n", parameters["language"].String().c_str());
             auto status = _tts->ListVoices(parameters["language"].String(), voices);
             if (voices == nullptr || status != TTS::TTS_OK) {
+            printf("kykumar status no ok\n");
                response["TTS_Status"] = status;
                response["message"] = "Failed to list voices";
                if (voices) {
                   voices->Release();
                }
+            printf("kykumar returning failure\n");
                returnResponse(false);
             }
             JsonArray arr;
@@ -343,11 +348,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
             config.ttsEndPoint = GET_STR(parameters, "ttsendpoint", "");
             config.ttsEndPointSecured = GET_STR(parameters, "ttsendpointsecured", "");
             config.language = GET_STR(parameters, "language", "");        
-            #ifndef UNIT_TESTING
-            config.voice = ""; //ignore voice from app           
-            #else
             config.voice = GET_STR(parameters, "voice", "");
-            #endif
             
             std::string proxyRate;
             std::string proxyPitch;
