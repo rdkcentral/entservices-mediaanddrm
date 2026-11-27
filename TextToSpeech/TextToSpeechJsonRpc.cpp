@@ -159,6 +159,7 @@ uint32_t TextToSpeech::SetACL(const JsonObject& parameters, JsonObject& response
                if (voices) {
                   voices->Release();
                }
+            printf("kykumar returning failure\n");
                returnResponse(false);
             }
             JsonArray arr;

@@ -317,7 +317,7 @@ jobs:
         with:
           repository: rdkcentral/entservices-helpers
           path: entservices-helpers
-          ref: a302e5e74c222c0c381b4eb94d364519392b2a0c
+          ref: eb8392f9f51a757963ee857426cbf3885b0ee960
 
       - name: Build entservices-helpers
         run: >
